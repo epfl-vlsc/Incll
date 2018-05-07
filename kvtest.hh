@@ -614,6 +614,74 @@ void kvtest_rw16(C &client)
     kvtest_rw16_seed(client, kvtest_first_seed + client.id() % 48);
 }
 
+// generate a big tree, update the tree to current epoch as much as possible
+//write/delete: write to tree, meanwhile try to get keys, if found remove
+#define N_KEYS 5000000
+#define N_OPS  2000000
+
+template <typename C>
+void kvtest_intensive(C &client, pthread_barrier_t& barr, std::string& expName){
+	int res=-2;
+	unsigned pos = 0, val =0;
+	uint64_t n = 0;
+	Json result = Json();
+
+	if(client.id() == 0){
+		printf("Create tree\n");
+		while (n < N_KEYS/2) {
+			++n;
+			pos = rand() % N_KEYS;
+			client.put(pos, pos + 1);
+		}
+	}
+
+	//Barrier-------------------------------------------------------------
+	res = pthread_barrier_wait(&barr);
+	if(res != 0 && res!= PTHREAD_BARRIER_SERIAL_THREAD)
+		printf("in thread %d in barrier 1 problem %d\n", client.id(), res);
+	printf("Thread %d passed barrier 1\n", client.id());
+	n = 0;
+	bool found = false;
+
+	double t0 = client.now();
+	if (client.id() % 2) {
+		while (!client.timeout(0) && n <= N_OPS/100) {
+			++n;
+
+			pos = rand() % N_KEYS;
+			found = client.get_sync(pos);
+
+			if(found){
+				client.remove_sync(pos);
+			}
+
+			if ((n % (1 << 6)) == 0){
+				client.rcu_quiesce();
+			}
+
+		}
+		result.set("removepos", pos);
+	} else {
+		while (n < N_OPS) {
+			++n;
+
+			pos = rand() % N_KEYS;
+			val = rand() % N_KEYS;
+			client.put(pos, val);
+
+			if ((n % (1 << 6)) == 0){
+				client.rcu_quiesce();
+			}
+		}
+		result.set("putpos", pos);
+	}
+	client.wait_all();
+	double t1 = client.now();
+
+	kvtest_set_time(result, "ops", n, t1 - t0);
+	client.report(result);
+}
+
 
 // A writer and a deleter; the deleter chases the writer
 template <typename C>

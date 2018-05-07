@@ -70,6 +70,9 @@
 #include <algorithm>
 #include <numeric>
 
+pthread_barrier_t barr;
+std::string experimentName;
+
 static std::vector<int> cores;
 volatile bool timeout[2] = {false, false};
 double duration[2] = {10, 0};
@@ -516,6 +519,8 @@ static pthread_cond_t subtest_cond;
 #define TESTRUNNER_CLIENT_TYPE kvtest_client<Masstree::default_table>&
 #include "testrunner.hh"
 
+
+MAKE_TESTRUNNER(intensive, kvtest_intensive(client, barr, experimentName));
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
 // MAKE_TESTRUNNER(palma, kvtest_palma(client));
 // MAKE_TESTRUNNER(palmb, kvtest_palmb(client));
@@ -678,6 +683,8 @@ void runtest(int nthreads, void* (*func)(void*)) {
     for (int i = 0; i < nthreads; ++i)
         tis.push_back(threadinfo::make(threadinfo::TI_PROCESS, i));
     signal(SIGALRM, test_timeout);
+
+    pthread_barrier_init(&barr, NULL, nthreads);
     for (int i = 0; i < nthreads; ++i) {
         int r = pthread_create(&tis[i]->pthread(), 0, func, tis[i]);
         always_assert(r == 0);
@@ -1013,6 +1020,12 @@ Try 'mttest --help' for options.\n");
         fprintf(stderr, "%d/%u %s/%s%s", counter + 1, (int) (ntrials * tests.size() * treetypes.size()),
                 tests[t], treetypes[tt], quiet ? "      " : "\n");
 
+        //test name
+        std::string testName = std::string(tests[t]) + "_"
+        		+ std::string(treetypes[tt]) + "_" + std::to_string(trial);
+        experimentName = testName;
+
+        //run test
         run_one_test(trial, treetypes[tt], tests[t], p, nruns);
         struct timeval delay;
         delay.tv_sec = 0;
