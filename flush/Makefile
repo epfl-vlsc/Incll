@@ -13,6 +13,7 @@ unload:
 run:
 	sudo dmesg -C
 	sudo insmod gf.ko
-	sudo ./test
+	sudo chmod 777 /dev/global_flush
+	./test
 	dmesg
 	sudo rmmod gf.ko

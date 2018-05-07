@@ -4,7 +4,7 @@
 #include <linux/kernel.h>         
 #include <linux/fs.h>            
 #include <linux/uaccess.h>    
-#define  DEVICE_NAME "global_fence"    
+#define  DEVICE_NAME "global_flush"    
 #define  CLASS_NAME  "gf"
 
 MODULE_LICENSE("GPL");  
@@ -18,21 +18,23 @@ static struct device* gfDevice = NULL;
 
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
+static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
 
 static struct file_operations fops ={
    .open = dev_open,
    .release = dev_release,
+   .write = dev_write,
 };
 
 static int __init gf_init(void){
-   printk(KERN_INFO "Init GF\n");
+   printk(KERN_INFO "Kernel: Init GF\n");
 
    majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
    if (majorNumber<0){
       printk(KERN_ALERT "GF failed to register\n");
       return majorNumber;
    }
-   printk(KERN_INFO "GF: registered - major number %d\n", majorNumber);
+   printk(KERN_INFO "Kernel: registered - major number %d\n", majorNumber);
 
 	//class
    gfClass = class_create(THIS_MODULE, CLASS_NAME);
@@ -51,7 +53,7 @@ static int __init gf_init(void){
       printk(KERN_ALERT "Failed to create gf device\n");
       return PTR_ERR(gfDevice);
    }
-   printk(KERN_INFO "gf device class created correctly\n");
+   printk(KERN_INFO "Kernel: gf device class created correctly\n");
    return 0;
 }
 
@@ -60,20 +62,24 @@ static void __exit gf_exit(void){
    class_unregister(gfClass);
    class_destroy(gfClass);
    unregister_chrdev(majorNumber, DEVICE_NAME); 
-   printk(KERN_INFO "gfclass exit\n");
+   printk(KERN_INFO "Kernel: gfclass exit\n");
 }
 
 
 static int dev_open(struct inode *inodep, struct file *filep){
-   //printk(KERN_INFO "Flush entire cache \n");
-	asm volatile ("wbinvd");
+   printk(KERN_INFO "Kernel: device connect successful \n");
    return 0;
 }
 
 
 static int dev_release(struct inode *inodep, struct file *filep){
-   //printk(KERN_INFO "done\n");
+   printk(KERN_INFO "Kernel: device disconnect successful\n");
    return 0;
+}
+
+static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
+	asm volatile ("wbinvd");
+	return 0;
 }
 
 module_init(gf_init);
