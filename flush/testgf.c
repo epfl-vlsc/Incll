@@ -40,7 +40,7 @@ int main(){
 		total += timeFlush(&tvalBefore, &tvalAfter);
 	}
 
-	printf("Time spent flushing %lu ms\n", total/NRUNS);
+	printf("Time spent flushing %lu us\n", total/NRUNS);
 
 	close(fd);
 	return 0;
