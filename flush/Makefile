@@ -1,6 +1,6 @@
 obj-m+=gf.o
 
-all:
+all: 
 	make -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) modules
 	$(CC) testgf.c -o test
 clean:

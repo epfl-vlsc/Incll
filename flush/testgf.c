@@ -31,7 +31,7 @@ int main(){
 
 	for(int i=0;i<NRUNS;++i){
 		gettimeofday (&tvalBefore, NULL);
-		ret = write(fd, buf, 0); // Send the string to the LKM
+		ret = write(fd, buf, 0);
 		if (ret < 0){
 			perror("Failed to flush.");
 			return errno;

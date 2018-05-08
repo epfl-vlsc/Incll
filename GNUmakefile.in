@@ -50,6 +50,16 @@ mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a
 mttest: mttest.o misc.o checkpoint.o $(KVTREES) testrunner.o \
 	kvio.o libjson.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+	
+flush_all:
+	cd flush && $(MAKE) all
+	
+flush_unload:
+	cd flush && $(MAKE) unload
+
+flush_load:
+	cd flush && $(MAKE) load
+	sudo chmod 777 /dev/global_flush
 
 test_string: test_string.o string.o straccum.o compiler.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)

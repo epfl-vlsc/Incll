@@ -21,6 +21,97 @@
 #include <vector>
 #include <fstream>
 
+struct CondHelper{
+	int var;
+	pthread_mutex_t mtx;
+	pthread_cond_t cond;
+
+	void init(){
+		var = 0;
+		mtx = PTHREAD_MUTEX_INITIALIZER;
+		cond = PTHREAD_COND_INITIALIZER;
+	}
+
+	void signal() {
+		pthread_mutex_lock(&mtx);
+		var--;
+		pthread_cond_signal(&cond);
+		pthread_mutex_unlock(&mtx);
+	}
+
+	void wait() {
+		pthread_mutex_lock(&mtx);
+		while (var != 0)
+			pthread_cond_wait(&cond, &mtx);
+		pthread_mutex_unlock(&mtx);
+	}
+
+	void start(){
+		pthread_mutex_lock(&mtx);
+		var++;
+		pthread_mutex_unlock(&mtx);
+	}
+};
+
+
+struct KVTestHelper{
+	std::string experimentName;
+
+	//barrier
+	pthread_barrier_t barr;
+
+	//global flush
+	int fd;
+
+	//flush sync
+	CondHelper fS;
+
+	//work sync
+	CondHelper wS;
+
+
+	void init(int n_threads){
+		//global flush driver
+		fd = open("/dev/global_flush", O_RDWR);
+		if (fd < 0){
+			perror("Failed to connect to device\n");
+			return;
+		}
+
+		//flush
+		fS.init();
+
+		//work
+		wS.init();
+
+		//init syncs
+		pthread_barrier_init(&barr, NULL, n_threads);
+	}
+
+	void globalFlush(){
+		int ret = write(fd, "", 0);
+		if (ret < 0){
+			perror("Failed to flush.");
+			return;
+		}
+	}
+
+	void setExpName(std::string& name){
+		experimentName = name;
+	}
+
+	void destroy(){
+		pthread_barrier_destroy(&barr);
+	}
+
+	void wait_barrier(int id){
+		int res = pthread_barrier_wait(&barr);
+		if(res != 0 && res!= PTHREAD_BARRIER_SERIAL_THREAD)
+			printf("in thread %d in barrier 1 problem %d\n", id, res);
+		printf("Thread %d passed barrier 1\n", id);
+	}
+};
+
 using lcdf::Str;
 using lcdf::String;
 using lcdf::Json;
@@ -616,43 +707,53 @@ void kvtest_rw16(C &client)
 
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
-#define N_KEYS 5000000
-#define N_OPS  2000000
-
 template <typename C>
-void kvtest_intensive(C &client, pthread_barrier_t& barr, std::string& expName){
-	int res=-2;
+void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsigned long n_ops){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	Json result = Json();
 
 	if(client.id() == 0){
 		printf("Create tree\n");
-		while (n < N_KEYS/2) {
+		while (n < n_keys/2) {
 			++n;
-			pos = rand() % N_KEYS;
+			pos = rand() % n_keys;
+
 			client.put(pos, pos + 1);
 		}
 	}
 
 	//Barrier-------------------------------------------------------------
-	res = pthread_barrier_wait(&barr);
-	if(res != 0 && res!= PTHREAD_BARRIER_SERIAL_THREAD)
-		printf("in thread %d in barrier 1 problem %d\n", client.id(), res);
-	printf("Thread %d passed barrier 1\n", client.id());
+	kvTH.wait_barrier(client.id());
+
 	n = 0;
 	bool found = false;
 
 	double t0 = client.now();
 	if (client.id() % 2) {
-		while (!client.timeout(0) && n <= N_OPS/100) {
+		while (!client.timeout(0) && n <= n_ops/100) {
 			++n;
 
-			pos = rand() % N_KEYS;
+			pos = rand() % n_keys;
+
+			//wait if flush
+			kvTH.fS.wait();
+			//set to work
+			kvTH.wS.start();
+			//work
 			found = client.get_sync(pos);
+			//finish work
+			kvTH.wS.signal();
 
 			if(found){
+				//wait if flush
+				kvTH.fS.wait();
+				//set to work
+				kvTH.wS.start();
+				//work
 				client.remove_sync(pos);
+				//finish work
+				kvTH.wS.signal();
 			}
 
 			if ((n % (1 << 6)) == 0){
@@ -662,12 +763,20 @@ void kvtest_intensive(C &client, pthread_barrier_t& barr, std::string& expName){
 		}
 		result.set("removepos", pos);
 	} else {
-		while (n < N_OPS) {
+		while (n < n_ops) {
 			++n;
 
-			pos = rand() % N_KEYS;
-			val = rand() % N_KEYS;
+			pos = rand() % n_keys;
+			val = rand() % n_keys;
+
+			//wait if flush
+			kvTH.fS.wait();
+			//set to work
+			kvTH.wS.start();
+			//work
 			client.put(pos, val);
+			//finish work
+			kvTH.wS.signal();
 
 			if ((n % (1 << 6)) == 0){
 				client.rcu_quiesce();
