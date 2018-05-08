@@ -70,7 +70,7 @@
 #include <algorithm>
 #include <numeric>
 
-KVTestHelper kvtestHelper;
+KVTestHelper kvTH;
 
 static std::vector<int> cores;
 volatile bool timeout[2] = {false, false};
@@ -126,24 +126,18 @@ void test_timeout(int) {
 }
 
 void set_global_epoch(mrcu_epoch_type e) {
-    global_epoch_lock.lock();
+	bool shouldFlush = false;
+	global_epoch_lock.lock();
     if (mrcu_signed_epoch_type(e - globalepoch) > 0) {
     	globalepoch = e;
+
         active_epoch = threadinfo::min_active_epoch();
-
-        //flush signal
-        kvtestHelper.fS.start();
-
-        //make sure other threads are done with work
-        kvtestHelper.wS.wait();
-
-        //flush
-        kvtestHelper.globalFlush();
-
-        //finish flush
-        kvtestHelper.fS.signal();
+        shouldFlush = true;
     }
     global_epoch_lock.unlock();
+
+    if(shouldFlush)
+    	kvTH.fS.flush();
 }
 
 template <typename T>
@@ -531,13 +525,13 @@ static pthread_cond_t subtest_cond;
 #define TESTRUNNER_CLIENT_TYPE kvtest_client<Masstree::default_table>&
 #include "testrunner.hh"
 
-MAKE_TESTRUNNER(intensive, kvtest_intensive(client, kvtestHelper, 500, 200));
-MAKE_TESTRUNNER(intensive1, kvtest_intensive(client, kvtestHelper, 5000000, 2000000));
-MAKE_TESTRUNNER(intensive2, kvtest_intensive(client, kvtestHelper, 2000000, 5000000));
-MAKE_TESTRUNNER(intensive3, kvtest_intensive(client, kvtestHelper, 10000000, 10000000));
-MAKE_TESTRUNNER(intensive4, kvtest_intensive(client, kvtestHelper, 50000000, 20000000));
-MAKE_TESTRUNNER(intensive5, kvtest_intensive(client, kvtestHelper, 20000000, 50000000));
-MAKE_TESTRUNNER(intensive6, kvtest_intensive(client, kvtestHelper, 20000000, 20000000));
+MAKE_TESTRUNNER(intensive, kvtest_intensive(client, kvTH, 500, 200));
+MAKE_TESTRUNNER(intensive1, kvtest_intensive(client, kvTH, 5000000, 2000000));
+MAKE_TESTRUNNER(intensive2, kvtest_intensive(client, kvTH, 2000000, 5000000));
+MAKE_TESTRUNNER(intensive3, kvtest_intensive(client, kvTH, 10000000, 10000000));
+MAKE_TESTRUNNER(intensive4, kvtest_intensive(client, kvTH, 50000000, 20000000));
+MAKE_TESTRUNNER(intensive5, kvtest_intensive(client, kvTH, 20000000, 50000000));
+MAKE_TESTRUNNER(intensive6, kvtest_intensive(client, kvTH, 20000000, 20000000));
 
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
 // MAKE_TESTRUNNER(palma, kvtest_palma(client));
@@ -702,7 +696,7 @@ void runtest(int nthreads, void* (*func)(void*)) {
         tis.push_back(threadinfo::make(threadinfo::TI_PROCESS, i));
     signal(SIGALRM, test_timeout);
 
-    kvtestHelper.init(nthreads);
+    kvTH.init(nthreads);
     for (int i = 0; i < nthreads; ++i) {
         int r = pthread_create(&tis[i]->pthread(), 0, func, tis[i]);
         always_assert(r == 0);
@@ -1041,7 +1035,7 @@ Try 'mttest --help' for options.\n");
         //test name
         std::string testName = std::string(tests[t]) + "_"
         		+ std::string(treetypes[tt]) + "_" + std::to_string(trial);
-        kvtestHelper.setExpName(testName);
+        kvTH.setExpName(testName);
 
         //run test
         run_one_test(trial, treetypes[tt], tests[t], p, nruns);

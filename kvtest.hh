@@ -21,96 +21,7 @@
 #include <vector>
 #include <fstream>
 
-struct CondHelper{
-	int var;
-	pthread_mutex_t mtx;
-	pthread_cond_t cond;
-
-	void init(){
-		var = 0;
-		mtx = PTHREAD_MUTEX_INITIALIZER;
-		cond = PTHREAD_COND_INITIALIZER;
-	}
-
-	void signal() {
-		pthread_mutex_lock(&mtx);
-		var--;
-		pthread_cond_signal(&cond);
-		pthread_mutex_unlock(&mtx);
-	}
-
-	void wait() {
-		pthread_mutex_lock(&mtx);
-		while (var != 0)
-			pthread_cond_wait(&cond, &mtx);
-		pthread_mutex_unlock(&mtx);
-	}
-
-	void start(){
-		pthread_mutex_lock(&mtx);
-		var++;
-		pthread_mutex_unlock(&mtx);
-	}
-};
-
-
-struct KVTestHelper{
-	std::string experimentName;
-
-	//barrier
-	pthread_barrier_t barr;
-
-	//global flush
-	int fd;
-
-	//flush sync
-	CondHelper fS;
-
-	//work sync
-	CondHelper wS;
-
-
-	void init(int n_threads){
-		//global flush driver
-		fd = open("/dev/global_flush", O_RDWR);
-		if (fd < 0){
-			perror("Failed to connect to device\n");
-			return;
-		}
-
-		//flush
-		fS.init();
-
-		//work
-		wS.init();
-
-		//init syncs
-		pthread_barrier_init(&barr, NULL, n_threads);
-	}
-
-	void globalFlush(){
-		int ret = write(fd, "", 0);
-		if (ret < 0){
-			perror("Failed to flush.");
-			return;
-		}
-	}
-
-	void setExpName(std::string& name){
-		experimentName = name;
-	}
-
-	void destroy(){
-		pthread_barrier_destroy(&barr);
-	}
-
-	void wait_barrier(int id){
-		int res = pthread_barrier_wait(&barr);
-		if(res != 0 && res!= PTHREAD_BARRIER_SERIAL_THREAD)
-			printf("in thread %d in barrier 1 problem %d\n", id, res);
-		printf("Thread %d passed barrier 1\n", id);
-	}
-};
+#include "masstree_extras.hh"
 
 using lcdf::Str;
 using lcdf::String;
@@ -713,6 +624,9 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 	uint64_t n = 0;
 	Json result = Json();
 
+	result.set("n_keys", pos);
+	result.set("n_ops", pos);
+
 	if(client.id() == 0){
 		printf("Create tree\n");
 		while (n < n_keys/2) {
@@ -731,29 +645,21 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 
 	double t0 = client.now();
 	if (client.id() % 2) {
-		while (!client.timeout(0) && n <= n_ops/100) {
+		while (!client.timeout(0) && n <= n_ops) {
 			++n;
 
 			pos = rand() % n_keys;
 
-			//wait if flush
-			kvTH.fS.wait();
-			//set to work
-			kvTH.wS.start();
+
+			kvTH.fS.ackFlush();
 			//work
 			found = client.get_sync(pos);
-			//finish work
-			kvTH.wS.signal();
 
 			if(found){
-				//wait if flush
-				kvTH.fS.wait();
-				//set to work
-				kvTH.wS.start();
+
+				kvTH.fS.ackFlush();
 				//work
 				client.remove_sync(pos);
-				//finish work
-				kvTH.wS.signal();
 			}
 
 			if ((n % (1 << 6)) == 0){
@@ -769,14 +675,8 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 			pos = rand() % n_keys;
 			val = rand() % n_keys;
 
-			//wait if flush
-			kvTH.fS.wait();
-			//set to work
-			kvTH.wS.start();
-			//work
+			kvTH.fS.ackFlush();
 			client.put(pos, val);
-			//finish work
-			kvTH.wS.signal();
 
 			if ((n % (1 << 6)) == 0){
 				client.rcu_quiesce();
@@ -786,6 +686,15 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 	}
 	client.wait_all();
 	double t1 = client.now();
+
+	printf("done\n");
+
+	kvTH.fS.incDone();
+	bool repeat = true;
+	while(repeat){
+		repeat = kvTH.fS.ackFinish();
+	}
+
 
 	kvtest_set_time(result, "ops", n, t1 - t0);
 	client.report(result);
