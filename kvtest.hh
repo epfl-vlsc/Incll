@@ -624,8 +624,8 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 	uint64_t n = 0;
 	Json result = Json();
 
-	result.set("n_keys", pos);
-	result.set("n_ops", pos);
+	result.set("n_keys", n_keys);
+	result.set("n_ops", n_ops);
 
 	if(client.id() == 0){
 		printf("Create tree\n");
@@ -650,14 +650,16 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 
 			pos = rand() % n_keys;
 
-
+#ifdef GLOBAL_FLUSH
 			kvTH.fS.ackFlush();
+#endif
 			//work
 			found = client.get_sync(pos);
 
 			if(found){
-
+#ifdef GLOBAL_FLUSH
 				kvTH.fS.ackFlush();
+#endif
 				//work
 				client.remove_sync(pos);
 			}
@@ -675,7 +677,9 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 			pos = rand() % n_keys;
 			val = rand() % n_keys;
 
+#ifdef GLOBAL_FLUSH
 			kvTH.fS.ackFlush();
+#endif
 			client.put(pos, val);
 
 			if ((n % (1 << 6)) == 0){
@@ -687,14 +691,13 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 	client.wait_all();
 	double t1 = client.now();
 
-	printf("done\n");
-
-	kvTH.fS.incDone();
-	bool repeat = true;
-	while(repeat){
-		repeat = kvTH.fS.ackFinish();
+#ifdef GLOBAL_FLUSH
+	kvTH.fS.threadDone();
+	bool end = false;
+	while(!end){
+		end = kvTH.fS.ackFlush();
 	}
-
+#endif
 
 	kvtest_set_time(result, "ops", n, t1 - t0);
 	client.report(result);

@@ -126,18 +126,27 @@ void test_timeout(int) {
 }
 
 void set_global_epoch(mrcu_epoch_type e) {
+#ifdef GLOBAL_FLUSH
 	bool shouldFlush = false;
+#endif
+
 	global_epoch_lock.lock();
     if (mrcu_signed_epoch_type(e - globalepoch) > 0) {
     	globalepoch = e;
 
         active_epoch = threadinfo::min_active_epoch();
+
+#ifdef GLOBAL_FLUSH
         shouldFlush = true;
+#endif
     }
     global_epoch_lock.unlock();
 
-    if(shouldFlush)
+#ifdef GLOBAL_FLUSH
+    if(shouldFlush){
     	kvTH.fS.flush();
+    }
+#endif
 }
 
 template <typename T>
