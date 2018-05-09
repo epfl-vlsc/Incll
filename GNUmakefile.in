@@ -50,7 +50,10 @@ mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a
 mttest: mttest.o misc.o checkpoint.o $(KVTREES) testrunner.o \
 	kvio.o libjson.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
-	
+
+intensive: mttest
+	./mttest intensive
+
 flush_all:
 	cd flush && $(MAKE) all
 	
