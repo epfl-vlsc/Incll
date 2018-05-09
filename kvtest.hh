@@ -626,6 +626,7 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 
 	result.set("n_keys", n_keys);
 	result.set("n_ops", n_ops);
+	result.set("test", kvTH.experimentName);
 
 	if(client.id() == 0){
 		printf("Create tree\n");
@@ -671,7 +672,7 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 		}
 		result.set("removepos", pos);
 	} else {
-		while (n < n_ops) {
+		while (!client.timeout(0) && n <= n_ops) {
 			++n;
 
 			pos = rand() % n_keys;
