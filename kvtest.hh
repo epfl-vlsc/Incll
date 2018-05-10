@@ -619,6 +619,75 @@ void kvtest_rw16(C &client)
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 template <typename C>
+void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
+	unsigned pos = 0, val =0;
+	uint64_t n = 0;
+	Json result = Json();
+
+	//result.set("n_keys", n_keys);
+	//result.set("test", kvTH.experimentName);
+	//result.set("n_ops", n_ops);
+
+	if(client.id() == 0){
+		printf("Create tree\n");
+		while (n < n_keys/2) {
+			++n;
+			pos = rand() % n_keys;
+
+			client.put(pos, pos + 1);
+		}
+	}
+
+	//Barrier-------------------------------------------------------------
+	kvTH.wait_barrier(client.id());
+
+	n = 0;
+	bool found = false;
+
+	double t0 = client.now();
+	while(!client.timeout(0)){
+		n++;
+		pos = client.rand.next() % n_keys;
+		val = client.rand.next();
+		unsigned op = client.rand.next()%4;
+		switch(op){
+		case 0:
+		case 1:
+			found = client.get_sync(pos);
+			break;
+		case 2:
+			found = client.remove_sync(pos);
+			break;
+		case 3:
+			client.put(pos, val);
+			found = 0;
+		}
+		if ((n % (1 << 6)) == 0){
+			client.rcu_quiesce();
+			//set_global_epoch
+		}
+#ifdef GLOBAL_FLUSH
+			kvTH.fS.ackFlush();
+#endif
+	}
+	double t1 = client.now();
+	//result.set("time", t1-t0);
+	result.set("ops", (long)(n/(t1-t0)));
+#ifdef GLOBAL_FLUSH
+	kvTH.fS.threadDone();
+	bool end = false;
+	while(!end){
+		end = kvTH.fS.ackFlush();
+	}
+#endif
+
+	//kvtest_set_time(result, "ops", n, t1 - t0);
+	client.report(result);
+}
+
+// generate a big tree, update the tree to current epoch as much as possible
+//write/delete: write to tree, meanwhile try to get keys, if found remove
+template <typename C>
 void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsigned long n_ops){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;

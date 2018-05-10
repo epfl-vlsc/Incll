@@ -540,6 +540,8 @@ static pthread_cond_t subtest_cond;
 #include "testrunner.hh"
 
 
+MAKE_TESTRUNNER(rand, kvtest_rand(client, kvTH, 5000000));
+
 MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, kvTH, 500, 200));
 MAKE_TESTRUNNER(intensive, kvtest_intensive(client, kvTH, 5000000, 2000000));
 

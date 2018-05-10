@@ -156,7 +156,7 @@ struct KVTestHelper{
 		int res = pthread_barrier_wait(&barr);
 		if(res != 0 && res!= PTHREAD_BARRIER_SERIAL_THREAD)
 			printf("in thread %d in barrier 1 problem %d\n", id, res);
-		printf("Thread %d passed barrier 1\n", id);
+		//printf("Thread %d passed barrier 1\n", id);
 	}
 };
 
