@@ -12,7 +12,6 @@
 extern volatile uint64_t globalepoch;
 
 struct CondHelper{
-	sem_t flushSem;
 	sem_t flushAckSem;
 	sem_t ackSem;
 	sem_t doneSem;
@@ -25,15 +24,17 @@ struct CondHelper{
 	int fd;
 
 	void threadDone(){
+		influshWarning.store(true, std::memory_order_seq_cst);//until the next epoch...
 		sem_post(&doneSem);
 	}
 
 	void init(int nthreads_){
-		sem_init(&flushSem, 0, 0);
 		sem_init(&flushAckSem, 0, 0);
 		sem_init(&ackSem, 0, 0);
 		sem_init(&doneSem, 0, 0);
 		pthread_mutex_init(&mtx, NULL);
+		waitingFlush=false;
+		influshWarning=false;
 
 		//global flush driver
 		fd = open(GF_FILE, O_RDWR);
@@ -56,20 +57,24 @@ struct CondHelper{
 		pthread_mutex_unlock(&mtx);
 		return false;
 	}
+	std::atomic<bool> influshWarning; //general warning that something may change.
+	std::atomic<bool> waitingFlush;	  //flush needed. Wait until it finishes.
+	//std::atomic<long> epoch;
+	//std::atomic<int> numAcks;
 
 	bool ackFlush() {
-		int flushMode;
-
-		if(this->checkDone()){
+		if(influshWarning.load(std::memory_order_acquire)==false)
+			return false;
+		if(checkDone()){
 			return true;
 		}
 
 		pthread_mutex_lock(&mtx);
-		//get flush mode
-		sem_getvalue(&flushSem, &flushMode);
-
 		//if in flush
-		if(flushMode == 1){
+		if(waitingFlush.load(std::memory_order_acquire)){
+			//assert(epoch == globalepoch);
+			//assert(numAcks.fetch_add(1)<=nthreads);
+
 			pthread_mutex_unlock(&mtx);
 
 			//signal acknowledge
@@ -83,13 +88,15 @@ struct CondHelper{
 		return false;
 	}
 
-	void flush(){
+	void flush(long){
+		influshWarning.store(true, std::memory_order_seq_cst);
 		if(this->checkDone()){
 			return;
 		}
+		//assert(epoch.exchange(e) < e);
 
 		//entering flush mode
-		sem_post(&flushSem);
+		waitingFlush.store(true, std::memory_order_seq_cst);
 
 		//wait for other thread acks
 		int other_threads = nthreads - 1;
@@ -98,16 +105,16 @@ struct CondHelper{
 		}
 
 		//flush
-		this->globalFlush();
+		globalFlush();
 
 		//exiting flush mode
-		sem_wait(&flushSem);
+		waitingFlush.store(false, std::memory_order_seq_cst);
 
 		//release other threads
 		for(int i=0;i<other_threads;++i){
 			sem_post(&flushAckSem);
 		}
-
+		influshWarning.store(false, std::memory_order_release);
 	}
 
 	void globalFlush(){

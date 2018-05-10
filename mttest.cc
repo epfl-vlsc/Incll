@@ -148,7 +148,7 @@ void set_global_epoch(mrcu_epoch_type e) {
 
 #ifdef GLOBAL_FLUSH
     if(shouldFlush){
-    	kvTH.fS.flush();
+    	kvTH.fS.flush(e);
     }
 #endif
 }

@@ -642,7 +642,6 @@ void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
 	kvTH.wait_barrier(client.id());
 
 	n = 0;
-	bool found = false;
 
 	double t0 = client.now();
 	while(!client.timeout(0)){
@@ -653,14 +652,13 @@ void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
 		switch(op){
 		case 0:
 		case 1:
-			found = client.get_sync(pos);
+			client.get_sync(pos);
 			break;
 		case 2:
-			found = client.remove_sync(pos);
+			client.remove_sync(pos);
 			break;
 		case 3:
 			client.put(pos, val);
-			found = 0;
 		}
 		if ((n % (1 << 6)) == 0){
 			client.rcu_quiesce();
@@ -675,10 +673,7 @@ void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
 	result.set("ops", (long)(n/(t1-t0)));
 #ifdef GLOBAL_FLUSH
 	kvTH.fS.threadDone();
-	bool end = false;
-	while(!end){
-		end = kvTH.fS.ackFlush();
-	}
+	while(!kvTH.fS.ackFlush());
 #endif
 
 	//kvtest_set_time(result, "ops", n, t1 - t0);
