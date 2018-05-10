@@ -14,8 +14,6 @@ extern volatile uint64_t globalepoch;
 struct CondHelper{
 	sem_t flushAckSem;
 	sem_t ackSem;
-	sem_t doneSem;
-	pthread_mutex_t mtx;
 	int nthreads;
 
 	int flushFrequency;
@@ -25,16 +23,15 @@ struct CondHelper{
 
 	void threadDone(){
 		influshWarning.store(true, std::memory_order_seq_cst);//until the next epoch...
-		sem_post(&doneSem);
+		doneThreads.fetch_add(1);
 	}
 
 	void init(int nthreads_){
 		sem_init(&flushAckSem, 0, 0);
 		sem_init(&ackSem, 0, 0);
-		sem_init(&doneSem, 0, 0);
-		pthread_mutex_init(&mtx, NULL);
 		waitingFlush=false;
 		influshWarning=false;
+		doneThreads=0;
 
 		//global flush driver
 		fd = open(GF_FILE, O_RDWR);
@@ -47,52 +44,38 @@ struct CondHelper{
 	}
 
 	bool checkDone(){
-		int doneMode;
-		pthread_mutex_lock(&mtx);
-		sem_getvalue(&doneSem, &doneMode);
-		if(doneMode == nthreads){
-			pthread_mutex_unlock(&mtx);
-			return true;
-		}
-		pthread_mutex_unlock(&mtx);
-		return false;
+		return doneThreads == nthreads;
 	}
 	std::atomic<bool> influshWarning; //general warning that something may change.
 	std::atomic<bool> waitingFlush;	  //flush needed. Wait until it finishes.
+	std::atomic<int> doneThreads;
 	//std::atomic<long> epoch;
 	//std::atomic<int> numAcks;
 
 	bool ackFlush() {
 		if(influshWarning.load(std::memory_order_acquire)==false)
 			return false;
-		if(checkDone()){
+		if(checkDone())
 			return true;
-		}
 
-		pthread_mutex_lock(&mtx);
 		//if in flush
 		if(waitingFlush.load(std::memory_order_acquire)){
 			//assert(epoch == globalepoch);
 			//assert(numAcks.fetch_add(1)<=nthreads);
-
-			pthread_mutex_unlock(&mtx);
 
 			//signal acknowledge
 			sem_post(&ackSem);
 
 			// wait for flush to complete
 			sem_wait(&flushAckSem);
-		}else{
-			pthread_mutex_unlock(&mtx);
 		}
 		return false;
 	}
 
 	void flush(long){
 		influshWarning.store(true, std::memory_order_seq_cst);
-		if(this->checkDone()){
+		if(checkDone())
 			return;
-		}
 		//assert(epoch.exchange(e) < e);
 
 		//entering flush mode
