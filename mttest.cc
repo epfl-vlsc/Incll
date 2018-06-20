@@ -70,7 +70,8 @@
 #include <algorithm>
 #include <numeric>
 
-KVTestHelper kvTH;
+#include "masstree_econfigs.hh"
+#include "masstree_eglobals.hh"
 
 static std::vector<int> cores;
 volatile bool timeout[2] = {false, false};
@@ -130,8 +131,6 @@ void set_global_epoch(mrcu_epoch_type e) {
 	bool shouldFlush = false;
 #endif
 
-
-
 	global_epoch_lock.lock();
     if (mrcu_signed_epoch_type(e - globalepoch) > 0) {
     	//printf("e: %lu gle: %lu\n", e, globalepoch);
@@ -148,7 +147,7 @@ void set_global_epoch(mrcu_epoch_type e) {
 
 #ifdef GLOBAL_FLUSH
     if(shouldFlush){
-    	kvTH.fS.flush(e);
+    	GH::global_flush.flush(e);
     }
 #endif
 }
@@ -307,7 +306,7 @@ struct kvtest_client {
     void wait_all() {
     }
     void rcu_quiesce() {
-        mrcu_epoch_type e = timestamp() >> kvTH.freq;
+        mrcu_epoch_type e = timestamp() >> GL_FREQ;
         if (e != globalepoch){
             set_global_epoch(e);
         }
@@ -540,19 +539,13 @@ static pthread_cond_t subtest_cond;
 #include "testrunner.hh"
 
 
-MAKE_TESTRUNNER(rand, kvtest_rand(client, kvTH, 5000000));
-
-MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, kvTH, 500, 200));
-MAKE_TESTRUNNER(intensive, kvtest_intensive(client, kvTH, 5000000, 2000000));
+MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 
 
-/*
-MAKE_TESTRUNNER(intensive2, kvtest_intensive(client, kvTH, 2000000, 5000000));
-MAKE_TESTRUNNER(intensive3, kvtest_intensive(client, kvTH, 10000000, 10000000));
-MAKE_TESTRUNNER(intensive4, kvtest_intensive(client, kvTH, 50000000, 20000000));
-MAKE_TESTRUNNER(intensive5, kvtest_intensive(client, kvTH, 20000000, 50000000));
-MAKE_TESTRUNNER(intensive6, kvtest_intensive(client, kvTH, 20000000, 20000000));
-*/
+MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, 500, 200));
+MAKE_TESTRUNNER(intensive, kvtest_intensive(client, 5000000, 2000000));
+
+
 
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
 // MAKE_TESTRUNNER(palma, kvtest_palma(client));
@@ -1052,14 +1045,6 @@ Try 'mttest --help' for options.\n");
         fprintf(stderr, "%d/%u %s/%s%s", counter + 1, (int) (ntrials * tests.size() * treetypes.size()),
                 tests[t], treetypes[tt], quiet ? "      " : "\n");
 
-        //test name
-        std::string testName = std::string(tests[t]) + "_";
-#ifdef GLOBAL_FLUSH
-        testName += "gl_" + std::to_string(GL_FREQ);
-#endif
-
-        kvTH.setExpName(testName);
-
         //run test
         run_one_test(trial, treetypes[tt], tests[t], p, nruns);
         struct timeval delay;
@@ -1091,8 +1076,10 @@ Try 'mttest --help' for options.\n");
 static void run_one_test_body(int trial, const char *treetype, const char *test) {
     threadinfo *main_ti = threadinfo::make(threadinfo::TI_MAIN, -1);
     main_ti->pthread() = pthread_self();
-    kvTH.init(tcpthreads, GL_FREQ);
-    globalepoch = active_epoch = timestamp() >> kvTH.freq;
+    GH::init_all(tcpthreads, test);
+	globalepoch = active_epoch =
+		(strcmp(test, "recovery") == 0) ? 1 : timestamp() >> GL_FREQ;
+
     //printf("Init global epoch %lu\n",globalepoch);
     for (int i = 0; i < (int) arraysize(test_thread_map); ++i)
         if (strcmp(test_thread_map[i].treetype, treetype) == 0) {

@@ -21,7 +21,7 @@
 #include <vector>
 #include <fstream>
 
-#include "masstree_extras.hh"
+#include "masstree_eglobals.hh"
 
 using lcdf::Str;
 using lcdf::String;
@@ -619,14 +619,10 @@ void kvtest_rw16(C &client)
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 template <typename C>
-void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
+void kvtest_rand(C &client, unsigned long n_keys){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	Json result = Json();
-
-	//result.set("n_keys", n_keys);
-	//result.set("test", kvTH.experimentName);
-	//result.set("n_ops", n_ops);
 
 	if(client.id() == 0){
 		printf("Create tree\n");
@@ -639,7 +635,7 @@ void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
 	}
 
 	//Barrier-------------------------------------------------------------
-	kvTH.wait_barrier(client.id());
+	GH::thread_barrier.wait_barrier(client.id());
 
 	n = 0;
 
@@ -665,15 +661,15 @@ void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
 			//set_global_epoch
 		}
 #ifdef GLOBAL_FLUSH
-			kvTH.fS.ackFlush();
+			GH::global_flush.ack_flush();
 #endif
 	}
 	double t1 = client.now();
 	//result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
 #ifdef GLOBAL_FLUSH
-	kvTH.fS.threadDone();
-	while(!kvTH.fS.ackFlush());
+	GH::global_flush.thread_done();
+	while(!GH::global_flush.ack_flush());
 #endif
 
 	//kvtest_set_time(result, "ops", n, t1 - t0);
@@ -683,14 +679,14 @@ void kvtest_rand(C &client, KVTestHelper& kvTH, unsigned long n_keys){
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 template <typename C>
-void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsigned long n_ops){
+void kvtest_intensive(C &client, unsigned long n_keys, unsigned long n_ops){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	Json result = Json();
 
 	result.set("n_keys", n_keys);
 	result.set("n_ops", n_ops);
-	result.set("test", kvTH.experimentName);
+	result.set("test", GH::exp_name);
 
 	if(client.id() == 0){
 		printf("Create tree\n");
@@ -703,7 +699,7 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 	}
 
 	//Barrier-------------------------------------------------------------
-	kvTH.wait_barrier(client.id());
+	GH::thread_barrier.wait_barrier(client.id());
 
 	n = 0;
 	bool found = false;
@@ -716,14 +712,14 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 			pos = rand() % n_keys;
 
 #ifdef GLOBAL_FLUSH
-			kvTH.fS.ackFlush();
+			GH::global_flush.ack_flush();
 #endif
 			//work
 			found = client.get_sync(pos);
 
 			if(found){
 #ifdef GLOBAL_FLUSH
-				kvTH.fS.ackFlush();
+				GH::global_flush.ack_flush();
 #endif
 				//work
 				client.remove_sync(pos);
@@ -743,7 +739,7 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 			val = rand() % n_keys;
 
 #ifdef GLOBAL_FLUSH
-			kvTH.fS.ackFlush();
+			GH::global_flush.ack_flush();
 #endif
 			client.put(pos, val);
 
@@ -757,10 +753,10 @@ void kvtest_intensive(C &client, KVTestHelper& kvTH, unsigned long n_keys, unsig
 	double t1 = client.now();
 
 #ifdef GLOBAL_FLUSH
-	kvTH.fS.threadDone();
+	GH::global_flush.thread_done();
 	bool end = false;
 	while(!end){
-		end = kvTH.fS.ackFlush();
+		end = GH::global_flush.ack_flush();
 	}
 #endif
 

@@ -47,12 +47,38 @@ mtd: mtd.o log.o checkpoint.o file.o misc.o $(KVTREES) \
 mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
+# main benchmarks
 mttest: mttest.o misc.o checkpoint.o $(KVTREES) testrunner.o \
 	kvio.o libjson.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
-intensive: mttest
-	./mttest intensive
+
+rand: mttest
+	rm -rf *.json
+	./mttest rand
+	./mttest rand
+	./mttest rand
+	./mttest rand
+	./mttest rand
+	python get_average.py
+
+# unit tests
+test_barrier: test_barrier.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tbarrier: test_barrier
+	./test_barrier
+
+test_gf: test_gf.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tgf: test_gf
+	./test_gf
+	
+
+# helpers
+get_avg:
+	python get_average.py
 
 flush_all:
 	cd flush && $(MAKE) all
@@ -63,6 +89,14 @@ flush_unload:
 flush_load:
 	cd flush && $(MAKE) load
 	sudo chmod 777 /dev/global_flush
+	
+clean_notebooks:
+	rm -rf *.json
+
+clean_heap:
+	rm -rf /dev/shm/incll_${USER}/
+
+	
 
 test_string: test_string.o string.o straccum.o compiler.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
