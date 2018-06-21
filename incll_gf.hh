@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "masstree_econfigs.hh"
+#include "incll_configs.hh"
 
 #ifdef GLOBAL_FLUSH
 

@@ -21,10 +21,12 @@
 #include <vector>
 #include <fstream>
 #include <atomic>
+#include <cstdio>
+#include <cstdlib>
 
-#include "masstree_eglobals.hh"
-#include "masstree_etrav.hh"
-
+#include "incll_copy.hh"
+#include "incll_globals.hh"
+#include "incll_trav.hh"
 
 using lcdf::Str;
 using lcdf::String;
@@ -622,6 +624,118 @@ void kvtest_rw16(C &client)
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 std::atomic<size_t> global_size;
+template <typename C>
+void kvtest_recovery(C &client,
+		uint64_t n_keys,
+		uint64_t n_initops,
+		uint64_t n_ops1,
+		uint64_t n_ops2){
+	unsigned pos = 0, val =0;
+	uint64_t n = 0;
+	size_t local_size = 0;
+
+	if(client.id() == 0){
+		printf("Create tree ge: %lu\n", globalepoch);
+		while (n < n_initops) {
+			++n;
+			pos = rand() % n_keys;
+
+			local_size +=
+					client.put(pos, pos + 1);
+		}
+	}
+
+#ifdef GLOBAL_FLUSH
+	GH::thread_barrier.wait_barrier(client.id());
+	if(client.id() == 0){
+		GH::global_flush.flush_manual();
+		printf("New epoch ge: %lu\n", globalepoch);
+	}else{
+		GH::global_flush.ack_flush_manual();
+	}
+	GH::thread_barrier.wait_barrier(client.id());
+#endif // global flush
+
+	n = 0;
+	while(n<n_ops1){
+		n++;
+		pos = client.rand.next() % n_keys;
+		val = client.rand.next();
+		unsigned op = client.rand.next()%4;
+		switch(op){
+		case 0:
+		case 1:
+			client.get_sync(pos);
+			break;
+		case 2:
+			local_size -=
+					client.remove_sync(pos);
+			break;
+		case 3:
+			local_size +=
+					client.put(pos, val);
+			break;
+		}
+	}
+
+#ifdef GLOBAL_FLUSH
+	GH::thread_barrier.wait_barrier(client.id());
+	global_size += local_size;
+	if(client.id() == 0){
+		GH::global_flush.flush_manual();
+		printf("New epoch ge: %lu\n", globalepoch);
+	}else{
+		GH::global_flush.ack_flush_manual();
+	}
+	GH::thread_barrier.wait_barrier(client.id());
+#endif // global flush
+
+	//check size
+	void *copy;
+	if(client.id() == 0){
+		assert(global_size == get_tree_size(client.get_root()));
+		global_size = 0;
+		copy = copy_tree(client.get_root());
+		assert(is_same_tree(client.get_root(), copy));
+	}
+
+	GH::thread_barrier.wait_barrier(client.id());
+
+	n = 0;
+	while(n<n_ops2){
+		n++;
+		pos = client.rand.next() % n_keys;
+		val = client.rand.next();
+		unsigned op = client.rand.next()%4;
+		switch(op){
+		case 0:
+		case 1:
+			client.get_sync(pos);
+			break;
+		case 2:
+			local_size -= client.remove_sync(pos);
+			break;
+		case 3:
+			local_size += client.put(pos, val);
+			break;
+		}
+	}
+
+	global_size += local_size;
+	GH::thread_barrier.wait_barrier(client.id());
+
+	if(client.id() == 0){
+		assert(global_size == get_tree_size(client.get_root()));
+		assert(!is_same_tree(client.get_root(), copy));
+		clear_copy<decltype(client.get_root())>(copy);
+		assert(copy == nullptr);
+	}
+
+}
+
+
+// generate a big tree, update the tree to current epoch as much as possible
+//write/delete: write to tree, meanwhile try to get keys, if found remove
 template <typename C>
 void kvtest_rand(C &client, uint64_t n_keys){
 	unsigned pos = 0, val =0;

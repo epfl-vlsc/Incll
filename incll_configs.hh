@@ -17,7 +17,7 @@
 #define GL_FREQ 16
 
 //periodic flush
-//#define GLOBAL_FLUSH
+#define GLOBAL_FLUSH
 
 //in-cache line log
 //#define INCLL

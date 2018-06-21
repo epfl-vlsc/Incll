@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "masstree_econfigs.hh"
-#include "masstree_ebarrier.hh"
-#include "masstree_egf.hh"
+#include "incll_barrier.hh"
+#include "incll_gf.hh"
+#include "incll_configs.hh"
 
 
 namespace GH{

@@ -4,7 +4,8 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
-#include "masstree_eglobals.hh"
+
+#include "incll_globals.hh"
 
 const int NUM_THREADS = 8;
 int signs[NUM_THREADS];

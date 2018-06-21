@@ -1,10 +1,15 @@
 /*
- * tree traversal
+ * tree traversal code
+ * stats
+ * print
  */
 
 #pragma once
 
 #include <queue>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 template <typename N, typename LN>
 void get_children_leaf(std::queue<N*>& q, LN *ln){
@@ -89,15 +94,5 @@ void print_tree(N* root){
 
 		get_children(q, node);
 	}
-}
-
-template <typename N>
-void clone_tree(N* root){
-	assert(0 && "Not implemented");
-}
-
-template <typename N>
-void compare_tree(N* root, bool same){
-	assert(0 && "Not implemented");
 }
 

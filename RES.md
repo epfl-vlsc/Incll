@@ -1,3 +1,14 @@
+# run
+* performance
+          
+	$ make rand
+* recovery
+
+	$ make recovery
+* unit tests
+
+	$ make run
+
 # performance
 * original: 2078126
 * original+flush: 2081245
@@ -5,3 +16,5 @@
 * mod+flush: 2078118
 * size: 2074616
 * size+flush: 2055173
+* clone: 2091452
+* clone+flush: 2070761

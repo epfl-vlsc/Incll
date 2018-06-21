@@ -52,6 +52,8 @@ mttest: mttest.o misc.o checkpoint.o $(KVTREES) testrunner.o \
 	kvio.o libjson.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
+recovery: mttest
+	./mttest recovery
 
 rand: mttest
 	rm -rf *.json
@@ -63,7 +65,16 @@ rand: mttest
 	python get_average.py
 
 # unit tests
-UNIT_TESTS = test_barrier tgf 
+UNIT_TESTS = test_barrier test_gf test_simplemt test_copy
+
+test_suite: $(UNIT_TESTS)
+
+run_test_suite: test_suite
+	./test_barrier 
+	./test_gf 
+	./test_simplemt 
+	./test_copy
+
 test_barrier: test_barrier.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
@@ -82,7 +93,12 @@ test_simplemt: test_simplemt.o compiler.o misc.o libjson.a
 tsimplemt: test_simplemt
 	./test_simplemt
 	
-test_suite: $(UNIT_TESTS)
+test_copy: test_clone.o compiler.o misc.o libjson.a
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tcopy: test_copy
+	./test_copy
+
 	
 # helpers
 get_avg:
@@ -147,6 +163,7 @@ stamp-h: config.h.in config.status
 
 clean:
 	rm -f mtd mtclient mttest test_string test_atomics *.o libjson.a
+	rm -f $(UNIT_TESTS)
 	rm -rf .deps
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d)

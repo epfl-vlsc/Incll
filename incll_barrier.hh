@@ -3,7 +3,7 @@
  */
 
 #pragma once
-#include "masstree_econfigs.hh"
+#include "incll_configs.hh"
 
 
 class ThreadBarrier{

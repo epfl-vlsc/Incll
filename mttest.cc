@@ -70,8 +70,8 @@
 #include <algorithm>
 #include <numeric>
 
-#include "masstree_econfigs.hh"
-#include "masstree_eglobals.hh"
+#include "incll_configs.hh"
+#include "incll_globals.hh"
 
 static std::vector<int> cores;
 volatile bool timeout[2] = {false, false};
@@ -547,7 +547,8 @@ static pthread_cond_t subtest_cond;
 
 
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
-
+MAKE_TESTRUNNER(recovery,
+		kvtest_recovery(client, 50, 25, 20, 5));
 
 MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, 500, 200));
 MAKE_TESTRUNNER(intensive, kvtest_intensive(client, 5000000, 2000000));

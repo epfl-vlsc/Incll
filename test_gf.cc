@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cassert>
 
-#include "masstree_eglobals.hh"
+#include "incll_globals.hh"
 
 int NUM_THREADS = 8;
 

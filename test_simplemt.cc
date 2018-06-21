@@ -1,9 +1,8 @@
 #include "test_mocktree.hh"
-#include "masstree_etrav.hh"
-#include "masstree_eglobals.hh"
-
 #include <vector>
 #include <thread>
+#include "incll_globals.hh"
+#include "incll_trav.hh"
 
 __thread typename MockMasstree::table_params::threadinfo_type* MockMasstree::ti = nullptr;
 volatile mrcu_epoch_type failedepoch = 0;
