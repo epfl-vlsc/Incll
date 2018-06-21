@@ -625,20 +625,16 @@ void kvtest_rw16(C &client)
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 std::atomic<size_t> global_size;
 template <typename C>
-void kvtest_recovery(C &client,
-		uint64_t n_keys,
-		uint64_t n_initops,
-		uint64_t n_ops1,
-		uint64_t n_ops2){
+void kvtest_recovery(C &client){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	size_t local_size = 0;
 
 	if(client.id() == 0){
 		printf("Create tree ge: %lu\n", globalepoch);
-		while (n < n_initops) {
+		while (n < GH::n_initops) {
 			++n;
-			pos = rand() % n_keys;
+			pos = rand() % GH::n_keys;
 
 			local_size +=
 					client.put(pos, pos + 1);
@@ -657,9 +653,9 @@ void kvtest_recovery(C &client,
 #endif // global flush
 
 	n = 0;
-	while(n<n_ops1){
+	while(n<GH::n_ops1){
 		n++;
-		pos = client.rand.next() % n_keys;
+		pos = client.rand.next() % GH::n_keys;
 		val = client.rand.next();
 		unsigned op = client.rand.next()%4;
 		switch(op){
@@ -702,9 +698,9 @@ void kvtest_recovery(C &client,
 	GH::thread_barrier.wait_barrier(client.id());
 
 	n = 0;
-	while(n<n_ops2){
+	while(n<GH::n_ops2){
 		n++;
-		pos = client.rand.next() % n_keys;
+		pos = client.rand.next() % GH::n_keys;
 		val = client.rand.next();
 		unsigned op = client.rand.next()%4;
 		switch(op){

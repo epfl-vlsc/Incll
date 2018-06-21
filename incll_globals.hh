@@ -8,14 +8,16 @@
 #include "incll_barrier.hh"
 #include "incll_gf.hh"
 #include "incll_configs.hh"
-
+#include <iostream>
 
 namespace GH{
 	ThreadBarrier thread_barrier;
 
 	std::string exp_name;
-	static const uint64_t num_keys = 5000000;
-	static const uint64_t num_ops = 2000000;
+	uint64_t n_keys = 50;
+	uint64_t n_initops = 25;
+	uint64_t n_ops1 = 20;
+	uint64_t n_ops2 = 5;
 
 #ifdef GLOBAL_FLUSH
 	GlobalFlush global_flush;

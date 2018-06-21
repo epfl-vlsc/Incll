@@ -7,7 +7,7 @@
 	$ make recovery
 * unit tests
 
-	$ make run
+	$ make run_test_suite
 
 # performance
 * original: 2078126

@@ -93,7 +93,7 @@ test_simplemt: test_simplemt.o compiler.o misc.o libjson.a
 tsimplemt: test_simplemt
 	./test_simplemt
 	
-test_copy: test_clone.o compiler.o misc.o libjson.a
+test_copy: test_copy.o compiler.o misc.o libjson.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 tcopy: test_copy

@@ -4,6 +4,9 @@
 
 #pragma once
 #include "incll_configs.hh"
+#include <pthread.h>
+#include <cstdlib>
+#include <cstdio>
 
 
 class ThreadBarrier{

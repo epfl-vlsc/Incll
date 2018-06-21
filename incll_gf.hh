@@ -14,7 +14,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 #define GF_FILE "/dev/global_flush"
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;

@@ -547,8 +547,7 @@ static pthread_cond_t subtest_cond;
 
 
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
-MAKE_TESTRUNNER(recovery,
-		kvtest_recovery(client, 50, 25, 20, 5));
+MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
 MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, 500, 200));
 MAKE_TESTRUNNER(intensive, kvtest_intensive(client, 5000000, 2000000));
@@ -759,7 +758,7 @@ enum { opt_pin = 1, opt_port, opt_duration,
        opt_test, opt_test_name, opt_threads, opt_trials, opt_quiet, opt_print,
        opt_normalize, opt_limit, opt_notebook, opt_compare, opt_no_run,
        opt_lazy_timer, opt_gid, opt_tree_stats, opt_rscale_ncores, opt_cores,
-       opt_stats, opt_help, opt_yrange };
+       opt_stats, opt_help, opt_yrange, opt_nkeys, opt_ninitops, opt_nops1, opt_nops2};
 static const Clp_Option options[] = {
     { "pin", 'p', opt_pin, 0, Clp_Negate },
     { "port", 0, opt_port, Clp_ValInt, 0 },
@@ -775,6 +774,10 @@ static const Clp_Option options[] = {
     { "test-rw4", 0, opt_test_name, 0, 0 },
     { "test-rd1", 0, opt_test_name, 0, 0 },
     { "threads", 'j', opt_threads, Clp_ValInt, 0 },
+	{ "nkeys", 'k', opt_nkeys, Clp_ValUnsignedLong, 0 },
+	{ "ninitops", 'i', opt_ninitops, Clp_ValUnsignedLong, 0 },
+	{ "nops1", 'o', opt_nops1, Clp_ValUnsignedLong, 0 },
+	{ "nops2", 'h', opt_nops2, Clp_ValUnsignedLong, 0 },
     { "trials", 'T', opt_trials, Clp_ValInt, 0 },
     { "quiet", 'q', opt_quiet, 0, Clp_Negate },
     { "print", 0, opt_print, 0, Clp_Negate },
@@ -796,6 +799,10 @@ Usage: mttest [-jTHREADS] [OPTIONS] [PARAM=VALUE...] TEST...\n\
 \n\
 Options:\n\
   -j, --threads=THREADS    Run with THREADS threads (default %d).\n\
+  -k, --nkeys=NKEYS		   Number of keys.\n\
+  -i, --ninitops=NINITOPS  Number of operations to init tree.\n\
+  -o, --nops1=NOPS1    	   Number of operations after init.\n\
+  -h, --nops2=NOPS2   	   Number of operations final.\n\
   -p, --pin                Pin each thread to its own core.\n\
   -T, --trials=TRIALS      Run each test TRIALS times.\n\
   -q, --quiet              Do not generate verbose and Gnuplot output.\n\
@@ -878,6 +885,18 @@ main(int argc, char *argv[])
         case opt_threads:
             tcpthreads = udpthreads = clp->val.i;
             break;
+        case opt_nkeys:
+			GH::n_keys = clp->val.ul;
+			break;
+		case opt_ninitops:
+			GH::n_initops = clp->val.ul;
+			break;
+        case opt_nops1:
+        	GH::n_ops1 = clp->val.ul;
+			break;
+        case opt_nops2:
+        	GH::n_ops2 = clp->val.ul;
+			break;
         case opt_trials:
             ntrials = clp->val.i;
             break;
