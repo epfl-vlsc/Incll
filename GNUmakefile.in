@@ -63,6 +63,7 @@ rand: mttest
 	python get_average.py
 
 # unit tests
+UNIT_TESTS = test_barrier tgf 
 test_barrier: test_barrier.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
@@ -75,7 +76,14 @@ test_gf: test_gf.o
 tgf: test_gf
 	./test_gf
 	
+test_simplemt: test_simplemt.o compiler.o misc.o libjson.a
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
+tsimplemt: test_simplemt
+	./test_simplemt
+	
+test_suite: $(UNIT_TESTS)
+	
 # helpers
 get_avg:
 	python get_average.py

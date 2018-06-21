@@ -20,8 +20,11 @@
 #include "kvproto.hh"
 #include <vector>
 #include <fstream>
+#include <atomic>
 
 #include "masstree_eglobals.hh"
+#include "masstree_etrav.hh"
+
 
 using lcdf::Str;
 using lcdf::String;
@@ -618,11 +621,14 @@ void kvtest_rw16(C &client)
 
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
+std::atomic<size_t> global_size;
 template <typename C>
-void kvtest_rand(C &client, unsigned long n_keys){
+void kvtest_rand(C &client, uint64_t n_keys){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	Json result = Json();
+	size_t local_size = 0;
+
 
 	if(client.id() == 0){
 		printf("Create tree\n");
@@ -630,7 +636,8 @@ void kvtest_rand(C &client, unsigned long n_keys){
 			++n;
 			pos = rand() % n_keys;
 
-			client.put(pos, pos + 1);
+			local_size +=
+					client.put(pos, pos + 1);
 		}
 	}
 
@@ -651,10 +658,12 @@ void kvtest_rand(C &client, unsigned long n_keys){
 			client.get_sync(pos);
 			break;
 		case 2:
-			client.remove_sync(pos);
+			local_size -=
+					client.remove_sync(pos);
 			break;
 		case 3:
-			client.put(pos, val);
+			local_size +=
+					client.put(pos, val);
 		}
 		if ((n % (1 << 6)) == 0){
 			client.rcu_quiesce();
@@ -667,13 +676,24 @@ void kvtest_rand(C &client, unsigned long n_keys){
 	double t1 = client.now();
 	//result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
+
 #ifdef GLOBAL_FLUSH
 	GH::global_flush.thread_done();
 	while(!GH::global_flush.ack_flush());
 #endif
 
-	//kvtest_set_time(result, "ops", n, t1 - t0);
 	client.report(result);
+
+	global_size += local_size;
+	//Barrier-------------------------------------------------------------
+	GH::thread_barrier.wait_barrier(client.id());
+
+	//check size
+	if(client.id() == 0){
+		assert(global_size == get_tree_size(client.get_root()));
+	}
+
+
 }
 
 // generate a big tree, update the tree to current epoch as much as possible

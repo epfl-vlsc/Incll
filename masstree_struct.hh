@@ -94,6 +94,16 @@ class node_base : public make_nodeversion<P>::type {
     }
 
     void print(FILE* f, const char* prefix, int depth, int kdepth) const;
+
+
+
+    leaf_type* to_leaf(){
+    	return static_cast<leaf_type*>(this);
+    }
+
+    internode_type* to_internode(){
+    	return static_cast<internode_type*>(this);
+    }
 };
 
 template <typename P>

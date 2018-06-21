@@ -252,25 +252,25 @@ struct kvtest_client {
     void rscan_sync(const Str &firstkey, int n,
                     std::vector<Str> &keys, std::vector<Str> &values);
 
-    void put(const Str &key, const Str &value);
-    void put(const char *key, const char *value) {
-        put(Str(key), Str(value));
+    bool put(const Str &key, const Str &value);
+    bool put(const char *key, const char *value) {
+        return put(Str(key), Str(value));
     }
-    void put(long ikey, long ivalue) {
+    bool put(long ikey, long ivalue) {
         quick_istr key(ikey), value(ivalue);
-        put(key.string(), value.string());
+        return put(key.string(), value.string());
     }
-    void put(const Str &key, long ivalue) {
+    bool put(const Str &key, long ivalue) {
         quick_istr value(ivalue);
-        put(key, value.string());
+        return put(key, value.string());
     }
-    void put_key8(long ikey, long ivalue) {
+    bool put_key8(long ikey, long ivalue) {
         quick_istr key(ikey, 8), value(ivalue);
-        put(key.string(), value.string());
+        return put(key.string(), value.string());
     }
-    void put_key16(long ikey, long ivalue) {
+    bool put_key16(long ikey, long ivalue) {
         quick_istr key(ikey, 16), value(ivalue);
-        put(key.string(), value.string());
+        return put(key.string(), value.string());
     }
     void put_col(const Str &key, int col, const Str &value);
     void put_col(long ikey, int col, long ivalue) {
@@ -329,6 +329,13 @@ struct kvtest_client {
         if (!quiet)
             fprintf(stderr, "%d: %s\n", ti_->index(), report_.unparse().c_str());
     }
+
+    typedef typename T::node_type node_type;
+
+    node_type* get_root(){
+    	return table_->table().fix_root();
+    }
+
 
     T *table_;
     threadinfo *ti_;
@@ -449,8 +456,8 @@ void kvtest_client<T>::output_scan(const Json& req, std::vector<Str>& keys,
 }
 
 template <typename T>
-void kvtest_client<T>::put(const Str &key, const Str &value) {
-    q_[0].run_replace(table_->table(), key, value, *ti_);
+bool kvtest_client<T>::put(const Str &key, const Str &value) {
+	return result_t::Inserted == q_[0].run_replace(table_->table(), key, value, *ti_);
 }
 
 template <typename T>

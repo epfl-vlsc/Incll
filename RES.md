@@ -3,3 +3,5 @@
 * original+flush: 2081245
 * mod: 2094927
 * mod+flush: 2078118
+* size: 2074616
+* size+flush: 2055173
