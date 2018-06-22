@@ -1104,8 +1104,13 @@ static void run_one_test_body(int trial, const char *treetype, const char *test)
     threadinfo *main_ti = threadinfo::make(threadinfo::TI_MAIN, -1);
     main_ti->pthread() = pthread_self();
     GH::init_all(tcpthreads, test);
-	globalepoch = active_epoch =
-		(strcmp(test, "recovery") == 0) ? 1 : timestamp() >> GL_FREQ;
+
+    if(strcmp(test, "recovery") == 0){
+    	globalepoch = active_epoch = 1;
+    	GH::print_exp_params();
+    }else{
+    	globalepoch = active_epoch = timestamp() >> GL_FREQ;
+    }
 
     //printf("Init global epoch %lu\n",globalepoch);
     for (int i = 0; i < (int) arraysize(test_thread_map); ++i)

@@ -23,6 +23,11 @@ namespace GH{
 	GlobalFlush global_flush;
 #endif
 
+	void print_exp_params(){
+		printf("nkeys:%lu ninitops:%lu nops1:%lu nops2:%lu\n",
+				n_keys, n_initops, n_ops1, n_ops2);
+	}
+
 	void set_exp_name(const char *exp){
 		exp_name = std::string(exp);
         exp_name += "_lw" + std::to_string(KEY_LW);
