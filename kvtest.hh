@@ -687,7 +687,7 @@ void kvtest_recovery(C &client){
 #endif // global flush
 
 	//check size
-	void *copy;
+	void *copy = nullptr;
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
 		global_size = 0;
@@ -722,7 +722,8 @@ void kvtest_recovery(C &client){
 
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
-		assert(!is_same_tree(client.get_root(), copy));
+		bool is_same = is_same_tree(client.get_root(), copy);
+ 		printf("%s\n", is_same ? "is same":"not same - recovery failed");
 		clear_copy<decltype(client.get_root())>(copy);
 		assert(copy == nullptr);
 	}
