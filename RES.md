@@ -18,3 +18,6 @@
 * size+flush: 2055173
 * clone: 2091452
 * clone+flush: 2070761
+* loggedepoch: 2137146
+* loggedepoch+flush: 2118240
+

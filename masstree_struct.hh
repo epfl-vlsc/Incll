@@ -52,6 +52,8 @@ class node_base : public make_nodeversion<P>::type {
     typedef typename make_nodeversion<P>::type nodeversion_type;
     typedef typename P::threadinfo_type threadinfo;
 
+    uint64_t loggedepoch;
+
     node_base(bool isleaf)
         : nodeversion_type(isleaf) {
     }
