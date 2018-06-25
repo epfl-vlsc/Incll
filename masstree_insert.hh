@@ -94,7 +94,8 @@ bool tcursor<P>::make_new_layer(threadinfo& ti) {
     nl->assign_initialize(0, kcmp < 0 ? oka : ka_, ti);
     nl->assign_initialize(1, kcmp < 0 ? ka_ : oka, ti);
     nl->lv_[kcmp > 0] = n_->lv_[kx_.p];
-    nl->lock(*nl, ti.lock_fence(tc_leaf_lock));
+
+    nl->lock_persistent(*nl, ti.lock_fence(tc_leaf_lock));
     if (kcmp < 0)
         nl->permutation_ = permuter_type::make_sorted(1);
     else {

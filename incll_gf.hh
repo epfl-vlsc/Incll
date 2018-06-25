@@ -8,6 +8,8 @@
 #include "incll_configs.hh"
 
 #ifdef GLOBAL_FLUSH
+#include "incll_globals.hh"
+#include "incll_extlog.hh"
 
 #include <atomic>
 #include <semaphore.h>
@@ -19,6 +21,9 @@ typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
 extern volatile mrcu_epoch_type active_epoch;
 
+namespace GH{
+	extern thread_local ExtNodeLogger node_logger;
+}
 
 class GlobalFlush{
 private:
@@ -51,9 +56,7 @@ private:
 		global_flush();
 
 		//todo check later if this belongs here
-#ifdef NVMLOG
-		node_logger.update_checkpoint();
-#endif
+		GH::node_logger.checkpoint();
 	}
 
 public:
@@ -166,4 +169,4 @@ public:
 
 
 
-#endif
+#endif //gf

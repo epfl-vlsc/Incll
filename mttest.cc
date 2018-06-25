@@ -336,6 +336,10 @@ struct kvtest_client {
     	return table_->table().fix_root();
     }
 
+    node_type*& get_root_assignable(){
+		return table_->table().root_assignable();
+	}
+
 
     T *table_;
     threadinfo *ti_;

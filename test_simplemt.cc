@@ -13,10 +13,6 @@ volatile mrcu_epoch_type active_epoch = 1;
 #define INTERVAL 8
 #define NUM_THREADS 8
 
-void assert_tree_size(MockMasstree *mt, size_t size_expected){
-	assert(size_expected == get_tree_size(mt->get_root()));
-}
-
 void insert_t8_body(MockMasstree *mt, int tid){
 	mt->thread_init(tid);
 	uint64_t val;

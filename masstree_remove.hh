@@ -18,6 +18,7 @@
 #include "masstree_get.hh"
 #include "btree_leaflink.hh"
 #include "circular_int.hh"
+
 namespace Masstree {
 
 template <typename P>
@@ -60,7 +61,8 @@ bool tcursor<P>::gc_layer(threadinfo& ti)
         internode_type *in = static_cast<internode_type *>(layer);
         if (in->size() > 0)
             return false;
-        in->lock(*layer, ti.lock_fence(tc_internode_lock));
+
+        in->lock_persistent(*layer, ti.lock_fence(tc_internode_lock));
         if (!in->is_root() || in->size() > 0)
             goto unlock_layer;
 
@@ -78,7 +80,7 @@ bool tcursor<P>::gc_layer(threadinfo& ti)
         leaf_type* lf = static_cast<leaf_type*>(layer);
         if (lf->size() > 0)
             return false;
-        lf->lock(*lf, ti.lock_fence(tc_leaf_lock));
+        lf->lock_persistent(*lf, ti.lock_fence(tc_leaf_lock));
         if (!lf->is_root() || lf->size() > 0)
             goto unlock_layer;
 
@@ -289,7 +291,8 @@ void destroy_rcu_callback<P>::operator()(threadinfo& ti) {
     if (++count_ == 1) {
         while (!root_->is_root())
             root_ = root_->maybe_parent();
-        root_->lock();
+
+        root_->lock_persistent();
         root_->mark_deleted_tree(); // i.e., deleted but not splitting
         root_->unlock();
         ti.rcu_register(this);

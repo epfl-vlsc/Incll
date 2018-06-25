@@ -626,12 +626,15 @@ void kvtest_rw16(C &client)
 std::atomic<size_t> global_size;
 template <typename C>
 void kvtest_recovery(C &client){
+	GH::node_logger.init(client.id());
+
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	size_t local_size = 0;
 
+	//begin initops epoch 1--------------------------------------------------
 	if(client.id() == 0){
-		printf("Create tree ge: %lu\n", globalepoch);
+		printf("-----ninitops ge: %lu\n", globalepoch);
 		while (n < GH::n_initops) {
 			++n;
 			pos = rand() % GH::n_keys;
@@ -640,17 +643,13 @@ void kvtest_recovery(C &client){
 					client.put(pos, pos + 1);
 		}
 	}
+	//end initops epoch 1-----------------------------------------------------
 
-#ifdef GLOBAL_FLUSH
-	GH::thread_barrier.wait_barrier(client.id());
-	if(client.id() == 0){
-		GH::global_flush.flush_manual();
-		printf("New epoch ge: %lu\n", globalepoch);
-	}else{
-		GH::global_flush.ack_flush_manual();
-	}
-	GH::thread_barrier.wait_barrier(client.id());
-#endif // global flush
+	GH::advance_epoch(client.id());
+
+	//begin nops1 epoch 2----------------------------------------------------
+	if(client.id() == 0)
+		printf("-----nops1 ge: %lu\n", globalepoch);
 
 	n = 0;
 	while(n<GH::n_ops1){
@@ -673,29 +672,27 @@ void kvtest_recovery(C &client){
 			break;
 		}
 	}
+	//nops 1 end epoch 2----------------------------------------------------
 
-#ifdef GLOBAL_FLUSH
-	GH::thread_barrier.wait_barrier(client.id());
 	global_size += local_size;
-	if(client.id() == 0){
-		GH::global_flush.flush_manual();
-		printf("New epoch ge: %lu\n", globalepoch);
-	}else{
-		GH::global_flush.ack_flush_manual();
-	}
-	GH::thread_barrier.wait_barrier(client.id());
-#endif // global flush
+	GH::advance_epoch(client.id());
 
-	//check size
+	//begin copy epoch 3---------------------------------------------
+	if(client.id() == 0)
+		printf("-----copy ge: %lu\n", globalepoch);
+
 	void *copy = nullptr;
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
-		global_size = 0;
 		copy = copy_tree(client.get_root());
 		assert(is_same_tree(client.get_root(), copy));
 	}
-
 	GH::thread_barrier.wait_barrier(client.id());
+	//end copy epoch 3----------------------------------------------------
+
+	//begin nops2 epoch 3----------------------------------------------------
+	if(client.id() == 0)
+		printf("-----nops2 ge: %lu\n", globalepoch);
 
 	n = 0;
 	while(n<GH::n_ops2){
@@ -716,20 +713,27 @@ void kvtest_recovery(C &client){
 			break;
 		}
 	}
+	//end nops2 epoch 3----------------------------------------------------
 
-	global_size += local_size;
+	//begin recovery epoch 3-----------------------------------------------
+	GH::thread_barrier.wait_barrier(client.id());
+	if(client.id() == 0)
+			printf("-----recovery ge: %lu\n", globalepoch);
+
+	GH::node_logger.undo(client.get_root_assignable());
 	GH::thread_barrier.wait_barrier(client.id());
 
 	if(client.id() == 0){
-		assert(global_size == get_tree_size(client.get_root()));
 		bool is_same = is_same_tree(client.get_root(), copy);
- 		printf("%s\n", is_same ? "is same":"not same - recovery failed");
-		clear_copy<decltype(client.get_root())>(copy);
+		printf("%s\n", is_same ? "is same":"not same - recovery failed");
+
+ 		clear_copy<decltype(client.get_root())>(copy);
 		assert(copy == nullptr);
 	}
 
+	GH::thread_barrier.wait_barrier(client.id());
+	//end recovery epoch 3-----------------------------------------------
 }
-
 
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove

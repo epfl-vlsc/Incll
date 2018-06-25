@@ -7,17 +7,35 @@
 #pragma once
 
 #include "incll_trav.hh"
+#include "masstree_print.hh"
+
+
+template <typename ILN>
+int clever_mem_cmp(ILN* n1, ILN* n2, size_t node_size){
+	char* addr = (char*)&(n1->loggedepoch);
+	size_t skip_size = addr-(char*)n1 + sizeof(n1->loggedepoch);
+
+	char *n1_shifted = (char*)n1 + skip_size;
+	char *n2_shifted = (char*)n2 + skip_size;
+
+	return memcmp((void*)n1_shifted, (void*)n2_shifted, node_size - skip_size);
+}
 
 template <typename ILN>
 bool is_same_node_specialized(ILN* n1, ILN* n2){
-	size_t n1_size = sizeof(*n1);
-	size_t n2_size = sizeof(*n2);
+	size_t n1_size = n1->allocated_size();
+	size_t n2_size = n2->allocated_size();
 
 	if(n1_size != n2_size)
 		return false;
 
-	if(memcmp(n1, n2, n1_size) != 0)
+	if(clever_mem_cmp(n1, n2, n1_size) != 0){
+		n1->print_node();
+		n2->print_node();
+
 		return false;
+	}
+
 
 	return true;
 }
@@ -82,7 +100,7 @@ template <typename ILN>
 ILN* copy_node_specialized(ILN* iln){
 	//Assumption: leaf or internode type
 	//todo make sure this part is correct, size stuff, iksuf, ksuf stuff
-	size_t iln_size = sizeof(*iln);
+	size_t iln_size = iln->allocated_size();
 
 	ILN *iln_copy = (ILN*) malloc(iln_size);
 	memcpy(iln_copy, iln, iln_size);
@@ -119,6 +137,8 @@ void* copy_tree(N* root){
 
 		get_children(q, node);
 	}
+
+	printf("copy num_nodes %lu\n", v_copy->size());
 	return (void*)v_copy;
 }
 

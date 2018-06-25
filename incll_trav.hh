@@ -47,6 +47,14 @@ size_t get_num_keys_leaf(LN *ln){
 	return perm.size();
 }
 
+template <typename IN>
+size_t get_num_keys_internode(IN* in){
+	if(in->child_[in->size()])
+		return in->size() + 1;
+	else
+		return in->size();
+}
+
 template <typename N>
 void get_children(std::queue<N*>& q, N *node){
 	if(node->isleaf()){
@@ -58,6 +66,29 @@ void get_children(std::queue<N*>& q, N *node){
 
 template <typename N>
 size_t get_tree_size(N* root){
+	size_t num_keys = 0;
+	N* node = root;
+
+	std::queue<N*> q;
+
+	q.push(node);
+
+	while(!q.empty()){
+		node = q.front();
+		q.pop();
+
+		if(node->isleaf())
+			num_keys += get_num_keys_leaf(node->to_leaf());
+
+		get_children(q, node);
+	}
+
+	return num_keys;
+}
+
+
+template <typename N>
+size_t get_num_nodes(N* root){
 	size_t num_nodes = 0;
 	N* node = root;
 
@@ -70,7 +101,7 @@ size_t get_tree_size(N* root){
 		q.pop();
 
 		if(node->isleaf())
-			num_nodes += get_num_keys_leaf(node->to_leaf());
+			num_nodes++;
 
 		get_children(q, node);
 	}
@@ -94,5 +125,35 @@ void print_tree(N* root){
 
 		get_children(q, node);
 	}
+}
+
+template <typename N>
+void print_tree_asline(N* root){
+	N* node = root;
+	printf("root %p\n", (void*)root);
+
+	std::queue<N*> q;
+
+	q.push(node);
+
+	size_t num_nodes = 0;
+	size_t num_keys = 0;
+	while(!q.empty()){
+		node = q.front();
+		q.pop();
+
+		get_children(q, node);
+
+		if(node->isleaf()){
+			size_t nkeys = get_num_keys_leaf(node->to_leaf());
+			printf("ln%lu %p ", nkeys, (void*)node);
+			num_keys += nkeys;
+		}else{
+			size_t nkeys = get_num_keys_internode(node->to_internode());
+			printf("in%lu %p ", nkeys, (void*)node);
+		}
+		num_nodes++;
+	}
+	printf("\nnum nodes %lu num keys %lu\n", num_nodes, num_keys);
 }
 

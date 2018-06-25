@@ -22,6 +22,8 @@
 #include "masstree_stats.hh"
 #include "string.hh"
 
+#include "incll_trav.hh"
+
 class key_unparse_unsigned {
 public:
     static int unparse_key(Masstree::key<uint64_t> key, char* buf, int buflen) {
@@ -123,6 +125,10 @@ public:
     	return table_.fix_root();
     }
 
+    node_type*& get_root_assignable(){
+		return table_.root_assignable();
+	}
+
 private:
     table_type table_;
 
@@ -131,3 +137,7 @@ private:
         return Str((const char *)&key_buf, sizeof(key_buf));
     }
 };
+
+void assert_tree_size(MockMasstree *mt, size_t size_expected){
+	assert(size_expected == get_tree_size(mt->get_root()));
+}

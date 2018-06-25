@@ -9,54 +9,28 @@
 #include "incll_gf.hh"
 #include "incll_configs.hh"
 #include <iostream>
+#include "incll_extlog.hh"
 
 namespace GH{
-	ThreadBarrier thread_barrier;
+	extern ThreadBarrier thread_barrier;
 
-	std::string exp_name;
-	uint64_t n_keys = 50;
-	uint64_t n_initops = 25;
-	uint64_t n_ops1 = 20;
-	uint64_t n_ops2 = 5;
-
-#ifdef GLOBAL_FLUSH
-	GlobalFlush global_flush;
-#endif
-
-	void print_exp_params(){
-		printf("nkeys:%lu ninitops:%lu nops1:%lu nops2:%lu\n",
-				n_keys, n_initops, n_ops1, n_ops2);
-	}
-
-	void set_exp_name(const char *exp){
-		exp_name = std::string(exp);
-        exp_name += "_lw" + std::to_string(KEY_LW);
-        exp_name += "_iw" + std::to_string(KEY_IW);
+	extern std::string exp_name;
+	extern uint64_t n_keys;
+	extern uint64_t n_initops;
+	extern uint64_t n_ops1;
+	extern uint64_t n_ops2;
 
 #ifdef GLOBAL_FLUSH
-        exp_name += "_gl" + std::to_string(GL_FREQ);
+	extern GlobalFlush global_flush;
 #endif
 
-#ifdef INCLL
-        exp_name += "_incll";
-#endif
+	extern thread_local ExtNodeLogger node_logger;
 
-#ifdef NVMLOG
-        exp_name += "_nvmlog";
-#endif
-
-#ifdef PALLOC
-        exp_name += "_p";
-#endif
-	}
-
-
-	void init_all(int nthreads, const char *testname){
-		thread_barrier.init(nthreads);
-		set_exp_name(testname);
+	void print_exp_params();
+	void init_all(int nthreads, const char *testname);
 
 #ifdef GLOBAL_FLUSH
-		global_flush.init(nthreads);
-#endif
-	}
+	void advance_epoch(int tid);
+#endif //gf
+
 };

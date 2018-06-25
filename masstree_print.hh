@@ -178,6 +178,103 @@ void internode<P>::print(FILE* f, const char* prefix, int depth, int kdepth) con
 }
 
 template <typename P>
+void leaf<P>::print_node() const
+{
+    typename node_base<P>::nodeversion_type v;
+    permuter_type perm;
+    const char *prefix = "";
+    int indent = 0;
+
+    do {
+        v = *this;
+        fence();
+        perm = permutation_;
+    } while (this->has_changed(v));
+
+    {
+        char buf[1024];
+        int l = 0;
+        if (ksuf_ && extrasize64_ < -1)
+            l = snprintf(buf, sizeof(buf), " [ksuf i%dx%d]", -extrasize64_ - 1, (int) ksuf_->capacity() / 64);
+        else if (ksuf_)
+            l = snprintf(buf, sizeof(buf), " [ksuf x%d]", (int) ksuf_->capacity() / 64);
+        else if (extrasize64_)
+            l = snprintf(buf, sizeof(buf), " [ksuf i%d]", extrasize64_);
+        if (P::debug_level > 0) {
+            kvtimestamp_t cts = timestamp_sub(created_at_[0], initial_timestamp);
+            l += snprintf(&buf[l], sizeof(buf) - l, " @" PRIKVTSPARTS, KVTS_HIGHPART(cts), KVTS_LOWPART(cts));
+        }
+        static const char* const modstates[] = {"", "-", "D"};
+        printf("%s%*sleaf %p: %d %s, version %" PRIx64 "%s, permutation %s, parent %p, prev %p, next %p%.*s\n",
+                prefix, indent, "", this,
+                perm.size(), perm.size() == 1 ? "key" : "keys",
+                (uint64_t) v.version_value(),
+                modstate_ <= 2 ? modstates[modstate_] : "??",
+                perm.unparse().c_str(),
+                parent_, prev_, next_.ptr,
+                l, buf);
+    }
+
+    if (v.deleted() || (perm[0] != 0 && prev_))
+        printf("%s%*s%s = [] #0\n", prefix, indent + 2, "", key_type(ikey_bound()).unparse().c_str());
+
+    char keybuf[MASSTREE_MAXKEYLEN];
+    char xbuf[15];
+    for (int idx = 0; idx < perm.size(); ++idx) {
+        int p = perm[idx];
+        int l = P::key_unparse_type::unparse_key(this->get_key(p), keybuf, sizeof(keybuf));
+        sprintf(xbuf, " #%x/%d", p, keylenx_[p]);
+        leafvalue_type lv = lv_[p];
+        if (this->has_changed(v)) {
+            printf("%s%*s[NODE CHANGED]\n", prefix, indent + 2, "");
+            break;
+        } else if (!lv)
+            printf("%s%*s%.*s = []%s\n", prefix, indent + 2, "", l, keybuf, xbuf);
+        else if (is_layer(p)) {
+            printf("%s%*s%.*s = SUBTREE%s\n", prefix, indent + 2, "", l, keybuf, xbuf);
+            node_base<P> *n = lv.layer();
+            while (!n->is_root())
+                n = n->maybe_parent();
+        }
+    }
+
+    if (v.deleted())
+        printf("%s%*s[DELETED]\n", prefix, indent + 2, "");
+}
+
+template <typename P>
+void internode<P>::print_node() const
+{
+	const char *prefix = "";
+	int indent = 0;
+
+	internode<P> copy(*this);
+    for (int i = 0; i < 100 && (copy.has_changed(*this) || this->inserting() || this->splitting()); ++i)
+        memcpy(&copy, this, sizeof(copy));
+
+    {
+        char buf[1024];
+        int l = 0;
+        if (P::debug_level > 0) {
+            kvtimestamp_t cts = timestamp_sub(created_at_[0], initial_timestamp);
+            l = snprintf(buf, sizeof(buf), " @" PRIKVTSPARTS, KVTS_HIGHPART(cts), KVTS_LOWPART(cts));
+        }
+        printf("%s%*sinternode %p[%u]%s: %d keys, version %" PRIx64 ", parent %p%.*s\n",
+                prefix, indent, "", this,
+                height_, this->deleted() ? " [DELETED]" : "",
+                copy.size(), (uint64_t) copy.version_value(), copy.parent_,
+                l, buf);
+    }
+
+    char keybuf[MASSTREE_MAXKEYLEN];
+    for (int p = 0; p < copy.size(); ++p) {
+        int l = P::key_unparse_type::unparse_key(copy.get_key(p), keybuf, sizeof(keybuf));
+        printf("%s%*s%p[%u.%d] %.*s\n",
+                prefix, indent, "", this, height_, p, l, keybuf);
+    }
+}
+
+template <typename P>
 void basic_table<P>::print(FILE* f) const {
     root_->print(f ? f : stdout, "", 0, 0);
 }

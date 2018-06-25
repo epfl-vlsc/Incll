@@ -20,6 +20,14 @@
 #include "stringbag.hh"
 #include "mtcounters.hh"
 #include "timestamp.hh"
+
+#include "incll_configs.hh"
+#include "incll_globals.hh"
+#include "incll_macros.hh"
+
+typedef uint64_t mrcu_epoch_type;
+extern volatile mrcu_epoch_type globalepoch;
+
 namespace Masstree {
 
 template <typename P>
@@ -52,11 +60,12 @@ class node_base : public make_nodeversion<P>::type {
     typedef typename make_nodeversion<P>::type nodeversion_type;
     typedef typename P::threadinfo_type threadinfo;
 
-    uint64_t loggedepoch;
+    mrcu_epoch_type loggedepoch;
 
-    node_base(bool isleaf)
-        : nodeversion_type(isleaf) {
-    }
+    node_base(bool isleaf):
+    	nodeversion_type(isleaf),
+    	loggedepoch(globalepoch)
+    {}
 
     inline base_type* parent() const {
         // almost always an internode
@@ -96,7 +105,28 @@ class node_base : public make_nodeversion<P>::type {
     }
 
     void print(FILE* f, const char* prefix, int depth, int kdepth) const;
+    void print_node() const;
 
+    void record_node(){
+    	if(loggedepoch != globalepoch){
+			//printf("le %lu ge %lu\n", loggedepoch, globalepoch);
+			GH::node_logger.record(this);
+			loggedepoch = globalepoch;
+		}
+    }
+
+	template <typename SF>
+	nodeversion_type lock_persistent(nodeversion_type expected, SF spin_function){
+		auto res = nodeversion_type::lock(expected, spin_function);
+		this->record_node();
+		return res;
+	}
+
+	nodeversion_type lock_persistent(){
+		auto res = nodeversion_type::lock();
+		this->record_node();
+		return res;
+	}
 
 
     leaf_type* to_leaf(){
@@ -106,6 +136,22 @@ class node_base : public make_nodeversion<P>::type {
     internode_type* to_internode(){
     	return static_cast<internode_type*>(this);
     }
+
+    const leaf_type* to_const_leaf() const{
+		return static_cast<const leaf_type*>(this);
+	}
+
+    const internode_type* to_const_internode() const{
+		return static_cast<const internode_type*>(this);
+	}
+
+    size_t allocated_size() const {
+		if(this->isleaf()){
+			return this->to_const_leaf()->allocated_size();
+		}else{
+			return this->to_const_internode()->allocated_size();
+		}
+	}
 };
 
 template <typename P>
@@ -164,6 +210,7 @@ class internode : public node_base<P> {
     }
 
     void print(FILE* f, const char* prefix, int depth, int kdepth) const;
+    void print_node() const;
 
     void deallocate(threadinfo& ti) {
         ti.pool_deallocate(this, sizeof(*this), memtag_masstree_internode);
@@ -171,6 +218,10 @@ class internode : public node_base<P> {
     void deallocate_rcu(threadinfo& ti) {
         ti.pool_deallocate_rcu(this, sizeof(*this), memtag_masstree_internode);
     }
+
+    size_t allocated_size() const {
+		return sizeof(*this);
+	}
 
   private:
     void assign(int p, ikey_type ikey, node_base<P>* child) {
@@ -474,6 +525,7 @@ class leaf : public node_base<P> {
     }
 
     void print(FILE* f, const char* prefix, int depth, int kdepth) const;
+    void print_node() const;
 
     leaf<P>* safe_next() const {
         return reinterpret_cast<leaf<P>*>(next_.x & ~(uintptr_t) 1);
@@ -561,7 +613,8 @@ internode<P>* node_base<P>::locked_parent(threadinfo& ti) const
         p = this->parent();
         if (!this->parent_exists(p))
             break;
-        nodeversion_type pv = p->lock(*p, ti.lock_fence(tc_internode_lock));
+
+        nodeversion_type pv = p->lock_persistent(*p, ti.lock_fence(tc_internode_lock));
         if (p == this->parent()) {
             masstree_invariant(!p->isleaf());
             break;
@@ -582,6 +635,14 @@ void node_base<P>::print(FILE* f, const char* prefix, int depth, int kdepth) con
         static_cast<const internode<P>*>(this)->print(f, prefix, depth, kdepth);
 }
 
+template <typename P>
+void node_base<P>::print_node() const
+{
+    if (this->isleaf())
+        static_cast<const leaf<P>*>(this)->print_node();
+    else
+        static_cast<const internode<P>*>(this)->print_node();
+}
 
 /** @brief Return the result of compare_key(k, LAST KEY IN NODE).
 
@@ -781,6 +842,11 @@ inline node_base<P>* basic_table<P>::fix_root() {
         (void) cmpxchg(&root_, old_root, root);
     }
     return root;
+}
+
+template <typename P>
+inline node_base<P>*& basic_table<P>::root_assignable(){
+    return root_;
 }
 
 } // namespace Masstree

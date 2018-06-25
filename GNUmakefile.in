@@ -49,7 +49,7 @@ mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a
 
 # main benchmarks
 mttest: mttest.o misc.o checkpoint.o $(KVTREES) testrunner.o \
-	kvio.o libjson.a
+	kvio.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 recovery: mttest
@@ -65,7 +65,8 @@ rand: mttest
 	python get_average.py
 
 # unit tests
-UNIT_TESTS = test_barrier test_gf test_simplemt test_copy
+UNIT_TESTS = test_barrier test_gf test_simplemt test_copy \
+		test_log test_logmt
 
 test_suite: $(UNIT_TESTS)
 
@@ -74,31 +75,44 @@ run_test_suite: test_suite
 	./test_gf 
 	./test_simplemt 
 	./test_copy
+	./test_log
+	./test_logmt
 
-test_barrier: test_barrier.o
+test_barrier: test_barrier.o incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 tbarrier: test_barrier
 	./test_barrier
 
-test_gf: test_gf.o
+test_gf: test_gf.o incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 tgf: test_gf
 	./test_gf
 	
-test_simplemt: test_simplemt.o compiler.o misc.o libjson.a
+test_simplemt: test_simplemt.o compiler.o misc.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 tsimplemt: test_simplemt
 	./test_simplemt
 	
-test_copy: test_copy.o compiler.o misc.o libjson.a
+test_copy: test_copy.o compiler.o misc.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 tcopy: test_copy
 	./test_copy
 
+test_log: test_log.o incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tlog: test_log
+	./test_log
+
+test_logmt: test_logmt.o compiler.o misc.o libjson.a incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tlogmt: test_logmt
+	./test_logmt
 	
 # helpers
 get_avg:

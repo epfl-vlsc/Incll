@@ -73,6 +73,8 @@ class basic_table {
     inline node_type* root() const;
     inline node_type* fix_root();
 
+    inline node_type*& root_assignable();
+
     bool get(Str key, value_type& value, threadinfo& ti) const;
 
     template <typename F>

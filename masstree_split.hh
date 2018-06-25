@@ -148,8 +148,13 @@ int internode<P>::split_into(internode<P> *nr, int p, ikey_type ka,
         split_ikey = this->ikey0_[mid];
     }
 
-    for (int i = 0; i <= nr->nkeys_; ++i)
-        nr->child_[i]->set_parent(nr);
+    for (int i = 0; i <= nr->nkeys_; ++i){
+        if(!nr->child_[i]->locked()){
+        	nr->child_[i]->lock_persistent();
+        	nr->child_[i]->unlock();
+        }
+    	nr->child_[i]->set_parent(nr);
+    }
 
     this->mark_split();
     if (p < mid) {

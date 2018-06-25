@@ -7,6 +7,10 @@
 
 #include "incll_globals.hh"
 
+volatile mrcu_epoch_type failedepoch = 0;
+volatile mrcu_epoch_type globalepoch = 1;
+volatile mrcu_epoch_type active_epoch = 1;
+
 const int NUM_THREADS = 8;
 int signs[NUM_THREADS];
 

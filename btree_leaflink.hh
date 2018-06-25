@@ -60,10 +60,14 @@ template <typename N> struct btree_leaflink<N, true> {
     template <typename SF>
     static void link_split(N *n, N *nr, SF spin_function) {
         nr->prev_ = n;
+
         N *next = lock_next(n, spin_function);
         nr->next_.ptr = next;
-        if (next)
-            next->prev_ = nr;
+        if (next){
+        	next->lock_persistent();
+        	next->unlock();
+        	next->prev_ = nr;
+        }
         fence();
         n->next_.ptr = nr;
     }
@@ -89,8 +93,11 @@ template <typename N> struct btree_leaflink<N, true> {
                 break;
             spin_function();
         }
-        if (next)
+        if (next){
+        	next->lock_persistent();
+			next->unlock();
             next->prev_ = prev;
+        }
         fence();
         prev->next_.ptr = next;
     }
