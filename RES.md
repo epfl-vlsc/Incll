@@ -26,8 +26,9 @@
 * log logic+flush: 2095439
 * recovery: seems to work with mt
 
-## using flush
+## using global flush default
 * rand without logging: 2098709
+* rand with logging: 1804248
 
 
 

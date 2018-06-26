@@ -739,6 +739,7 @@ void kvtest_recovery(C &client){
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 template <typename C>
 void kvtest_rand(C &client, uint64_t n_keys){
+	GH::node_logger.init(client.id());
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	Json result = Json();
