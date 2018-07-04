@@ -17,6 +17,9 @@
 #define QUERY_MASSTREE_HH 1
 #include "masstree.hh"
 #include "kvrow.hh"
+
+#include "incll_configs.hh"
+
 class threadinfo;
 namespace lcdf { class Json; }
 
@@ -70,7 +73,7 @@ class query_table {
     basic_table<P> table_;
 };
 
-struct default_query_table_params : public nodeparams<15, 15> {
+struct default_query_table_params : public nodeparams<KEY_LW, 15> {
     typedef row_type* value_type;
     typedef value_print<value_type> value_print_type;
     typedef ::threadinfo threadinfo_type;

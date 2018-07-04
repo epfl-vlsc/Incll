@@ -32,6 +32,11 @@
 * rand with logging+flush(node): 1719341
 * rand with logging+flush(node)+flush(tail): 1603517
 
+## key change to 12 + gf
+* rand without logging: 1973669
+* rand with logging+flush(node)+flush(tail): 1559236
+
+
 
 
 

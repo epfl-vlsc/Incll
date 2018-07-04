@@ -19,9 +19,5 @@
 //periodic flush
 #define GLOBAL_FLUSH
 
-//deafult key 15
-/*
+//default 15
 #define KEY_LW 12
-#define KEY_IW 11
-#define KEY_MID KEY_LW/2
-*/
