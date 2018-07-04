@@ -11,6 +11,8 @@
 #include <atomic>
 #include <cassert>
 
+#include "incll_extflush.hh"
+
 class ExtNodeLogger{
 private:
 	struct nvm_logrec_node{
@@ -102,8 +104,16 @@ public:
 		lr->validity = entry_valid_magic;
 		std::memcpy(lr->node_content_, node_ptr, node_size);
 
+		void *beg = (void*)lr->node_content_;
+		void *end = (void*)((char*)beg + node_size);
+		sync_range(beg, end);
+
 		curr += entry_size;
 		active_records++;
+
+		beg = (void*)&curr;
+		end = (void*)((char*)beg + sizeof(curr));
+		sync_range(beg, end);
 	}
 
 	template <typename N>

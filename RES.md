@@ -29,6 +29,13 @@
 ## using global flush default
 * rand without logging: 2098709
 * rand with logging: 1804248
+* rand with logging+flush(node): 1719341
+* rand with logging+flush(node)+flush(tail): 1603517
+
+
+
+
+
 
 
 

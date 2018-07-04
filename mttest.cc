@@ -97,6 +97,8 @@ static bool pinthreads = false;
 nodeversion32 global_epoch_lock(false);
 volatile mrcu_epoch_type globalepoch = 1;     // global epoch, updated by main thread regularly
 volatile mrcu_epoch_type active_epoch = 1;
+int delaycount = 0;
+
 kvepoch_t global_log_epoch = 0;
 static int port = 2117;
 static int rscale_ncores = 0;
