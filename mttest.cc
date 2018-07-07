@@ -342,6 +342,23 @@ struct kvtest_client {
 		return table_->table().root_assignable();
 	}
 
+    enum op_type{
+    	op_get,
+		op_put,
+		op_remove
+    };
+
+    op_type get_op(uint64_t get_rate, uint64_t put_rate_cum){
+    	unsigned num = rand.next()%100;
+    	if(num < get_rate){
+    		return op_get;
+    	}else if(num < put_rate_cum){
+    		return op_put;
+    	}else{
+    		return op_remove;
+    	}
+    }
+
 
     T *table_;
     threadinfo *ti_;
@@ -764,7 +781,9 @@ enum { opt_pin = 1, opt_port, opt_duration,
        opt_test, opt_test_name, opt_threads, opt_trials, opt_quiet, opt_print,
        opt_normalize, opt_limit, opt_notebook, opt_compare, opt_no_run,
        opt_lazy_timer, opt_gid, opt_tree_stats, opt_rscale_ncores, opt_cores,
-       opt_stats, opt_help, opt_yrange, opt_nkeys, opt_ninitops, opt_nops1, opt_nops2};
+       opt_stats, opt_help, opt_yrange, opt_nkeys, opt_ninitops, opt_nops1, opt_nops2,
+	   opt_getrate, opt_putrate
+};
 static const Clp_Option options[] = {
     { "pin", 'p', opt_pin, 0, Clp_Negate },
     { "port", 0, opt_port, Clp_ValInt, 0 },
@@ -784,6 +803,8 @@ static const Clp_Option options[] = {
 	{ "ninitops", 'i', opt_ninitops, Clp_ValUnsignedLong, 0 },
 	{ "nops1", 'o', opt_nops1, Clp_ValUnsignedLong, 0 },
 	{ "nops2", 'h', opt_nops2, Clp_ValUnsignedLong, 0 },
+	{ "getrate", 0, opt_getrate, Clp_ValUnsignedLong, 0 },
+	{ "putrate", 0, opt_putrate, Clp_ValUnsignedLong, 0 },
     { "trials", 'T', opt_trials, Clp_ValInt, 0 },
     { "quiet", 'q', opt_quiet, 0, Clp_Negate },
     { "print", 0, opt_print, 0, Clp_Negate },
@@ -809,6 +830,8 @@ Options:\n\
   -i, --ninitops=NINITOPS  Number of operations to init tree.\n\
   -o, --nops1=NOPS1    	   Number of operations after init.\n\
   -h, --nops2=NOPS2   	   Number of operations final.\n\
+  --getrate=RATE 	  	   Number between 0 and 100.\n\
+  --putrate=RATE   	   Number between 0 and 100.\n\
   -p, --pin                Pin each thread to its own core.\n\
   -T, --trials=TRIALS      Run each test TRIALS times.\n\
   -q, --quiet              Do not generate verbose and Gnuplot output.\n\
@@ -902,6 +925,14 @@ main(int argc, char *argv[])
 			break;
         case opt_nops2:
         	GH::n_ops2 = clp->val.ul;
+			break;
+        case opt_getrate:
+			GH::get_rate = clp->val.ul;
+			GH::check_rate(clp->val.ul);
+			break;
+        case opt_putrate:
+			GH::put_rate = clp->val.ul;
+			GH::check_rate(clp->val.ul);
 			break;
         case opt_trials:
             ntrials = clp->val.i;

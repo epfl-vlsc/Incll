@@ -76,10 +76,10 @@ public:
 
 	template <typename N>
 	void record(N* node){
-		/*
-		printf("Recording node %p le %lu leaf %d\n",
-				(void*)node, node->loggedepoch, node->isleaf());
-		*/
+		DBGLOG("Recording node %p le %lu %s",
+			(void*)node, node->loggedepoch,
+			(node->isleaf()) ? "leaf":"internode"
+		)
 
 		void* node_ptr = (void*)node;
 		size_t node_size = node->allocated_size();
@@ -118,7 +118,7 @@ public:
 
 	template <typename N>
 	void undo(N*& root){
-		//printf("undo %lu records\n", active_records);
+		DBGLOG("undo %lu records", active_records)
 		while(last_flush != curr){
 			char *entry = (char*)buf_ + last_flush;
 

@@ -23,6 +23,7 @@
 #include "string.hh"
 
 #include "incll_trav.hh"
+#include "incll_configs.hh"
 
 class key_unparse_unsigned {
 public:
@@ -100,6 +101,7 @@ public:
 
     void insert(const std::initializer_list<uint64_t>& int_keys){
     	for(auto int_key: int_keys){
+    		DBGLOG("insert %lu", int_key)
     		insert(int_key, int_key+1);
     	}
     }
@@ -110,13 +112,14 @@ public:
 		Str key = make_key(int_key, key_buf);
 
 		cursor_type lp(table_, key);
-		bool found = lp.find_locked(*ti);
-		always_assert(found, "keys must all exist");
+		lp.find_locked(*ti);
+
 		lp.finish(-1, *ti);
     }
 
     void remove(const std::initializer_list<uint64_t>& int_keys){
 		for(auto int_key: int_keys){
+			DBGLOG("remove %lu", int_key)
 			remove(int_key);
 		}
 	}

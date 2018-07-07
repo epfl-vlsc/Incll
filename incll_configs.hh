@@ -5,13 +5,14 @@
 
 #pragma once
 
-//DBGLOG
-#define DBGLOG(text) \
-	printf("%s at %s:%d\n", text, __FILE__, __LINE__);
-
-#define DBGLOGPTR(text, ptr) \
-	printf("%s at %p at %s:%d\n", text, ptr, __FILE__, __LINE__);
-
+//Debug Logging
+#define DBG
+#ifdef DBG
+#define DBGLOG(f_, ...) \
+		printf(("At %s:%d " f_ "\n"), __FILE__, __LINE__, ##__VA_ARGS__);
+#else
+#define DBGLOG(f_, ...)
+#endif
 
 //default epoch 16
 #define GL_FREQ 16

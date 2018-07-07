@@ -19,6 +19,11 @@ namespace GH{
 	extern uint64_t n_initops;
 	extern uint64_t n_ops1;
 	extern uint64_t n_ops2;
+	extern uint64_t get_rate;
+	extern uint64_t put_rate;
+
+	void check_rate(uint64_t rate);
+	uint64_t put_rate_cum();
 
 #ifdef GLOBAL_FLUSH
 	extern GlobalFlush global_flush;

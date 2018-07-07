@@ -121,7 +121,7 @@ void print_tree(N* root){
 		node = q.front();
 		q.pop();
 
-		node->print(stdout, "", 0, 0);
+		node->print_node();
 
 		get_children(q, node);
 	}

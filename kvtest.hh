@@ -627,6 +627,8 @@ std::atomic<size_t> global_size;
 template <typename C>
 void kvtest_recovery(C &client){
 	GH::node_logger.init(client.id());
+	uint64_t get_rate = GH::get_rate;
+	uint64_t put_rate_cum = GH::put_rate_cum();
 
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
@@ -634,7 +636,7 @@ void kvtest_recovery(C &client){
 
 	//begin initops epoch 1--------------------------------------------------
 	if(client.id() == 0){
-		printf("-----ninitops ge: %lu\n", globalepoch);
+		DBGLOG("-----ninitops ge: %lu", globalepoch)
 		while (n < GH::n_initops) {
 			++n;
 			pos = rand() % GH::n_keys;
@@ -648,27 +650,28 @@ void kvtest_recovery(C &client){
 	GH::advance_epoch(client.id());
 
 	//begin nops1 epoch 2----------------------------------------------------
-	if(client.id() == 0)
-		printf("-----nops1 ge: %lu\n", globalepoch);
+	if(client.id() == 0){
+		DBGLOG("-----nops1 ge: %lu", globalepoch)
+	}
 
 	n = 0;
 	while(n<GH::n_ops1){
 		n++;
 		pos = client.rand.next() % GH::n_keys;
 		val = client.rand.next();
-		unsigned op = client.rand.next()%4;
+		unsigned op =
+				client.get_op(get_rate, put_rate_cum);
 		switch(op){
 		case 0:
-		case 1:
 			client.get_sync(pos);
+			break;
+		case 1:
+			local_size +=
+					client.put(pos, val);
 			break;
 		case 2:
 			local_size -=
 					client.remove_sync(pos);
-			break;
-		case 3:
-			local_size +=
-					client.put(pos, val);
 			break;
 		}
 	}
@@ -678,8 +681,9 @@ void kvtest_recovery(C &client){
 	GH::advance_epoch(client.id());
 
 	//begin copy epoch 3---------------------------------------------
-	if(client.id() == 0)
-		printf("-----copy ge: %lu\n", globalepoch);
+	if(client.id() == 0){
+		DBGLOG("-----copy ge: %lu", globalepoch)
+	}
 
 	void *copy = nullptr;
 	if(client.id() == 0){
@@ -691,8 +695,9 @@ void kvtest_recovery(C &client){
 	//end copy epoch 3----------------------------------------------------
 
 	//begin nops2 epoch 3----------------------------------------------------
-	if(client.id() == 0)
-		printf("-----nops2 ge: %lu\n", globalepoch);
+	if(client.id() == 0){
+		DBGLOG("-----nops2 ge: %lu", globalepoch)
+	}
 
 	n = 0;
 	while(n<GH::n_ops2){
@@ -717,15 +722,17 @@ void kvtest_recovery(C &client){
 
 	//begin recovery epoch 3-----------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
-	if(client.id() == 0)
-			printf("-----recovery ge: %lu\n", globalepoch);
+	if(client.id() == 0){
+		DBGLOG("-----recovery ge: %lu", globalepoch)
+	}
 
 	GH::node_logger.undo(client.get_root_assignable());
 	GH::thread_barrier.wait_barrier(client.id());
 
 	if(client.id() == 0){
 		bool is_same = is_same_tree(client.get_root(), copy);
-		printf("%s\n", is_same ? "is same":"not same - recovery failed");
+		printf("%s\n",
+				is_same ? "is same":"not same - recovery failed");
 
  		clear_copy<decltype(client.get_root())>(copy);
 		assert(copy == nullptr);

@@ -66,7 +66,7 @@ rand: mttest
 
 # unit tests
 UNIT_TESTS = test_barrier test_gf test_simplemt test_copy \
-		test_log test_logmt
+		test_log test_logmt test_incacheline
 
 test_suite: $(UNIT_TESTS)
 
@@ -77,6 +77,7 @@ run_test_suite: test_suite
 	./test_copy
 	./test_log
 	./test_logmt
+	./test_incacheline
 
 test_barrier: test_barrier.o incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
@@ -113,7 +114,13 @@ test_logmt: test_logmt.o compiler.o misc.o libjson.a incll_globals.o
 
 tlogmt: test_logmt
 	./test_logmt
-	
+
+test_incacheline: test_incacheline.o compiler.o misc.o libjson.a incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tincacheline: test_incacheline
+	./test_incacheline
+
 # helpers
 get_avg:
 	python get_average.py

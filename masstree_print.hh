@@ -240,6 +240,8 @@ void leaf<P>::print_node() const
 
     if (v.deleted())
         printf("%s%*s[DELETED]\n", prefix, indent + 2, "");
+
+    printf("--------------------------------\n");
 }
 
 template <typename P>
@@ -267,11 +269,14 @@ void internode<P>::print_node() const
     }
 
     char keybuf[MASSTREE_MAXKEYLEN];
-    for (int p = 0; p < copy.size(); ++p) {
+    for (int p = 0; p <= copy.size(); ++p) {
+    	if (!copy.child_[p]) continue;
         int l = P::key_unparse_type::unparse_key(copy.get_key(p), keybuf, sizeof(keybuf));
         printf("%s%*s%p[%u.%d] %.*s\n",
                 prefix, indent, "", this, height_, p, l, keybuf);
     }
+
+    printf("--------------------------------\n");
 }
 
 template <typename P>

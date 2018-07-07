@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "incll_configs.hh"
 #include "incll_trav.hh"
 #include "masstree_print.hh"
-
 
 template <typename ILN>
 int clever_mem_cmp(ILN* n1, ILN* n2, size_t node_size){
@@ -119,6 +119,8 @@ N* copy_node(N *node){
 
 template <typename N>
 void* copy_tree(N* root){
+	size_t num_keys = 0;
+
 	N* node = root;
 	N* node_copy = nullptr;
 
@@ -135,10 +137,14 @@ void* copy_tree(N* root){
 		assert(is_same_node(node, node_copy));
 		v_copy->push_back(node_copy);
 
+		if(node->isleaf())
+			num_keys += get_num_keys_leaf(node->to_leaf());
+
 		get_children(q, node);
 	}
 
-	printf("copy num_nodes %lu\n", v_copy->size());
+	DBGLOG("copy num_nodes %lu with %lu keys",
+			v_copy->size(), num_keys)
 	return (void*)v_copy;
 }
 
