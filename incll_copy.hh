@@ -13,17 +13,6 @@
 #include "incll_trav.hh"
 #include "masstree_print.hh"
 
-template <typename ILN>
-int clever_mem_cmp(ILN* n1, ILN* n2, size_t node_size){
-	char* addr = (char*)&(n1->loggedepoch);
-	size_t skip_size = addr-(char*)n1 + sizeof(n1->loggedepoch);
-
-	char *n1_shifted = (char*)n1 + skip_size;
-	char *n2_shifted = (char*)n2 + skip_size;
-
-	return memcmp((void*)n1_shifted, (void*)n2_shifted, node_size - skip_size);
-}
-
 template <typename V>
 void assert_diff(std::string str, V v1, V v2){
 	if(v1 != v2){
@@ -31,7 +20,6 @@ void assert_diff(std::string str, V v1, V v2){
 		assert(v1 == v2);
 	}
 }
-
 
 template <typename LN>
 void compare_mem_contents(LN* n1, LN* n2, size_t node_size){
@@ -69,11 +57,12 @@ void find_leaf_difference(LN* n1, LN* n2){
 	size_t n1_size = n1->allocated_size();
 	size_t n2_size = n2->allocated_size();
 
-
 	typename LN::permuter_type perm1 = n1->permutation_;
 	typename LN::permuter_type perm2 = n2->permutation_;
 
 	assert_diff("size", n1_size, n2_size);
+	assert_diff("version", n1->version_value(), n2->version_value());
+	assert_diff("le", n1->loggedepoch, n2->loggedepoch);
 	assert_diff("modstate", n1->modstate_, n2->modstate_);
 	assert_diff("extrasize", n1->extrasize64_, n2->extrasize64_);
 	assert_diff("permutation", n1->permutation_, n2->permutation_);
@@ -98,43 +87,61 @@ void find_leaf_difference(LN* n1, LN* n2){
 	compare_mem_contents(n1, n2, n1_size);
 }
 
+
 template <typename ILN>
-bool is_same_node_specialized(ILN* n1, ILN* n2){
-	size_t n1_size = n1->allocated_size();
-	size_t n2_size = n2->allocated_size();
-
-	if(n1_size != n2_size)
+bool is_same_mem(ILN* n1, ILN* n2){
+	if(n1->allocated_size() != n2->allocated_size())
 		return false;
 
-	if(clever_mem_cmp(n1, n2, n1_size) != 0){
-		printf("Tree "); n1->print_node();
-		printf("Copy "); n2->print_node();
-
-		if(n1->isleaf() && n2->isleaf())
-			find_leaf_difference(n1->to_leaf(), n2->to_leaf());
-
-		return false;
-	}
-
-
-	return true;
+	return (memcmp((void*)n1, (void*)n2, n1->allocated_size()) == 0);
 }
+
+
+template <typename LN>
+bool is_same_leaf(LN* n1, LN* n2){
+	return is_same_mem(n1, n2);
+}
+
+template <typename IN>
+bool is_same_internode(IN* n1, IN* n2){
+	return is_same_mem(n1, n2);
+}
+
+
+
+template <typename N>
+void print_diff_between_nodes(N* n1, N* n2){
+	printf("Tree: ");
+	n1->print_node();
+
+	printf("Copy: ");
+	n2->print_node();
+
+	//detailed comparison for leaf nodes
+	if(n1->isleaf() && n2->isleaf()){
+		find_leaf_difference(n1->to_leaf(), n2->to_leaf());
+	}
+}
+
 
 template <typename N>
 bool is_same_node(N* n1, N* n2){
-	bool is_n1_leaf = n1->isleaf();
-	bool is_n2_leaf = n2->isleaf();
+	bool is_same = false;
 
-	if(is_n1_leaf != is_n2_leaf)
-		return false;
-
-	if(is_n1_leaf){
-		return is_same_node_specialized(
-				n1->to_leaf(), n2->to_leaf());
-	}else{
-		return is_same_node_specialized(
-				n1->to_internode(), n2->to_internode());
+	if(n1->isleaf() == n2->isleaf()){
+		if(n1->isleaf()){
+			is_same =
+				is_same_leaf(n1->to_leaf(), n2->to_leaf());
+		}else{
+			is_same =
+				is_same_internode(n1->to_internode(), n2->to_internode());
+		}
 	}
+	if(!is_same){
+		print_diff_between_nodes(n1, n2);
+	}
+
+	return is_same;
 }
 
 template <typename N>

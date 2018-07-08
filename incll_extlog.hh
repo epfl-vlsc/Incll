@@ -146,10 +146,17 @@ public:
 				entry_size = lr->size_;
 			}
 
+			//get to be undone node
+			N* undo_node = (N*)lr->node_content_;
+			//unlock if node is locked
+			if(undo_node->locked()){
+				undo_node->unlock();
+			}
+
 			size_t copy_size = entry_size - sizeof(*lr);
 			std::memcpy(lr->node_addr_, (void*)lr->node_content_, copy_size);
 
-			N* node = (N*)lr->node_addr_;
+
 			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
 				(void*)node, node->loggedepoch,
 				(node->isleaf()) ? "leaf":"internode",
@@ -157,6 +164,7 @@ public:
 				(node->isleaf()) ? 0 : node->to_internode()->size()
 			)
 
+			N* node = (N*)lr->node_addr_;
 			if(lr->is_root){
 				if(!node->isleaf()){
 					//printf("change root addr to %p\n", lr->node_addr_);

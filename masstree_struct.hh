@@ -502,7 +502,9 @@ class leaf : public node_base<P> {
     		//case exists a prev node
     		if(idx>0){
     			//get the leaf to the most right
-    			leaf_type *ln = base_type::get_max_leaf(pin->child_[idx-1]);
+    			base_type *node_for_prev = pin->child_[idx-1];
+    			assert(node_for_prev);
+    			leaf_type *ln = base_type::get_max_leaf(node_for_prev);
     			assert(ln != this);
     			return ln;
     		}
@@ -527,7 +529,9 @@ class leaf : public node_base<P> {
 			//case exists a prev node
 			if(idx<pin->size()){
 				//get the leaf to the most right
-				leaf_type *ln = base_type::get_min_leaf(pin->child_[idx+1]);
+				base_type *node_for_next = pin->child_[idx+1];
+				assert(node_for_next);
+				leaf_type *ln = base_type::get_min_leaf(node_for_next);
 				assert(ln != this);
 				return ln;
 			}
