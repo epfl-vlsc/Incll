@@ -152,6 +152,39 @@ class node_base : public make_nodeversion<P>::type {
 			return this->to_const_internode()->allocated_size();
 		}
 	}
+
+    static leaf_type* get_max_leaf(base_type *n){
+    	if(n->isleaf()){
+    		return n->to_leaf();
+    	}else{
+    		internode_type *in = n->to_internode();
+    		auto in_keys = in->nkeys_;
+
+    		if(in->child_[in_keys]){
+    			return base_type::get_max_leaf(in->child_[in_keys]);
+    		}else if(in->child_[in_keys-1]){
+    			assert(0);
+    			return base_type::get_max_leaf(in->child_[in_keys-1]);
+    		}else{
+    			assert(0);
+    			return nullptr;
+    		}
+    	}
+    }
+
+    static leaf_type* get_min_leaf(base_type *n){
+    	if(n->isleaf()){
+			return n->to_leaf();
+		}else{
+			internode_type *in = n->to_internode();
+			auto *child = in->child_[0];
+			if(child){
+				return base_type::get_min_leaf(child);
+			}else{
+				return nullptr;
+			}
+		}
+    }
 };
 
 template <typename P>
@@ -161,6 +194,9 @@ class internode : public node_base<P> {
     typedef typename node_base<P>::nodeversion_type nodeversion_type;
     typedef key<typename P::ikey_type> key_type;
     typedef typename P::ikey_type ikey_type;
+    typedef node_base<P> base_type;
+	typedef leaf<P> leaf_type;
+	typedef internode<P> internode_type;
     typedef typename key_bound<width, P::bound_method>::type bound_type;
     typedef typename P::threadinfo_type threadinfo;
 
@@ -222,6 +258,23 @@ class internode : public node_base<P> {
     size_t allocated_size() const {
 		return sizeof(*this);
 	}
+
+    int find_child_idx(base_type* child){
+    	int idx = -1;
+    	for (int i = 0; i <= this->size(); ++i) {
+    		if(this->child_[i] == child){
+    			idx = i;
+    			break;
+    		}
+    	}
+    	if(idx == -1){
+    		this->print_node();
+    		printf("BOOM child:%p parent:%p %d size %d\n",
+    				(void*)child, (void*)this, idx, this->size());
+    	}
+    	assert(idx != -1);
+    	return idx;
+    }
 
   private:
     void assign(int p, ikey_type ikey, node_base<P>* child) {
@@ -313,6 +366,10 @@ class leaf : public node_base<P> {
     static constexpr int width = P::leaf_width;
     typedef typename node_base<P>::nodeversion_type nodeversion_type;
     typedef key<typename P::ikey_type> key_type;
+    typedef node_base<P> base_type;
+    typedef leaf<P> leaf_type;
+    typedef internode<P> internode_type;
+
     typedef typename node_base<P>::leafvalue_type leafvalue_type;
     typedef kpermuter<P::leaf_width> permuter_type;
     typedef typename P::ikey_type ikey_type;
@@ -431,6 +488,57 @@ class leaf : public node_base<P> {
 
     inline leaf<P>* advance_to_key(const key_type& k, nodeversion_type& version,
                                    threadinfo& ti) const;
+
+
+    leaf<P>* get_prev_safe(){
+    	base_type *cn = this;
+    	while(cn->has_parent()){
+    		base_type *pn = cn->parent();
+			assert(!pn->isleaf());
+			internode_type *pin = pn->to_internode();
+
+			int idx = pin->find_child_idx(cn);
+
+    		//case exists a prev node
+    		if(idx>0){
+    			//get the leaf to the most right
+    			leaf_type *ln = base_type::get_max_leaf(pin->child_[idx-1]);
+    			assert(ln != this);
+    			return ln;
+    		}
+
+    		//case no prev in this node
+    		cn = pn;
+    	}
+
+    	//case no parent
+    	return nullptr;
+    }
+
+    leaf<P>* get_next_safe(){
+    	base_type *cn = this;
+		while(cn->has_parent()){
+			base_type *pn = cn->parent();
+			assert(!pn->isleaf());
+			internode_type *pin = pn->to_internode();
+
+			int idx = pin->find_child_idx(cn);
+
+			//case exists a prev node
+			if(idx<pin->size()){
+				//get the leaf to the most right
+				leaf_type *ln = base_type::get_min_leaf(pin->child_[idx+1]);
+				assert(ln != this);
+				return ln;
+			}
+
+			//case no prev in this node
+			cn = pn;
+		}
+
+		//case no parent
+		return nullptr;
+    }
 
     static bool keylenx_is_layer(int keylenx) {
         return keylenx > 127;

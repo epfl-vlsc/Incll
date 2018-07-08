@@ -726,7 +726,11 @@ void kvtest_recovery(C &client){
 		DBGLOG("-----recovery ge: %lu", globalepoch)
 	}
 
+	auto last_flush = GH::node_logger.get_last_flush();
 	GH::node_logger.undo(client.get_root_assignable());
+	GH::thread_barrier.wait_barrier(client.id());
+
+	GH::node_logger.undo_next_prev(client.get_root_assignable(), last_flush);
 	GH::thread_barrier.wait_barrier(client.id());
 
 	if(client.id() == 0){

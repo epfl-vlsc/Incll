@@ -216,7 +216,7 @@ void leaf<P>::print_node() const
     }
 
     if (v.deleted() || (perm[0] != 0 && prev_))
-        printf("%s%*s%s = [] #0\n", prefix, indent + 2, "", key_type(ikey_bound()).unparse().c_str());
+        printf("%s%*s%s = [] #0\n", prefix, 2, "", key_type(ikey_bound()).unparse().c_str());
 
     char keybuf[MASSTREE_MAXKEYLEN];
     char xbuf[15];
@@ -225,16 +225,17 @@ void leaf<P>::print_node() const
         int l = P::key_unparse_type::unparse_key(this->get_key(p), keybuf, sizeof(keybuf));
         sprintf(xbuf, " #%x/%d", p, keylenx_[p]);
         leafvalue_type lv = lv_[p];
+
         if (this->has_changed(v)) {
-            printf("%s%*s[NODE CHANGED]\n", prefix, indent + 2, "");
+            printf("%s%*s[NODE CHANGED]\n", prefix, 2, "");
             break;
-        } else if (!lv)
-            printf("%s%*s%.*s = []%s\n", prefix, indent + 2, "", l, keybuf, xbuf);
+        }else if (!lv)
+            printf("%s%*s%.*s = []%s\n", prefix, 2, "", l, keybuf, xbuf);
         else if (is_layer(p)) {
-            printf("%s%*s%.*s = SUBTREE%s\n", prefix, indent + 2, "", l, keybuf, xbuf);
-            node_base<P> *n = lv.layer();
-            while (!n->is_root())
-                n = n->maybe_parent();
+        	assert(false);
+        }else {
+            typename P::value_type tvx = lv.value();
+            P::value_print_type::print(tvx, stdout, prefix, 2, Str(keybuf, l), initial_timestamp, xbuf);
         }
     }
 
@@ -272,7 +273,7 @@ void internode<P>::print_node() const
     for (int p = 0; p <= copy.size(); ++p) {
     	if (!copy.child_[p]) continue;
         int l = P::key_unparse_type::unparse_key(copy.get_key(p), keybuf, sizeof(keybuf));
-        printf("%s%*s%p[%u.%d] %.*s\n",
+        printf("child at %p %s%*s%p[%u.%d] %.*s\n", (void*)copy.child_[p],
                 prefix, indent, "", this, height_, p, l, keybuf);
     }
 

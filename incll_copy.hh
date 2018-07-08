@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <cassert>
+#include <iostream>
+
 #include "incll_configs.hh"
 #include "incll_trav.hh"
 #include "masstree_print.hh"
@@ -21,6 +24,80 @@ int clever_mem_cmp(ILN* n1, ILN* n2, size_t node_size){
 	return memcmp((void*)n1_shifted, (void*)n2_shifted, node_size - skip_size);
 }
 
+template <typename V>
+void assert_diff(std::string str, V v1, V v2){
+	if(v1 != v2){
+		std::cout << str << " " << v1 << " " << v2 << std::endl;
+		assert(v1 == v2);
+	}
+}
+
+
+template <typename LN>
+void compare_mem_contents(LN* n1, LN* n2, size_t node_size){
+	char* addr = (char*)&(n1->loggedepoch);
+	size_t skip_size = addr-(char*)n1 + sizeof(n1->loggedepoch);
+
+	char *n1_shifted = (char*)n1 + skip_size;
+	char *n2_shifted = (char*)n2 + skip_size;
+	uint64_t compare_size = node_size - skip_size;
+
+	char *ptr1 = n1_shifted;
+	char *ptr2 = n2_shifted;
+	for(uint64_t i=0;i<compare_size;++i){
+		printf("%x %x|", *ptr1, *ptr2);
+		ptr1++;
+		ptr2++;
+		if(i % 10 == 0) printf("\n");
+
+		if(*ptr1 != *ptr2){
+			printf("%x %x|", *ptr1, *ptr2);
+			void *iksuf_ptr = &n1->iksuf_;
+			int ptr_diff = ptr1 - (char*)n1;
+			int iksuf_diff = (char*)iksuf_ptr - (char*)n1;
+
+			printf("\n\nat tree %p from start %d node size %lu iksuf %d\n",
+					ptr1, ptr_diff, node_size, iksuf_diff);
+			assert(*ptr1 == *ptr2);
+		}
+	}
+}
+
+
+template <typename LN>
+void find_leaf_difference(LN* n1, LN* n2){
+	size_t n1_size = n1->allocated_size();
+	size_t n2_size = n2->allocated_size();
+
+
+	typename LN::permuter_type perm1 = n1->permutation_;
+	typename LN::permuter_type perm2 = n2->permutation_;
+
+	assert_diff("size", n1_size, n2_size);
+	assert_diff("modstate", n1->modstate_, n2->modstate_);
+	assert_diff("extrasize", n1->extrasize64_, n2->extrasize64_);
+	assert_diff("permutation", n1->permutation_, n2->permutation_);
+	assert_diff("prev", n1->prev_, n2->prev_);
+	assert_diff("next", n1->next_.ptr, n2->next_.ptr);
+	assert_diff("parent", n1->parent_, n2->parent_);
+	assert_diff("ksuf", n1->ksuf_, n2->ksuf_);
+	assert_diff("perm size", perm1.size(), perm2.size());
+	assert_diff("phantom", n1->phantom_epoch_, n2->phantom_epoch_);
+	assert_diff("created", n1->created_at_, n2->created_at_);
+
+	for (int idx = 0; idx < perm1.size(); ++idx) {
+		int p1 = perm1[idx];
+		int p2 = perm2[idx];
+
+		assert_diff("lv", n1->lv_[p1].value(), n2->lv_[p2].value());
+		assert_diff("keylenx", n1->keylenx_[p1], n2->keylenx_[p2]);
+		assert_diff("ikey0", n1->ikey0_[p1], n2->ikey0_[p2]);
+	}
+
+
+	compare_mem_contents(n1, n2, n1_size);
+}
+
 template <typename ILN>
 bool is_same_node_specialized(ILN* n1, ILN* n2){
 	size_t n1_size = n1->allocated_size();
@@ -30,8 +107,11 @@ bool is_same_node_specialized(ILN* n1, ILN* n2){
 		return false;
 
 	if(clever_mem_cmp(n1, n2, n1_size) != 0){
-		n1->print_node();
-		n2->print_node();
+		printf("Tree "); n1->print_node();
+		printf("Copy "); n2->print_node();
+
+		if(n1->isleaf() && n2->isleaf())
+			find_leaf_difference(n1->to_leaf(), n2->to_leaf());
 
 		return false;
 	}

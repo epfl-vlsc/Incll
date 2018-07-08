@@ -13,6 +13,9 @@
 
 #include "incll_extflush.hh"
 
+typedef uint64_t mrcu_epoch_type;
+extern volatile mrcu_epoch_type globalepoch;
+
 class ExtNodeLogger{
 private:
 	struct nvm_logrec_node{
@@ -37,6 +40,10 @@ public:
 	static constexpr const size_t buf_size = (1ull << 34);
 	static constexpr const size_t entry_meta_size = sizeof(nvm_logrec_node);
 	static constexpr const uint8_t entry_valid_magic = 18;
+
+	index get_last_flush(){
+		return last_flush;
+	}
 
 	void init(size_t tid){
 		destroy();
@@ -76,9 +83,11 @@ public:
 
 	template <typename N>
 	void record(N* node){
-		DBGLOG("Recording node %p le %lu %s",
+		DBGLOG("Recording node %p le %lu %s ge:%lu inkeys:%d",
 			(void*)node, node->loggedepoch,
-			(node->isleaf()) ? "leaf":"internode"
+			(node->isleaf()) ? "leaf":"internode",
+			globalepoch,
+			(node->isleaf()) ? 0 : node->to_internode()->size()
 		)
 
 		void* node_ptr = (void*)node;
@@ -119,6 +128,7 @@ public:
 	template <typename N>
 	void undo(N*& root){
 		DBGLOG("undo %lu records", active_records)
+
 		while(last_flush != curr){
 			char *entry = (char*)buf_ + last_flush;
 
@@ -127,7 +137,7 @@ public:
 			size_t entry_size = lr->size_;
 
 			//almost circular buffer
-			if(!lr->check_validity() || curr + entry_size > buf_size){
+			if(!lr->check_validity() || last_flush + entry_size > buf_size){
 				printf("Warning in undo: back to the beginning of log\n");
 				assert(0);
 				last_flush = 0;
@@ -139,8 +149,15 @@ public:
 			size_t copy_size = entry_size - sizeof(*lr);
 			std::memcpy(lr->node_addr_, (void*)lr->node_content_, copy_size);
 
+			N* node = (N*)lr->node_addr_;
+			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
+				(void*)node, node->loggedepoch,
+				(node->isleaf()) ? "leaf":"internode",
+				globalepoch,
+				(node->isleaf()) ? 0 : node->to_internode()->size()
+			)
+
 			if(lr->is_root){
-				N* node = (N*)lr->node_addr_;
 				if(!node->isleaf()){
 					//printf("change root addr to %p\n", lr->node_addr_);
 					root = node;
@@ -151,5 +168,53 @@ public:
 		}
 
 		active_records = 0;
+	}
+
+	template <typename N>
+	void undo_next_prev(N*& root, index temp_flush){
+		(void)(root);
+
+		while(temp_flush != curr){
+			char *entry = (char*)buf_ + temp_flush;
+
+			nvm_logrec_node *lr =
+					reinterpret_cast<nvm_logrec_node *>(entry);
+			size_t entry_size = lr->size_;
+			//almost circular buffer
+			if(!lr->check_validity() || temp_flush + entry_size > buf_size){
+				printf("Warning in undo: back to the beginning of log\n");
+				assert(0);
+				temp_flush = 0;
+				entry = (char*)buf_ + temp_flush;
+				lr = reinterpret_cast<nvm_logrec_node *>(entry);
+				entry_size = lr->size_;
+			}
+
+			N* node = (N*)lr->node_addr_;
+			DBGLOG("Undoing next prev node %p le %lu %s ge:%lu inkeys:%d",
+				(void*)node, node->loggedepoch,
+				(node->isleaf()) ? "leaf":"internode",
+				globalepoch,
+				(node->isleaf()) ? 0 : node->to_internode()->size()
+			)
+
+			//fix next and prev
+			if(node->isleaf()){
+				auto *ln = node->to_leaf();
+				auto *prev = ln->get_prev_safe();
+				auto *next = ln->get_next_safe();
+
+				ln->next_.ptr 	= next;
+				ln->prev_ 		= prev;
+
+				if(prev)
+					prev->next_.ptr = ln;
+
+				if(next)
+					next->prev_ = ln;
+			}
+
+			temp_flush += entry_size;
+		}
 	}
 };

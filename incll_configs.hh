@@ -6,7 +6,7 @@
 #pragma once
 
 //Debug Logging
-#define DBG
+//#define DBG
 #ifdef DBG
 #define DBGLOG(f_, ...) \
 		printf(("At %s:%d " f_ "\n"), __FILE__, __LINE__, ##__VA_ARGS__);
