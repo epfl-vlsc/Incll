@@ -128,9 +128,11 @@ class node_base : public make_nodeversion<P>::type {
 		return res;
 	}
 
+#ifdef INCLL
 	void log_persistent(){
 		this->record_node();
 	}
+#endif //incll
 
 
     leaf_type* to_leaf(){
