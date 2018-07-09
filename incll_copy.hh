@@ -87,6 +87,44 @@ void find_leaf_difference(LN* n1, LN* n2){
 	compare_mem_contents(n1, n2, n1_size);
 }
 
+template <typename LN>
+bool is_same_leaf_fine_grained(LN* n1, LN* n2){
+	size_t n1_size = n1->allocated_size();
+	size_t n2_size = n2->allocated_size();
+
+	typename LN::permuter_type perm1 = n1->permutation_;
+	typename LN::permuter_type perm2 = n2->permutation_;
+
+	//todo logged epoch, phantom_epoch, created_at, not checked
+
+	bool is_same = (n1_size == n2_size
+			&& n1->version_value() == n2->version_value()
+			&& n1->modstate_ == n2->modstate_
+			&& n1->extrasize64_ == n2->extrasize64_
+			&& n1->permutation_ == n2->permutation_
+			&& n1->prev_ == n2->prev_
+			&& n1->next_.ptr == n2->next_.ptr
+			&& n1->parent_ == n2->parent_
+			&& n1->ksuf_ == n2->ksuf_
+			&& perm1.size() == perm2.size()
+			);
+
+	if(is_same){
+		for (int idx = 0; idx < perm1.size(); ++idx) {
+			int p1 = perm1[idx];
+			int p2 = perm2[idx];
+
+			is_same = (is_same
+					&& n1->lv_[p1].value() == n2->lv_[p2].value()
+					&& n1->keylenx_[p1] == n2->keylenx_[p2]
+					&& n1->ikey0_[p1] == n2->ikey0_[p2]
+					);
+		}
+	}
+
+
+	return is_same;
+}
 
 template <typename ILN>
 bool is_same_mem(ILN* n1, ILN* n2){
@@ -96,10 +134,13 @@ bool is_same_mem(ILN* n1, ILN* n2){
 	return (memcmp((void*)n1, (void*)n2, n1->allocated_size()) == 0);
 }
 
-
 template <typename LN>
 bool is_same_leaf(LN* n1, LN* n2){
+#ifdef INCLL
+	return is_same_leaf_fine_grained(n1, n2);
+#else //incll
 	return is_same_mem(n1, n2);
+#endif //incll
 }
 
 template <typename IN>

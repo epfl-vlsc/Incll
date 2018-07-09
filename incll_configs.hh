@@ -25,3 +25,11 @@
 
 //disable dealloc for remove
 //#define DISABLE_DEALLOC
+
+// in-cacheline log features
+#define INCLL
+#ifdef INCLL
+#define Ifincll(statement) statement
+#else //incll
+#define Ifincll(statement)
+#endif //incll
