@@ -148,7 +148,20 @@ public:
 
 			//get to be undone node
 			N* undo_node = (N*)lr->node_content_;
-			//unlock if node is locked
+#ifdef INCLL
+			//fix insert for modstate and version value
+			if(undo_node->inserting()){
+				auto *undo_ln = undo_node->to_leaf();
+				if(undo_ln->inserting()){
+					undo_ln->modstate_ = 1; //remove
+					undo_ln->clear_insert();
+				}
+
+			}
+
+#endif //incll
+
+
 			if(undo_node->locked()){
 				undo_node->unlock();
 			}

@@ -126,6 +126,11 @@ class nodeversion {
         v_ |= P::inserting_bit;
         acquire_fence();
     }
+
+    void clear_insert() {
+    	v_ &= ~P::inserting_bit;
+	}
+
     nodeversion<P> mark_insert(nodeversion<P> current_version) {
         masstree_invariant((fence(), v_ == current_version.v_));
         masstree_invariant(current_version.v_ & P::lock_bit);

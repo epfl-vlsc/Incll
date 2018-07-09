@@ -23,22 +23,30 @@ template <typename P>
 bool tcursor<P>::find_insert(threadinfo& ti)
 {
     find_locked(ti);
-    n_->log_persistent();
+
 
     original_n_ = n_;
     original_v_ = n_->full_unlocked_version_value();
 
     // maybe we found it
-    if (state_)
-        return true;
+    if (state_){
+    	//case update existing value
+    	Ifincll(n_->log_persistent())
+    	return true;
+    }
+
 
     // otherwise mark as inserted but not present
     state_ = 2;
 
     // maybe we need a new layer
-    if (kx_.p >= 0)
+    if (kx_.p >= 0){
+    	//case new layer
+		Ifincll(n_->log_persistent())
         return make_new_layer(ti);
+    }
 
+    //todo below modifies node version, modstate, logging afterwards have to take it into account
     // mark insertion if we are changing modification state
     if (unlikely(n_->modstate_ != leaf<P>::modstate_insert)) {
         masstree_invariant(n_->modstate_ == leaf<P>::modstate_remove);
@@ -51,10 +59,15 @@ bool tcursor<P>::find_insert(threadinfo& ti)
         kx_.p = permuter_type(n_->permutation_).back();
         // don't inappropriately reuse position 0, which holds the ikey_bound
         if (likely(kx_.p != 0) || !n_->prev_ || n_->ikey_bound() == ka_.ikey()) {
-            n_->assign(kx_.p, ka_, ti);
+        	// case insert new key
+        	Ifincll(n_->log_persistent())
+        	n_->assign(kx_.p, ka_, ti);
             return false;
         }
     }
+
+    //case split node
+    Ifincll(n_->log_persistent())
 
     // otherwise must split
     return make_split(ti);

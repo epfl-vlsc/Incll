@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <bitset>
 
 #include "incll_configs.hh"
 #include "incll_trav.hh"
@@ -51,6 +52,26 @@ void compare_mem_contents(LN* n1, LN* n2, size_t node_size){
 	}
 }
 
+template <typename LN>
+void compare_version_contents(LN* n1, LN* n2){
+	const char* format_str =
+		"%s lock:%u ins:%u spl:%u "
+		"del:%u cha:%u rt:%u\n";
+
+	printf(format_str, "Tree ", n1->locked(), n1->inserting(),
+			n1->splitting(), n1->deleted(),
+			n1->is_root());
+
+	printf(format_str, "Copy ", n2->locked(), n2->inserting(),
+			n2->splitting(), n2->deleted(),
+			n2->is_root());
+
+	std::bitset<32> v1(n1->version_value());
+	std::bitset<32> v2(n2->version_value());
+
+	std::cout << "v1:" << v1 << std::endl;
+	std::cout << "v2:" << v2 << std::endl;
+}
 
 template <typename LN>
 void find_leaf_difference(LN* n1, LN* n2){
@@ -61,6 +82,10 @@ void find_leaf_difference(LN* n1, LN* n2){
 	typename LN::permuter_type perm2 = n2->permutation_;
 
 	assert_diff("size", n1_size, n2_size);
+
+	if(n1->version_value() != n2->version_value()){
+		compare_version_contents(n1, n2);
+	}
 	assert_diff("version", n1->version_value(), n2->version_value());
 	assert_diff("le", n1->loggedepoch, n2->loggedepoch);
 	assert_diff("modstate", n1->modstate_, n2->modstate_);
