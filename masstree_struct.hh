@@ -503,10 +503,15 @@ class leaf : public node_base<P> {
     		if(idx>0){
     			//get the leaf to the most right
     			base_type *node_for_prev = pin->child_[idx-1];
-    			assert(node_for_prev);
-    			leaf_type *ln = base_type::get_max_leaf(node_for_prev);
-    			assert(ln != this);
-    			return ln;
+
+    			//make sure the bound has an item, idx-1 = 0
+    			if(node_for_prev){
+    				leaf_type *ln = base_type::get_max_leaf(node_for_prev);
+					assert(ln != this);
+					return ln;
+    			}
+
+    			//if bound does not have an item go up to parent
     		}
 
     		//case no prev in this node
