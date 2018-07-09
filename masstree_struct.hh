@@ -160,15 +160,8 @@ class node_base : public make_nodeversion<P>::type {
     		internode_type *in = n->to_internode();
     		auto in_keys = in->nkeys_;
 
-    		if(in->child_[in_keys]){
-    			return base_type::get_max_leaf(in->child_[in_keys]);
-    		}else if(in->child_[in_keys-1]){
-    			assert(0);
-    			return base_type::get_max_leaf(in->child_[in_keys-1]);
-    		}else{
-    			assert(0);
-    			return nullptr;
-    		}
+    		assert(in->child_[in_keys]);
+    		return base_type::get_max_leaf(in->child_[in_keys]);
     	}
     }
 
@@ -177,10 +170,14 @@ class node_base : public make_nodeversion<P>::type {
 			return n->to_leaf();
 		}else{
 			internode_type *in = n->to_internode();
-			auto *child = in->child_[0];
-			if(child){
-				return base_type::get_min_leaf(child);
+			auto *child_bound = in->child_[0];
+			auto *child_normal = in->child_[1];
+			if(child_bound){
+				return base_type::get_min_leaf(child_bound);
+			}else if(child_normal){
+				return base_type::get_min_leaf(child_normal);
 			}else{
+				assert(0);
 				return nullptr;
 			}
 		}
@@ -537,8 +534,10 @@ class leaf : public node_base<P> {
 				base_type *node_for_next = pin->child_[idx+1];
 				assert(node_for_next);
 				leaf_type *ln = base_type::get_min_leaf(node_for_next);
-				assert(ln != this);
-				return ln;
+				if(ln){
+					assert(ln != this);
+					return ln;
+				}
 			}
 
 			//case no prev in this node

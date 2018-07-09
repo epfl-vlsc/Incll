@@ -36,6 +36,9 @@
 * rand without logging: 1973669
 * rand with logging+flush(node)+flush(tail): 1559236
 
+## assumptions
+* disabled need_phantom_epoch in masstree.h
+
 
 
 

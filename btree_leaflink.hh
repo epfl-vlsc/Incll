@@ -39,6 +39,7 @@ template <typename N> struct btree_leaflink<N, true> {
     static inline N *lock_next(N *n, SF spin_function) {
         while (1) {
             N *next = n->next_.ptr;
+
             if (!next
                 || (!is_marked(next)
                     && bool_cmpxchg(&n->next_.ptr, next, mark(next))))
@@ -64,8 +65,6 @@ template <typename N> struct btree_leaflink<N, true> {
         N *next = lock_next(n, spin_function);
         nr->next_.ptr = next;
         if (next){
-        	next->lock_persistent();
-        	next->unlock();
         	next->prev_ = nr;
         }
         fence();
@@ -89,16 +88,16 @@ template <typename N> struct btree_leaflink<N, true> {
         N *prev;
         while (1) {
             prev = n->prev_;
+            //todo delete line below
             if (bool_cmpxchg(&prev->next_.ptr, n, mark(n)))
                 break;
             spin_function();
         }
         if (next){
-        	next->lock_persistent();
-			next->unlock();
             next->prev_ = prev;
         }
         fence();
+
         prev->next_.ptr = next;
     }
 };

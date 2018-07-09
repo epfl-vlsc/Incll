@@ -211,10 +211,16 @@ class threadinfo {
     }
     void deallocate(void* p, size_t sz, memtag tag) {
         // in C++ allocators, 'p' must be nonnull
+
+    	(void)(p);
+    	(void)(sz);
+    	(void)(tag);
+    	/* todo dangerous uncomment, for removals
         assert(p);
         p = memdebug::check_free(p, sz, tag);
         free(p);
         mark(threadcounter(tc_alloc + (tag > memtag_value)), -sz);
+        */
     }
     void deallocate_rcu(void* p, size_t sz, memtag tag) {
         assert(p);
@@ -238,6 +244,11 @@ class threadinfo {
         return p;
     }
     void pool_deallocate(void* p, size_t sz, memtag tag) {
+    	(void)(p);
+		(void)(sz);
+		(void)(tag);
+
+    	/* todo dangerous uncomment, for removal
         int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(p && nl <= pool_max_nlines);
         p = memdebug::check_free(p, sz, memtag(tag + nl));
@@ -248,6 +259,7 @@ class threadinfo {
             free(p);
         mark(threadcounter(tc_alloc + (tag > memtag_value)),
              -nl * CACHE_LINE_SIZE);
+		 */
     }
     void pool_deallocate_rcu(void* p, size_t sz, memtag tag) {
         int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;

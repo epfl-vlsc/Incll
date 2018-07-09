@@ -35,7 +35,7 @@ template <int LW = 15, int IW = LW> struct nodeparams {
     static constexpr int debug_level = 0;
     typedef uint64_t ikey_type;
     typedef uint32_t nodeversion_value_type;
-    static constexpr bool need_phantom_epoch = true;
+    static constexpr bool need_phantom_epoch = false;
     typedef uint64_t phantom_epoch_type;
     static constexpr ssize_t print_max_indent_depth = 12;
     typedef key_unparse_printable_string key_unparse_type;
