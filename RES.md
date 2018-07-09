@@ -38,6 +38,9 @@
 
 ## assumptions
 * disabled need_phantom_epoch in masstree.h
+* deallocs possible to disable: for measurements enabled
+
+* rand with logging+flush(node)+flush(tail): 1554701
 
 
 

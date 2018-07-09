@@ -22,3 +22,6 @@
 
 //default 15
 #define KEY_LW 12
+
+//disable dealloc for remove
+#define DISABLE_DEALLOC
