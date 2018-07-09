@@ -23,6 +23,8 @@ template <typename P>
 bool tcursor<P>::find_insert(threadinfo& ti)
 {
     find_locked(ti);
+    n_->log_persistent();
+
     original_n_ = n_;
     original_v_ = n_->full_unlocked_version_value();
 

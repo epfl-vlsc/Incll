@@ -41,6 +41,9 @@
 * deallocs possible to disable: for measurements enabled
 
 * rand with logging+flush(node)+flush(tail): 1554701
+* logging distributed from find_locked(config above): 1652645
+
+possible explanation: if not found don't log for remove
 
 
 

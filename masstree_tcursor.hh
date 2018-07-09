@@ -155,6 +155,12 @@ class tcursor {
     inline bool find_locked(threadinfo& ti);
     inline bool find_insert(threadinfo& ti);
 
+#ifdef INCLL
+    void log_persistent(){
+    	n_->log_persistent();
+    }
+#endif //incll
+
     inline void finish(int answer, threadinfo& ti);
 
     inline nodeversion_value_type previous_full_version_value() const;

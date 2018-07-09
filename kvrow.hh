@@ -237,8 +237,10 @@ template <typename R> template <typename T>
 bool query<R>::run_remove(T& table, Str key, threadinfo& ti) {
     typename T::cursor_type lp(table, key);
     bool found = lp.find_locked(ti);
-    if (found)
+    if (found){
+    	Ifincll(lp.log_persistent())
         apply_remove(lp.value(), lp.node()->phantom_epoch_[0], ti);
+    }
     lp.finish(-1, ti);
     return found;
 }

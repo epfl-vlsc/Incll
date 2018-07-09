@@ -98,7 +98,11 @@ bool tcursor<P>::find_locked(threadinfo& ti)
         state_ = 0;
 
     //locking of node
+#ifdef INCLL
+    n_->lock(v, ti.lock_fence(tc_leaf_lock));
+#else //incll
     n_->lock_persistent(v, ti.lock_fence(tc_leaf_lock));
+#endif
 
     if (n_->has_changed(v) || n_->permutation() != perm) {
         ti.mark(threadcounter(tc_stable_leaf_insert + n_->simple_has_split(v)));

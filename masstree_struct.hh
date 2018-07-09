@@ -128,6 +128,10 @@ class node_base : public make_nodeversion<P>::type {
 		return res;
 	}
 
+	void log_persistent(){
+		this->record_node();
+	}
+
 
     leaf_type* to_leaf(){
     	return static_cast<leaf_type*>(this);
