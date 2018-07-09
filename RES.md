@@ -36,7 +36,7 @@
 * rand without logging: 1973669
 * rand with logging+flush(node)+flush(tail): 1559236
 
-## assumptions
+## assumptions rand
 * disabled need_phantom_epoch in masstree.h
 * deallocs possible to disable: for measurements enabled
 
@@ -44,6 +44,10 @@
 * logging distributed from find_locked(config above): 1652645
 
 possible explanation: if not found don't log for remove
+
+##incll(with above assumptions)
+* moved logging to incll locations: 1636703
+* logging+flush(node)+flush(tail)+incll(fields): 1618616
 
 
 

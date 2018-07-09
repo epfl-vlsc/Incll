@@ -383,11 +383,49 @@ class leaf : public node_base<P> {
     typedef typename P::phantom_epoch_type phantom_epoch_type;
     static constexpr int ksuf_keylenx = 64;
     static constexpr int layer_keylenx = 128;
+    static constexpr const int8_t invalid_idx = -1;
 
     enum {
         modstate_insert = 0, modstate_remove = 1, modstate_deleted_layer = 2
     };
 
+#ifdef INCLL
+    struct incll_lv_{										//16 bytes
+    	leafvalue_type lv_;										//8 byte
+    	int8_t cl_idx;											//1 byte
+    	uint32_t loggedepoch;									//4 byte
+    	uint8_t padding[3];										//3 byte
+
+    	//no need to init index
+    	//because it will be overwritten in next epoch
+    	incll_lv_():loggedepoch(globalepoch){}
+    };
+#endif //incll
+
+
+#ifdef INCLL
+    //version value										//4 bytes
+    //logged epoch										//8 bytes
+    int8_t cl1_idx;										//1 byte
+    int8_t extrasize64_;								//1 byte
+	uint8_t modstate_; 									//1 byte
+	uint8_t keylenx_[width];							//12 bytes
+	typename permuter_type::storage_type permutation_;	//8 bytes
+	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
+	leaf<P>* prev_;										//8 bytes
+	node_base<P>* parent_;								//8 bytes
+
+	incll_lv_ lv_cl1;									//16 bytes
+	leafvalue_type lv_[width];							//96 bytes
+	incll_lv_ lv_cl2;									//16 bytes
+
+	ikey_type ikey0_[width];							//96 bytes
+	external_ksuf_type* ksuf_;							//8 bytes
+
+	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
+	kvtimestamp_t created_at_[P::debug_level > 0];
+	internal_ksuf_type iksuf_[0];
+#else // incll
     int8_t extrasize64_;
     uint8_t modstate_;
     uint8_t keylenx_[width];
@@ -404,17 +442,30 @@ class leaf : public node_base<P> {
     phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
     kvtimestamp_t created_at_[P::debug_level > 0];
     internal_ksuf_type iksuf_[0];
+#endif //incll
 
-    leaf(size_t sz, phantom_epoch_type phantom_epoch)
-        : node_base<P>(true), modstate_(modstate_insert),
-          permutation_(permuter_type::make_empty()),
-          ksuf_(), parent_(), iksuf_{} {
+    leaf(size_t sz, phantom_epoch_type phantom_epoch):
+#ifdef INCLL
+    	node_base<P>(true), modstate_(modstate_insert),
+		permutation_(permuter_type::make_empty()),
+		parent_(), ksuf_(), iksuf_{} {
+#else //incll
+		node_base<P>(true), modstate_(modstate_insert),
+		permutation_(permuter_type::make_empty()),
+		ksuf_(), parent_(), iksuf_{} {
+#endif //incll
         masstree_precondition(sz % 64 == 0 && sz / 64 < 128);
         extrasize64_ = (int(sz) >> 6) - ((int(sizeof(*this)) + 63) >> 6);
         if (extrasize64_ > 0)
             new((void *)&iksuf_[0]) internal_ksuf_type(width, sz - sizeof(*this));
         if (P::need_phantom_epoch)
             phantom_epoch_[0] = phantom_epoch;
+
+#ifdef INCLL
+        static_assert(
+        		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,
+        		"incll for lv_ is not cache aligned properly");
+#endif //incll
     }
 
     static leaf<P>* make(int ksufsize, phantom_epoch_type phantom_epoch, threadinfo& ti) {

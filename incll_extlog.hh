@@ -153,7 +153,7 @@ public:
 			if(undo_node->inserting()){
 				auto *undo_ln = undo_node->to_leaf();
 				if(undo_ln->inserting()){
-					undo_ln->modstate_ = 1; //remove
+					undo_ln->modstate_ = undo_ln->modstate_remove; //remove
 					undo_ln->clear_insert();
 				}
 
