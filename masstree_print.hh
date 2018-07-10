@@ -17,6 +17,7 @@
 #define MASSTREE_PRINT_HH
 #include "masstree_struct.hh"
 #include <stdio.h>
+#include <iostream>
 #include <inttypes.h>
 
 namespace Masstree {
@@ -177,6 +178,7 @@ void internode<P>::print(FILE* f, const char* prefix, int depth, int kdepth) con
         fprintf(f, "%s%*s[]\n", prefix, indent, "");
 }
 
+
 template <typename P>
 void leaf<P>::print_node() const
 {
@@ -242,7 +244,33 @@ void leaf<P>::print_node() const
     if (v.deleted())
         printf("%s%*s[DELETED]\n", prefix, indent + 2, "");
 
+    printf("le:%lu\n", this->loggedepoch);
+#ifdef INCLL
+	this->print_cl0();
+	this->lv_cl1.print();
+	this->lv_cl2.print();
+#endif //incll
     printf("--------------------------------\n");
+}
+
+template <typename P>
+void leaf<P>::incll_lv_::print() const{
+	if(cl_idx != invalid_idx){
+		typename P::value_type tvx = lv_.value();
+		std::cout << "incll lv:" << tvx
+				<< " idx:" << cl_idx
+				<< " le:" << loggedepoch << std::endl;
+	}
+}
+
+template <typename P>
+void leaf<P>::print_cl0() const{
+	if(cl0_idx != invalid_idx){
+		permuter_type perm = perm_cl0;
+		printf("incll0 %d keys %s idx:%d le:%lu\n",
+				perm.size(), perm.unparse().c_str(),
+				cl0_idx, this->loggedepoch);
+	}
 }
 
 template <typename P>
@@ -276,8 +304,8 @@ void internode<P>::print_node() const
         printf("child at %p %s%*s%p[%u.%d] %.*s\n", (void*)copy.child_[p],
                 prefix, indent, "", this, height_, p, l, keybuf);
     }
-
-    printf("--------------------------------\n");
+    printf("le:%lu\n", this->loggedepoch);
+	printf("--------------------------------\n");
 }
 
 template <typename P>

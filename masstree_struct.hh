@@ -482,43 +482,9 @@ class leaf : public node_base<P> {
     }
 
 #ifdef INCLL
-		void update_epochs(){
-			this->loggedepoch
-				= lv_cl1.loggedepoch
-				= lv_cl2.loggedepoch
-				= globalepoch;
-		}
-
-		void invalidate_cls(){
-			this->cl0_idx
-				= lv_cl1.cl_idx
-				= lv_cl2.cl_idx
-				= invalid_idx;
-		}
-
-		void recover_incll(){
-			bool did_recovery = false;
-			if(this->loggedepoch == failedepoch && cl0_idx != invalid_idx){
-				permutation_ = perm_cl0;
-				did_recovery = true;
-			}
-			if(lv_cl1.loggedepoch == failedepoch && lv_cl1.cl_idx != invalid_idx){
-				lv_[lv_cl1.cl_idx] = lv_cl1.lv_;
-				did_recovery = true;
-			}
-			if(lv_cl2.loggedepoch == failedepoch && lv_cl2.cl_idx != invalid_idx){
-				lv_[lv_cl2.cl_idx] = lv_cl2.lv_;
-				did_recovery = true;
-			}
-			if(did_recovery){
-				DBGLOG("------recover cls")
-				//this->update_epochs();
-				this->invalidate_incll();
-			}
-		}
 
 
-
+	void print_cl0() const;
 #endif //incll
 
     static leaf<P>* make(int ksufsize, phantom_epoch_type phantom_epoch, threadinfo& ti) {

@@ -170,13 +170,6 @@ public:
 			std::memcpy(lr->node_addr_, (void*)lr->node_content_, copy_size);
 
 
-			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
-				(void*)node, node->loggedepoch,
-				(node->isleaf()) ? "leaf":"internode",
-				globalepoch,
-				(node->isleaf()) ? 0 : node->to_internode()->size()
-			)
-
 			N* node = (N*)lr->node_addr_;
 			if(lr->is_root){
 				if(!node->isleaf()){
@@ -184,6 +177,13 @@ public:
 					root = node;
 				}
 			}
+
+			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
+				(void*)node, node->loggedepoch,
+				(node->isleaf()) ? "leaf":"internode",
+				globalepoch,
+				(node->isleaf()) ? 0 : node->to_internode()->size()
+			)
 
 			last_flush += entry_size;
 		}

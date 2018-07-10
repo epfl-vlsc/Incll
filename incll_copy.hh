@@ -87,7 +87,7 @@ void find_leaf_difference(LN* n1, LN* n2){
 		compare_version_contents(n1, n2);
 	}
 	assert_diff("version", n1->version_value(), n2->version_value());
-	assert_diff("le", n1->loggedepoch, n2->loggedepoch);
+	//assert_diff("le", n1->loggedepoch, n2->loggedepoch);
 	assert_diff("modstate", n1->modstate_, n2->modstate_);
 	assert_diff("extrasize", n1->extrasize64_, n2->extrasize64_);
 	assert_diff("permutation", n1->permutation_, n2->permutation_);
@@ -96,8 +96,8 @@ void find_leaf_difference(LN* n1, LN* n2){
 	assert_diff("parent", n1->parent_, n2->parent_);
 	assert_diff("ksuf", n1->ksuf_, n2->ksuf_);
 	assert_diff("perm size", perm1.size(), perm2.size());
-	assert_diff("phantom", n1->phantom_epoch_, n2->phantom_epoch_);
-	assert_diff("created", n1->created_at_, n2->created_at_);
+	//assert_diff("phantom", n1->phantom_epoch_, n2->phantom_epoch_);
+	//assert_diff("created", n1->created_at_, n2->created_at_);
 
 	for (int idx = 0; idx < perm1.size(); ++idx) {
 		int p1 = perm1[idx];
@@ -124,6 +124,7 @@ bool is_same_leaf_fine_grained(LN* n1, LN* n2){
 
 	bool is_same = (n1_size == n2_size
 			&& n1->version_value() == n2->version_value()
+			//&& n1->loggedepoch == n2->loggedepoch
 			&& n1->modstate_ == n2->modstate_
 			&& n1->extrasize64_ == n2->extrasize64_
 			&& n1->permutation_ == n2->permutation_
