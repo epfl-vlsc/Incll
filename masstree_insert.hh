@@ -42,6 +42,7 @@ bool tcursor<P>::find_insert(threadinfo& ti)
     // maybe we need a new layer
     if (kx_.p >= 0){
     	//case new layer
+    	//Ifincll(n_->save_cl1_2_update(kx_.p))
 		Ifincll(n_->log_persistent())
         return make_new_layer(ti);
     }
@@ -60,6 +61,7 @@ bool tcursor<P>::find_insert(threadinfo& ti)
         // don't inappropriately reuse position 0, which holds the ikey_bound
         if (likely(kx_.p != 0) || !n_->prev_ || n_->ikey_bound() == ka_.ikey()) {
         	// case insert new key
+        	//Ifincll(n_->save_cl0_insert())
         	Ifincll(n_->log_persistent())
         	n_->assign(kx_.p, ka_, ti);
             return false;

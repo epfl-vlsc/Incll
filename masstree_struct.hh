@@ -109,12 +109,13 @@ class node_base : public make_nodeversion<P>::type {
     void print_node() const;
 
     void record_node(){
-    	if(loggedepoch != globalepoch){
-			//printf("le %lu ge %lu\n", loggedepoch, globalepoch);
+		if(loggedepoch != globalepoch){
+			/*printf("%p le %lu ge %lu\n",
+					(void*)this, loggedepoch, globalepoch);*/
 			GH::node_logger.record(this);
 			loggedepoch = globalepoch;
 		}
-    }
+	}
 
 	template <typename SF>
 	nodeversion_type lock_persistent(nodeversion_type expected, SF spin_function){
@@ -399,7 +400,13 @@ class leaf : public node_base<P> {
 
     	//no need to init index
     	//because it will be overwritten in next epoch
-    	incll_lv_():loggedepoch(globalepoch){}
+    	incll_lv_():cl_idx(invalid_idx), loggedepoch(globalepoch){}
+    	bool is_le_diff(){
+			DBGLOG("is le diff le:%u ge:%lu", loggedepoch, globalepoch)
+			return loggedepoch != globalepoch;
+		}
+
+		void print() const;
     };
 #endif //incll
 
@@ -413,8 +420,8 @@ class leaf : public node_base<P> {
 	uint8_t keylenx_[width];							//12 bytes
 	typename permuter_type::storage_type permutation_;	//8 bytes
 	typename permuter_type::storage_type perm_cl0;		//8 bytes
+	bool not_logged;									//1 byte
 	external_ksuf_type* ksuf_;							//8 bytes
-	uint8_t padding[8];									//8 bytes
 
 	incll_lv_ lv_cl1;									//16 bytes
 	leafvalue_type lv_[width];							//96 bytes
@@ -454,7 +461,7 @@ class leaf : public node_base<P> {
     	node_base<P>(true), modstate_(modstate_insert),
 		permutation_(permuter_type::make_empty()),
 		perm_cl0(permuter_type::make_empty()),
-		ksuf_(), parent_(), iksuf_{} {
+		not_logged(true), ksuf_(), parent_(), iksuf_{} {
 #else //incll
 		node_base<P>(true), modstate_(modstate_insert),
 		permutation_(permuter_type::make_empty()),
