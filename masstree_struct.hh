@@ -27,6 +27,7 @@
 
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
+extern volatile mrcu_epoch_type failedepoch;
 
 namespace Masstree {
 
@@ -406,21 +407,25 @@ class leaf : public node_base<P> {
 #ifdef INCLL
     //version value										//4 bytes
     //logged epoch										//8 bytes
-    int8_t cl1_idx;										//1 byte
+    int8_t cl0_idx;										//1 byte
     int8_t extrasize64_;								//1 byte
 	uint8_t modstate_; 									//1 byte
 	uint8_t keylenx_[width];							//12 bytes
 	typename permuter_type::storage_type permutation_;	//8 bytes
-	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
-	leaf<P>* prev_;										//8 bytes
-	node_base<P>* parent_;								//8 bytes
+	typename permuter_type::storage_type perm_cl0;		//8 bytes
+	external_ksuf_type* ksuf_;							//8 bytes
+	uint8_t padding[8];									//8 bytes
 
 	incll_lv_ lv_cl1;									//16 bytes
 	leafvalue_type lv_[width];							//96 bytes
 	incll_lv_ lv_cl2;									//16 bytes
 
 	ikey_type ikey0_[width];							//96 bytes
-	external_ksuf_type* ksuf_;							//8 bytes
+
+
+	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
+	leaf<P>* prev_;										//8 bytes
+	node_base<P>* parent_;								//8 bytes
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
 	kvtimestamp_t created_at_[P::debug_level > 0];
@@ -448,7 +453,8 @@ class leaf : public node_base<P> {
 #ifdef INCLL
     	node_base<P>(true), modstate_(modstate_insert),
 		permutation_(permuter_type::make_empty()),
-		parent_(), ksuf_(), iksuf_{} {
+		perm_cl0(permuter_type::make_empty()),
+		ksuf_(), parent_(), iksuf_{} {
 #else //incll
 		node_base<P>(true), modstate_(modstate_insert),
 		permutation_(permuter_type::make_empty()),
@@ -467,6 +473,46 @@ class leaf : public node_base<P> {
         		"incll for lv_ is not cache aligned properly");
 #endif //incll
     }
+
+#ifdef INCLL
+		void update_epochs(){
+			this->loggedepoch
+				= lv_cl1.loggedepoch
+				= lv_cl2.loggedepoch
+				= globalepoch;
+		}
+
+		void invalidate_cls(){
+			this->cl0_idx
+				= lv_cl1.cl_idx
+				= lv_cl2.cl_idx
+				= invalid_idx;
+		}
+
+		void recover_incll(){
+			bool did_recovery = false;
+			if(this->loggedepoch == failedepoch && cl0_idx != invalid_idx){
+				permutation_ = perm_cl0;
+				did_recovery = true;
+			}
+			if(lv_cl1.loggedepoch == failedepoch && lv_cl1.cl_idx != invalid_idx){
+				lv_[lv_cl1.cl_idx] = lv_cl1.lv_;
+				did_recovery = true;
+			}
+			if(lv_cl2.loggedepoch == failedepoch && lv_cl2.cl_idx != invalid_idx){
+				lv_[lv_cl2.cl_idx] = lv_cl2.lv_;
+				did_recovery = true;
+			}
+			if(did_recovery){
+				DBGLOG("------recover cls")
+				//this->update_epochs();
+				this->invalidate_incll();
+			}
+		}
+
+
+
+#endif //incll
 
     static leaf<P>* make(int ksufsize, phantom_epoch_type phantom_epoch, threadinfo& ti) {
         size_t sz = iceil(sizeof(leaf<P>) + std::min(ksufsize, 128), 64);

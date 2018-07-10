@@ -95,7 +95,9 @@ static bool json_stats = false;
 static String gnuplot_yrange;
 static bool pinthreads = false;
 nodeversion32 global_epoch_lock(false);
+
 volatile mrcu_epoch_type globalepoch = 1;     // global epoch, updated by main thread regularly
+volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
 
