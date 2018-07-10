@@ -633,6 +633,7 @@ void kvtest_recovery(C &client){
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	size_t local_size = 0;
+	void *root_ptr = nullptr;
 
 	//begin initops epoch 1--------------------------------------------------
 	if(client.id() == 0){
@@ -647,7 +648,7 @@ void kvtest_recovery(C &client){
 	}
 	//end initops epoch 1-----------------------------------------------------
 
-	GH::advance_epoch(client.id());
+	GH::advance_epoch(client.id(), client.get_root());
 
 	//begin nops1 epoch 2----------------------------------------------------
 	if(client.id() == 0){
@@ -678,7 +679,7 @@ void kvtest_recovery(C &client){
 	//nops 1 end epoch 2----------------------------------------------------
 
 	global_size += local_size;
-	GH::advance_epoch(client.id());
+	GH::advance_epoch(client.id(), client.get_root());
 
 	//begin copy epoch 3---------------------------------------------
 	if(client.id() == 0){
@@ -690,6 +691,7 @@ void kvtest_recovery(C &client){
 		assert(global_size == get_tree_size(client.get_root()));
 		copy = copy_tree(client.get_root());
 		assert(is_same_tree(client.get_root(), copy));
+		root_ptr = client.get_root();
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 	//end copy epoch 3----------------------------------------------------
@@ -724,22 +726,31 @@ void kvtest_recovery(C &client){
 	GH::thread_barrier.wait_barrier(client.id());
 	if(client.id() == 0){
 		DBGLOG("-----recovery ge: %lu", globalepoch)
+		failedepoch = 3;
 	}
 
-	auto last_flush = GH::node_logger.get_last_flush();
-	GH::node_logger.undo(client.get_root_assignable());
+	//Begin Undo epoch 3 ------------------------------------------------
+	if(client.id() == 0){
+		GH::node_logger.set_tree_root(client.get_root_assignable());
+	}
 	GH::thread_barrier.wait_barrier(client.id());
 
-	GH::node_logger.undo_next_prev(client.get_root_assignable(), last_flush);
+	auto last_flush = GH::node_logger.get_last_flush();
+	GH::node_logger.undo(client.get_root());
 	GH::thread_barrier.wait_barrier(client.id());
+
+	GH::node_logger.undo_next_prev(client.get_root(), last_flush);
+	GH::thread_barrier.wait_barrier(client.id());
+	//End Undo epoch 3 ------------------------------------------------
+
 
 	if(client.id() == 0){
-		bool is_same = is_same_tree(client.get_root(), copy);
-		printf("%s\n",
-				is_same ? "is same":"not same - recovery failed");
+		//ensure same root
+		assert(root_ptr == client.get_root());
 
- 		clear_copy<decltype(client.get_root())>(copy);
-		assert(copy == nullptr);
+		//ensure same tree
+		bool is_same = is_same_tree(client.get_root(), copy);
+		printf("%s\n", is_same ? "is same":"not same - recovery failed");
 	}
 
 	GH::thread_barrier.wait_barrier(client.id());

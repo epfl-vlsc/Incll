@@ -22,7 +22,6 @@ private:
 		size_t size_;
 		void* node_addr_;
 		uint64_t validity;
-		bool is_root;
 		char node_content_[0];
 
 		bool check_validity(){
@@ -35,6 +34,7 @@ private:
 	index last_flush;
 	size_t log_no;
 	size_t active_records;
+	void *root;
 	char *buf_;
 public:
 	static constexpr const size_t buf_size = (1ull << 34);
@@ -109,7 +109,6 @@ public:
 
 		lr->size_ = entry_size;
 		lr->node_addr_ = node_ptr;
-		lr->is_root = node->is_root();
 		lr->validity = entry_valid_magic;
 		std::memcpy(lr->node_content_, node_ptr, node_size);
 
@@ -126,7 +125,18 @@ public:
 	}
 
 	template <typename N>
-	void undo(N*& root){
+	void set_tree_root(N*& root_){
+		root_ = (N*)root;
+	}
+
+	void set_log_root(void* root_){
+		root = root_;
+	}
+
+
+	template <typename N>
+	void undo(N* rand_node){
+		(void)(rand_node);
 		DBGLOG("undo %lu records", active_records)
 
 		while(last_flush != curr){
@@ -146,36 +156,24 @@ public:
 				entry_size = lr->size_;
 			}
 
-			//get to be undone node
-			N* undo_node = (N*)lr->node_content_;
-#ifdef INCLL
-			//fix insert for modstate and version value
-			if(undo_node->inserting()){
-				auto *undo_ln = undo_node->to_leaf();
-				if(undo_ln->inserting()){
-					undo_ln->modstate_ = undo_ln->modstate_remove; //remove
-					undo_ln->clear_insert();
-				}
-
-			}
-
-#endif //incll
-
-
-			if(undo_node->locked()){
-				undo_node->unlock();
-			}
-
 			size_t copy_size = entry_size - sizeof(*lr);
 			std::memcpy(lr->node_addr_, (void*)lr->node_content_, copy_size);
 
-
+			//get to be undone node
 			N* node = (N*)lr->node_addr_;
-			if(lr->is_root){
-				if(!node->isleaf()){
-					//printf("change root addr to %p\n", lr->node_addr_);
-					root = node;
+#ifdef INCLL
+			//fix insert for modstate and version value
+			if(node->inserting()){
+				auto *ln = node->to_leaf();
+				if(ln->inserting()){
+					ln->modstate_ = ln->modstate_remove; //remove
+					ln->clear_insert();
 				}
+
+			}
+#endif //incll
+			if(node->locked()){
+				node->unlock();
 			}
 
 			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
@@ -192,8 +190,8 @@ public:
 	}
 
 	template <typename N>
-	void undo_next_prev(N*& root, index temp_flush){
-		(void)(root);
+	void undo_next_prev(N* rand_node, index temp_flush){
+		(void)(rand_node);
 
 		while(temp_flush != curr){
 			char *entry = (char*)buf_ + temp_flush;

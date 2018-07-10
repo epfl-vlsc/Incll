@@ -35,7 +35,7 @@ namespace GH{
 	void init_all(int nthreads, const char *testname);
 
 #ifdef GLOBAL_FLUSH
-	void advance_epoch(int tid);
+	void advance_epoch(int tid, void *root);
 #endif //gf
 
 };

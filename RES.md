@@ -50,6 +50,7 @@ possible explanation: if not found don't log for remove
 * logging+flush(node)+flush(tail)+incll(fields): 1618616
 * logging+flush(node)+flush(tail)+incll(fieldsv2): 1630636
 * logging+flush(node)+flush(tail)+incll(fieldsv3): 1629900
+* global log root keeping + above: 1638092
 
 
 
