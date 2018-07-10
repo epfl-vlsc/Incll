@@ -16,6 +16,7 @@
 #ifndef MASSTREE_NODEVERSION_HH
 #define MASSTREE_NODEVERSION_HH
 #include "compiler.hh"
+#include "incll_configs.hh"
 
 template <typename P>
 class nodeversion {
@@ -127,9 +128,16 @@ class nodeversion {
         acquire_fence();
     }
 
+#ifdef INCLL
     void clear_insert() {
     	v_ &= ~P::inserting_bit;
+    }
+
+    void clear_insert_extras() {
+		v_ &= ~(1U << 3);
+		v_ &= ~(1U << 4);
 	}
+#endif //incll
 
     nodeversion<P> mark_insert(nodeversion<P> current_version) {
         masstree_invariant((fence(), v_ == current_version.v_));

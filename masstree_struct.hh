@@ -135,7 +135,11 @@ class node_base : public make_nodeversion<P>::type {
 		this->record_node();
 	}
 #endif //incll
-
+	void fix_lock(){
+		if(this->locked()){
+			this->unlock();
+		}
+	}
 
     leaf_type* to_leaf(){
     	return static_cast<leaf_type*>(this);
@@ -482,9 +486,25 @@ class leaf : public node_base<P> {
     }
 
 #ifdef INCLL
+		void fix_insert(){
+			if(this->inserting()){
+				DBGLOG("fix_insert_state")
+				modstate_ = modstate_remove;
+				this->clear_insert();
+			}
+		}
 
+		void fix_all(){
+			//todo reason about this, temporary for comparisons
+			DBGLOG("fix_state")
+			this->fix_insert();
+			this->fix_lock();
+			not_logged=false;
+			//this->modstate_ = modstate_insert;
+			//this->undo_incll();
+		}
 
-	void print_cl0() const;
+		void print_cl0() const;
 #endif //incll
 
     static leaf<P>* make(int ksufsize, phantom_epoch_type phantom_epoch, threadinfo& ti) {

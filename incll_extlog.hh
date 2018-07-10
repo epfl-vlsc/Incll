@@ -161,20 +161,18 @@ public:
 
 			//get to be undone node
 			N* node = (N*)lr->node_addr_;
-#ifdef INCLL
-			//fix insert for modstate and version value
-			if(node->inserting()){
-				auto *ln = node->to_leaf();
-				if(ln->inserting()){
-					ln->modstate_ = ln->modstate_remove; //remove
-					ln->clear_insert();
-				}
 
+#ifdef INCLL
+			if(node->isleaf()){
+				//fix insert for modstate and version value + incll
+				node->to_leaf()->fix_all();
+			}else{
+				node->fix_lock();
 			}
+#else //incll
+			node->fix_lock();
 #endif //incll
-			if(node->locked()){
-				node->unlock();
-			}
+
 
 			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
 				(void*)node, node->loggedepoch,
