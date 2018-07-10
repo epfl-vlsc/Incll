@@ -55,15 +55,16 @@ void remove_t1(MockMasstree *mt){
 }
 
 void remove_insert_t1(MockMasstree *mt){
+	globalepoch=1;
 	mt->insert({4,5,10,11,3,12,13,14,6,7,8,9,1,2});
 
 	globalepoch=2;
 
-	print_tree(mt->get_root());
+	//print_tree(mt->get_root());
 
 	mt->remove({4});
 
-	print_tree(mt->get_root());
+	//print_tree(mt->get_root());
 
 }
 

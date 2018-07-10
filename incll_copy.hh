@@ -192,16 +192,26 @@ void print_diff_between_nodes(N* n1, N* n2){
 
 
 template <typename N>
-bool is_same_node(N* n1, N* n2){
+bool is_same_node(N* n1, N* n2, bool apply_incll=false){
 	bool is_same = false;
 
 	if(n1->isleaf() == n2->isleaf()){
 		if(n1->isleaf()){
-			is_same =
-				is_same_leaf(n1->to_leaf(), n2->to_leaf());
+			auto *ln1 = n1->to_leaf();
+						auto *ln2 = n2->to_leaf();
+			#ifdef INCLL
+						if(apply_incll){
+							ln1->undo_incll();
+							ln2->undo_incll();
+						}
+			#else //incll
+						(void)(apply_incll);
+			#endif //incll
+						is_same = is_same_leaf(ln1, ln2);
 		}else{
-			is_same =
-				is_same_internode(n1->to_internode(), n2->to_internode());
+			auto *in1 = n1->to_internode();
+			auto *in2 = n2->to_internode();
+			is_same = is_same_internode(in1, in2);
 		}
 	}
 	if(!is_same){
@@ -226,7 +236,7 @@ void clear_copy(void*& copy){
 
 
 template <typename N>
-bool is_same_tree(N* root, void* copy){
+bool is_same_tree(N* root, void* copy, bool apply_incll=false){
 	//Assumption: N is a node, copy is a filled vector of node pointers
 	std::queue<N*> q;
 	std::vector<N*> *v_copy = (std::vector<N*>*)copy;
@@ -241,7 +251,7 @@ bool is_same_tree(N* root, void* copy){
 		node = q.front();
 		q.pop();
 
-		if(!is_same_node(node, node_copy))
+		if(!is_same_node(node, node_copy, apply_incll))
 			return false;
 
 		get_children(q, node);

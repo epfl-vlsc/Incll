@@ -749,7 +749,7 @@ void kvtest_recovery(C &client){
 		assert(root_ptr == client.get_root());
 
 		//ensure same tree
-		bool is_same = is_same_tree(client.get_root(), copy);
+		bool is_same = is_same_tree(client.get_root(), copy, true);
 		printf("%s\n", is_same ? "is same":"not same - recovery failed");
 	}
 

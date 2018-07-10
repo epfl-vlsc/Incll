@@ -465,7 +465,7 @@ class leaf : public node_base<P> {
     	node_base<P>(true), modstate_(modstate_insert),
 		permutation_(permuter_type::make_empty()),
 		perm_cl0(permuter_type::make_empty()),
-		not_logged(true), ksuf_(), parent_(), iksuf_{} {
+		not_logged(false), ksuf_(), parent_(), iksuf_{} {
 #else //incll
 		node_base<P>(true), modstate_(modstate_insert),
 		permutation_(permuter_type::make_empty()),
@@ -502,6 +502,10 @@ class leaf : public node_base<P> {
 			not_logged=false;
 			//this->modstate_ = modstate_insert;
 			//this->undo_incll();
+		}
+
+		void undo_incll(){
+
 		}
 
 		void print_cl0() const;

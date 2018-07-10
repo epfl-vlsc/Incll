@@ -112,7 +112,8 @@ public:
 		Str key = make_key(int_key, key_buf);
 
 		cursor_type lp(table_, key);
-		lp.find_locked(*ti);
+		bool found = lp.find_locked(*ti);
+		if(found) lp.log_persistent();
 
 		lp.finish(-1, *ti);
     }
