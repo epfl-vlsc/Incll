@@ -262,7 +262,7 @@ bool is_same_leaf(LN* n1, LN* n2){
 template <typename IN>
 bool is_same_internode(IN* n1, IN* n2){
 #ifdef INCLL
-	return is_same_internode_fine_grained(n1, n2);
+	return is_same_mem(n1, n2);
 #else //incll
 	return is_same_mem(n1, n2);
 #endif //incll

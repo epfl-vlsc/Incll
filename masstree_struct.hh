@@ -452,7 +452,6 @@ class leaf : public node_base<P> {
 
 	ikey_type ikey0_[width];							//96 bytes
 
-
 	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
 	leaf<P>* prev_;										//8 bytes
 	node_base<P>* parent_;								//8 bytes
@@ -520,14 +519,15 @@ class leaf : public node_base<P> {
 
 		void save_cl0_insert(){
 			if(this->loggedepoch != globalepoch){
-				DBGLOG("save incll of %p insert ge:%lu le:%lu keys:%d",
+				DBGLOG("save incll insert to %p ge:%lu le:%lu keys:%d",
 						(void*)this, globalepoch, this->loggedepoch, this->number_of_keys())
 				perm_cl0 = permutation_;
 				cl0_idx = 0;
 				this->update_epochs(globalepoch);
 				not_logged = true;
 			}else if(not_logged){
-				DBGLOG("log node insert ge:%lu le:%lu", globalepoch, this->loggedepoch)
+				DBGLOG("log node insert to %p ge:%lu le:%lu",
+						(void*)this, globalepoch, this->loggedepoch)
 				not_logged=false;
 				GH::node_logger.record(this);
 				this->invalidate_cls();
@@ -538,7 +538,7 @@ class leaf : public node_base<P> {
 			assert(p<width); //todo disable
 
 			if(this->loggedepoch != globalepoch){
-				DBGLOG("save incll of %p update ge:%lu le:%lu keys:%d",
+				DBGLOG("save incll to %p update ge:%lu le:%lu keys:%d",
 						(void*)this, globalepoch, this->loggedepoch, this->number_of_keys())
 				if(p < KEY_MID){
 					lv_cl1.lv_ = this->lv_[p];
@@ -550,7 +550,8 @@ class leaf : public node_base<P> {
 				this->update_epochs(globalepoch);
 				not_logged = true;
 			}else if(this->not_logged){
-				DBGLOG("log node update")
+				DBGLOG("log node update to %p ge:%lu le:%lu",
+						(void*)this, globalepoch, this->loggedepoch)
 				not_logged=false;
 				GH::node_logger.record(this);
 				this->invalidate_cls();
@@ -571,7 +572,6 @@ class leaf : public node_base<P> {
 			this->fix_insert();
 			this->fix_lock();
 			this->not_logged=false;
-			//this->undo_incll();
 		}
 
 		void undo_incll(){
@@ -595,32 +595,7 @@ class leaf : public node_base<P> {
 				this->fix_all();
 			}
 
-			//this->invalidate_cls();
-			//invalidate cachelines, fix state
-			this->modstate_ = modstate_insert;
-			this->clear_insert_extras();
-		}
-
-		void undo_incll2(){
-			bool did_recovery = false;
-			if(cl0_idx != invalid_idx){
-				did_recovery = true;
-			}
-			if(lv_cl1.cl_idx != invalid_idx){
-				did_recovery = true;
-			}
-			if(lv_cl2.cl_idx != invalid_idx){
-				did_recovery = true;
-			}
-			if(did_recovery){
-				DBGLOG("undo_incll")
-				this->invalidate_cls();
-				this->update_epochs(globalepoch-1);
-				this->fix_all();
-			}
-
-			//this->invalidate_cls();
-			//invalidate cachelines, fix state
+			//reset to a common insert state
 			this->modstate_ = modstate_insert;
 			this->clear_insert_extras();
 		}
@@ -726,7 +701,6 @@ class leaf : public node_base<P> {
 
     inline leaf<P>* advance_to_key(const key_type& k, nodeversion_type& version,
                                    threadinfo& ti) const;
-
 
     leaf<P>* get_prev_safe(){
     	base_type *cn = this;

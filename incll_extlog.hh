@@ -84,12 +84,8 @@ public:
 	template <typename N>
 	void record(N* node){
 		DBGLOG("Recording node %p le %lu %s ge:%lu keys:%d curr:%lu lf:%lu",
-			(void*)node, node->loggedepoch,
-			(node->isleaf()) ? "leaf":"internode",
-			globalepoch,
-			node->number_of_keys(),
-			curr,
-			last_flush
+			(void*)node, node->loggedepoch, (node->isleaf()) ? "leaf":"internode",
+			globalepoch, node->number_of_keys(), curr, last_flush
 		)
 
 		void* node_ptr = (void*)node;
@@ -176,14 +172,9 @@ public:
 			node->fix_lock();
 #endif //incll
 
-
 			DBGLOG("Undoing node %p le %lu %s ge:%lu keys:%d curr:%lu lf:%lu",
-				(void*)node, node->loggedepoch,
-				(node->isleaf()) ? "leaf":"internode",
-				globalepoch,
-				node->number_of_keys(),
-				curr,
-				last_flush
+				(void*)node, node->loggedepoch, (node->isleaf()) ? "leaf":"internode",
+				globalepoch, node->number_of_keys(), curr, last_flush
 			)
 
 			last_flush += entry_size;
@@ -214,12 +205,8 @@ public:
 
 			N* node = (N*)lr->node_addr_;
 			DBGLOG("Undoing next prev node %p le %lu %s ge:%lu inkeys:%d curr:%lu lf:%lu",
-				(void*)node, node->loggedepoch,
-				(node->isleaf()) ? "leaf":"internode",
-				globalepoch,
-				node->number_of_keys(),
-				curr,
-				last_flush
+				(void*)node, node->loggedepoch, (node->isleaf()) ? "leaf":"internode",
+				globalepoch, node->number_of_keys(), curr, last_flush
 			)
 
 			//fix next and prev
