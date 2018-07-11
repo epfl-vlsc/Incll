@@ -131,6 +131,13 @@ test_incacheline: test_incacheline.o compiler.o misc.o libjson.a incll_globals.o
 tincacheline: test_incacheline
 	./test_incacheline
 
+
+test_minilv: test_minilv.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tminilv: test_minilv
+	./test_minilv
+
 # helpers
 get_avg:
 	python get_average.py
