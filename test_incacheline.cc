@@ -53,7 +53,6 @@ void update_incll(MockMasstree *mt){
 
 	void *copy = copy_tree(mt->get_root());
 
-
 	mt->insert(9, 8);
 
 	set_failed_epoch(2);
@@ -133,20 +132,14 @@ void split_log(MockMasstree *mt){
 
 	void *copy = copy_tree(mt->get_root());
 
-	print_tree(mt->get_root());
-
 	mt->insert(2, 2);
 	mt->insert({0});
 	mt->remove({5,7});
 	mt->insert({1,18,7});
 
-	print_tree(mt->get_root());
-
 	set_failed_epoch(2);
 
 	undo_all(mt);
-
-	print_tree(mt->get_root());
 
 	assert(is_same_tree(mt->get_root(), copy, true));
 }
@@ -205,7 +198,6 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 
 
 int main(){
-	/*
 	DO_EXPERIMENT(insert_incll)
 	DO_EXPERIMENT(update_incll)
 	DO_EXPERIMENT(insert_log)
@@ -214,8 +206,6 @@ int main(){
 	DO_EXPERIMENT(mix_log)
 	DO_EXPERIMENT(split_log)
 	DO_EXPERIMENT(kill_root_leaf)
-	*/
-
 	DO_EXPERIMENT(incll2)
 
 	return 0;

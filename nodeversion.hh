@@ -134,7 +134,11 @@ class nodeversion {
     }
 
     void clear_insert_extras() {
-		v_ &= 0xFFFF0000;
+    	//todo investigate this behavior
+		v_ &= ~P::vinsert_lowbit;
+		v_ &= ~(P::vinsert_lowbit << 1);
+		v_ &= ~(P::vinsert_lowbit << 2);
+		v_ &= ~(P::vinsert_lowbit << 3);
 	}
 #endif //incll
 
