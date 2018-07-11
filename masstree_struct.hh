@@ -109,6 +109,7 @@ class node_base : public make_nodeversion<P>::type {
     void print_node() const;
 
     void record_node(){
+    	REC_ASSERT(this->locked())
 		if(this->isleaf()){
 			this->to_leaf()->record_node();
 		}else{

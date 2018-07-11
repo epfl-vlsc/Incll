@@ -23,7 +23,7 @@ void assert_diff(std::string str, V v1, V v2){
 }
 
 template <typename LN>
-void compare_mem_contents_ln(LN* n1, LN* n2, size_t node_size){
+void print_mem_contents_ln(LN* n1, LN* n2, size_t node_size){
 	char* addr = (char*)&(n1->loggedepoch);
 	size_t skip_size = addr-(char*)n1 + sizeof(n1->loggedepoch);
 
@@ -54,7 +54,7 @@ void compare_mem_contents_ln(LN* n1, LN* n2, size_t node_size){
 
 
 template <typename LN>
-void compare_mem_contents_in(LN* n1, LN* n2, size_t node_size){
+void print_mem_contents_in(LN* n1, LN* n2, size_t node_size){
 	char* addr = (char*)&(n1->loggedepoch);
 	size_t skip_size = addr-(char*)n1 + sizeof(n1->loggedepoch);
 
@@ -84,7 +84,7 @@ void compare_mem_contents_in(LN* n1, LN* n2, size_t node_size){
 }
 
 template <typename LN>
-void compare_version_contents(LN* n1, LN* n2){
+void print_version_contents(LN* n1, LN* n2){
 	const char* format_str =
 		"%s lock:%u ins:%u spl:%u "
 		"del:%u cha:%u rt:%u\n";
@@ -105,13 +105,13 @@ void compare_version_contents(LN* n1, LN* n2){
 }
 
 template <typename IN>
-void find_in_difference(IN* n1, IN* n2){
+void print_in_difference(IN* n1, IN* n2){
 	size_t n1_size = n1->allocated_size();
 	size_t n2_size = n2->allocated_size();
 
 	assert_diff("size", n1_size, n2_size);
 	if(n1->version_value() != n2->version_value()){
-		compare_version_contents(n1, n2);
+		print_version_contents(n1, n2);
 	}
 	assert_diff("version", n1->version_value(), n2->version_value());
 	assert_diff("nkeys", n1->nkeys_, n2->nkeys_);
@@ -127,12 +127,12 @@ void find_in_difference(IN* n1, IN* n2){
 		assert_diff("child+1", n1->child_[n1->size()], n2->child_[n1->size()]);
 	}
 
-	compare_mem_contents_in(n1, n2, n1_size);
+	print_mem_contents_in(n1, n2, n1_size);
 }
 
 
 template <typename LN>
-void find_ln_difference(LN* n1, LN* n2){
+void print_ln_difference(LN* n1, LN* n2){
 	size_t n1_size = n1->allocated_size();
 	size_t n2_size = n2->allocated_size();
 
@@ -142,7 +142,7 @@ void find_ln_difference(LN* n1, LN* n2){
 	assert_diff("size", n1_size, n2_size);
 
 	if(n1->version_value() != n2->version_value()){
-		compare_version_contents(n1, n2);
+		print_version_contents(n1, n2);
 	}
 	assert_diff("version", n1->version_value(), n2->version_value());
 	//assert_diff("le", n1->loggedepoch, n2->loggedepoch);
@@ -167,7 +167,7 @@ void find_ln_difference(LN* n1, LN* n2){
 	}
 
 
-	compare_mem_contents_ln(n1, n2, n1_size);
+	print_mem_contents_ln(n1, n2, n1_size);
 }
 
 template <typename LN>
@@ -280,13 +280,12 @@ void print_diff_between_nodes(N* n1, N* n2){
 
 	//detailed comparison for leaf nodes
 	if(n1->isleaf() && n2->isleaf()){
-		find_ln_difference(n1->to_leaf(), n2->to_leaf());
+		print_ln_difference(n1->to_leaf(), n2->to_leaf());
 	}
 
 	//detailed comparison for internodes
 	if(!n1->isleaf() && !n2->isleaf()){
-		printf("\n\n\n\n\n\n");
-		find_in_difference(n1->to_internode(), n2->to_internode());
+		print_in_difference(n1->to_internode(), n2->to_internode());
 	}
 }
 
@@ -301,7 +300,7 @@ bool is_same_node(N* n1, N* n2, bool apply_incll=false){
 #ifdef INCLL
 		if(apply_incll){
 			ln1->undo_incll();
-			ln2->undo_incll();
+			ln2->undo_incll(); //todo incorrect fix later
 		}
 #else //incll
 		(void)(apply_incll);

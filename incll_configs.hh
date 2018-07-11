@@ -8,11 +8,15 @@
 //Debug Logging
 //#define DBG
 #ifdef DBG
+#define REC_ASSERT(cond) assert(cond);
 #define DBGLOG(f_, ...) \
 		printf(("At %s:%d " f_ "\n"), __FILE__, __LINE__, ##__VA_ARGS__);
 #else
+#define REC_ASSERT(cond)
 #define DBGLOG(f_, ...)
 #endif
+
+//------------------------------------------------------------------------------------
 
 //default epoch 16
 #define GL_FREQ 16

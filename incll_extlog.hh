@@ -163,7 +163,7 @@ public:
 
 #ifdef INCLL
 			if(node->isleaf()){
-				//fix insert for modstate and version value + incll
+				//fix insert for modstate and version value
 				node->to_leaf()->fix_all();
 			}else{
 				node->fix_lock();

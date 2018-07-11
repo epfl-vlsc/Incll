@@ -164,7 +164,7 @@ void kill_root_leaf(MockMasstree *mt){
 	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
-void incll2(MockMasstree *mt){
+void two_epochs(MockMasstree *mt){
 	mt->insert({9,5,1,3,2,4,6});
 	adv_epoch(mt);
 
@@ -206,7 +206,7 @@ int main(){
 	DO_EXPERIMENT(mix_log)
 	DO_EXPERIMENT(split_log)
 	DO_EXPERIMENT(kill_root_leaf)
-	DO_EXPERIMENT(incll2)
+	DO_EXPERIMENT(two_epochs)
 
 	return 0;
 }
