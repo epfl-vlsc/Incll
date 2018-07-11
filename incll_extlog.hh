@@ -83,11 +83,13 @@ public:
 
 	template <typename N>
 	void record(N* node){
-		DBGLOG("Recording node %p le %lu %s ge:%lu inkeys:%d",
+		DBGLOG("Recording node %p le %lu %s ge:%lu keys:%d curr:%lu lf:%lu",
 			(void*)node, node->loggedepoch,
 			(node->isleaf()) ? "leaf":"internode",
 			globalepoch,
-			(node->isleaf()) ? 0 : node->to_internode()->size()
+			node->number_of_keys(),
+			curr,
+			last_flush
 		)
 
 		void* node_ptr = (void*)node;
@@ -124,12 +126,13 @@ public:
 		sync_range(beg, end);
 	}
 
-	template <typename N>
-	void set_tree_root(N*& root_){
-		root_ = (N*)root;
+
+	void* get_tree_root(){
+		return root;
 	}
 
 	void set_log_root(void* root_){
+		DBGLOG("save root:%p for future", root_)
 		root = root_;
 	}
 
@@ -174,11 +177,13 @@ public:
 #endif //incll
 
 
-			DBGLOG("Undoing node %p le %lu %s ge:%lu inkeys:%d",
+			DBGLOG("Undoing node %p le %lu %s ge:%lu keys:%d curr:%lu lf:%lu",
 				(void*)node, node->loggedepoch,
 				(node->isleaf()) ? "leaf":"internode",
 				globalepoch,
-				(node->isleaf()) ? 0 : node->to_internode()->size()
+				node->number_of_keys(),
+				curr,
+				last_flush
 			)
 
 			last_flush += entry_size;
@@ -208,11 +213,13 @@ public:
 			}
 
 			N* node = (N*)lr->node_addr_;
-			DBGLOG("Undoing next prev node %p le %lu %s ge:%lu inkeys:%d",
+			DBGLOG("Undoing next prev node %p le %lu %s ge:%lu inkeys:%d curr:%lu lf:%lu",
 				(void*)node, node->loggedepoch,
 				(node->isleaf()) ? "leaf":"internode",
 				globalepoch,
-				(node->isleaf()) ? 0 : node->to_internode()->size()
+				node->number_of_keys(),
+				curr,
+				last_flush
 			)
 
 			//fix next and prev

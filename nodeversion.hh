@@ -134,8 +134,7 @@ class nodeversion {
     }
 
     void clear_insert_extras() {
-		v_ &= ~(1U << 3);
-		v_ &= ~(1U << 4);
+		v_ &= 0xFFFF0000;
 	}
 #endif //incll
 

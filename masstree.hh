@@ -72,6 +72,7 @@ class basic_table {
 
     inline node_type* root() const;
     inline node_type* fix_root();
+    inline void set_root(void* new_root);
 
     inline node_type*& root_assignable();
 

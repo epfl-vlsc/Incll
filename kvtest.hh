@@ -692,6 +692,7 @@ void kvtest_recovery(C &client){
 		copy = copy_tree(client.get_root());
 		assert(is_same_tree(client.get_root(), copy));
 		root_ptr = client.get_root();
+		DBGLOG("root addr %p ge: %lu", root_ptr, globalepoch);
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 	//end copy epoch 3----------------------------------------------------
@@ -731,7 +732,8 @@ void kvtest_recovery(C &client){
 
 	//Begin Undo epoch 3 ------------------------------------------------
 	if(client.id() == 0){
-		GH::node_logger.set_tree_root(client.get_root_assignable());
+		void* undo_root = GH::node_logger.get_tree_root();
+		client.set_root(undo_root);
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 
@@ -746,6 +748,8 @@ void kvtest_recovery(C &client){
 
 	if(client.id() == 0){
 		//ensure same root
+		DBGLOG("root addr %p ge: %lu", (void*)client.get_root(), globalepoch);
+
 		assert(root_ptr == client.get_root());
 
 		//ensure same tree

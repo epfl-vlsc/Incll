@@ -337,7 +337,11 @@ struct kvtest_client {
     typedef typename T::node_type node_type;
 
     node_type* get_root(){
-    	return table_->table().fix_root();
+    	return table_->table().root();
+    }
+
+    void set_root(void* new_root){
+    	table_->table().set_root(new_root);
     }
 
     node_type*& get_root_assignable(){
