@@ -12,64 +12,181 @@ volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
 kvtimestamp_t initial_timestamp;
 
-
 #define N_OPS 80
 #define INTERVAL 8
 
+void adv_epoch(MockMasstree *mt){
+	globalepoch++;
+	GH::node_logger.set_log_root(mt->get_root());
+	printf("new ge:%lu\n", globalepoch);
+}
 
-void insert_t1(MockMasstree *mt){
-	globalepoch=2;
+void undo_all(MockMasstree *mt){
+	void *undo_root = GH::node_logger.get_tree_root();
+	mt->set_root(undo_root);
+	auto last_flush = GH::node_logger.get_last_flush();
+	GH::node_logger.undo(mt->get_root());
+	GH::node_logger.undo_next_prev(mt->get_root(), last_flush);
+}
+
+void set_failed_epoch(mrcu_epoch_type fe){
+	failedepoch = fe;
+	printf("fe:%lu\n", failedepoch);
+}
+
+void insert_incll(MockMasstree *mt){
+	mt->insert({9,5,1,3,7,2,4,6});
+	adv_epoch(mt);
+
 	void *copy = copy_tree(mt->get_root());
 
-	mt->insert({3});
-	failedepoch=2;
-	globalepoch=3;
+	mt->insert({8});
 
+	set_failed_epoch(2);
 
-	assert(is_same_tree(mt->get_root(), copy));
-	globalepoch=4; //because forced recovery
-
-	mt->insert({4, 5, 6});
-	failedepoch=4;
-	globalepoch=5;
-
-	GH::node_logger.undo(mt->get_root_assignable());
-	assert(is_same_tree(mt->get_root(), copy));
-
+	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
+void update_incll(MockMasstree *mt){
+	mt->insert({9,5,1,3,7,2,4,6});
+	adv_epoch(mt);
 
-void remove_t1(MockMasstree *mt){
-	mt->insert({1,2,3,4,5,6,7,8});
-
-	globalepoch=2;
 	void *copy = copy_tree(mt->get_root());
 
-	mt->insert({0, 9});
-	mt->remove({4, 5, 6});
-	failedepoch=2;
-	globalepoch=3;
 
-	GH::node_logger.undo(mt->get_root_assignable());
-	assert(is_same_tree(mt->get_root(), copy));
+	mt->insert(9, 8);
+
+	set_failed_epoch(2);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
-void remove_insert_t1(MockMasstree *mt){
-	globalepoch=1;
-	mt->insert({4,5,10,11,3,12,13,14,6,7,8,9,1,2});
+void insert_log(MockMasstree *mt){
+	mt->insert({9,5,1,3,7,2,4,6});
+	adv_epoch(mt);
 
-	globalepoch=2;
+	void *copy = copy_tree(mt->get_root());
 
-	//print_tree(mt->get_root());
+	mt->insert({8, 0});
 
-	mt->remove({4});
+	set_failed_epoch(2);
 
-	//print_tree(mt->get_root());
+	undo_all(mt);
 
+	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
-void remove_insert_multinode_t1(){
+void update_log(MockMasstree *mt){
+	mt->insert({9,5,1,3,7,2,4,6});
+	adv_epoch(mt);
 
+	void *copy = copy_tree(mt->get_root());
+
+	mt->insert({8});
+	mt->insert(8, 6);
+
+	set_failed_epoch(2);
+
+	undo_all(mt);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
+}
+
+void remove_log(MockMasstree *mt){
+	mt->insert({9,5,1,3,7,2,4,6});
+	adv_epoch(mt);
+
+	void *copy = copy_tree(mt->get_root());
+
+	mt->remove({9});
+
+	set_failed_epoch(2);
+
+	undo_all(mt);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
+}
+
+
+void mix_log(MockMasstree *mt){
+	mt->insert({9,5,1,3,7,2,4,6});
+	adv_epoch(mt);
+
+	void *copy = copy_tree(mt->get_root());
+
+	mt->insert({0});
+	mt->remove({9});
+
+	set_failed_epoch(2);
+
+	undo_all(mt);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
+}
+
+
+void split_log(MockMasstree *mt){
+	for(int i=2;i<18;++i){
+		mt->insert(i, i + 2);
+	}
+	adv_epoch(mt);
+
+	void *copy = copy_tree(mt->get_root());
+
+	print_tree(mt->get_root());
+
+	mt->insert(2, 2);
+	mt->insert({0});
+	mt->remove({5,7});
+	mt->insert({1,18,7});
+
+	print_tree(mt->get_root());
+
+	set_failed_epoch(2);
+
+	undo_all(mt);
+
+	print_tree(mt->get_root());
+
+	assert(is_same_tree(mt->get_root(), copy, true));
+}
+
+void kill_root_leaf(MockMasstree *mt){
+	for(int i=0;i<24;++i){
+		mt->insert(i, i + 2);
+	}
+	adv_epoch(mt);
+
+	void *copy = copy_tree(mt->get_root());
+
+	for(int i=0;i<13;++i){
+		mt->remove(i);
+	}
+	mt->insert({36});
+
+	set_failed_epoch(2);
+
+	undo_all(mt);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
+}
+
+void incll2(MockMasstree *mt){
+	mt->insert({9,5,1,3,2,4,6});
+	adv_epoch(mt);
+
+	void *copy = copy_tree(mt->get_root());
+
+	mt->insert({0,8});
+	adv_epoch(mt);
+
+	mt->insert({7});
+
+	set_failed_epoch(3);
+
+	undo_all(mt);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
 void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
@@ -88,9 +205,18 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 
 
 int main(){
-	//DO_EXPERIMENT(insert_t1)
-	//DO_EXPERIMENT(remove_t1)
-	DO_EXPERIMENT(remove_insert_t1)
+	/*
+	DO_EXPERIMENT(insert_incll)
+	DO_EXPERIMENT(update_incll)
+	DO_EXPERIMENT(insert_log)
+	DO_EXPERIMENT(update_log)
+	DO_EXPERIMENT(remove_log)
+	DO_EXPERIMENT(mix_log)
+	DO_EXPERIMENT(split_log)
+	DO_EXPERIMENT(kill_root_leaf)
+	*/
+
+	DO_EXPERIMENT(incll2)
 
 	return 0;
 }

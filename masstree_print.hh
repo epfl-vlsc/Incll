@@ -20,6 +20,9 @@
 #include <iostream>
 #include <inttypes.h>
 
+typedef uint64_t mrcu_epoch_type;
+extern volatile mrcu_epoch_type globalepoch;
+
 namespace Masstree {
 
 class key_unparse_printable_string {
@@ -182,6 +185,7 @@ void internode<P>::print(FILE* f, const char* prefix, int depth, int kdepth) con
 template <typename P>
 void leaf<P>::print_node() const
 {
+	printf("ge:%lu--------------------------------\n", globalepoch);
     typename node_base<P>::nodeversion_type v;
     permuter_type perm;
     const char *prefix = "";
@@ -276,6 +280,7 @@ void leaf<P>::print_cl0() const{
 template <typename P>
 void internode<P>::print_node() const
 {
+	printf("ge:%lu--------------------------------\n", globalepoch);
 	const char *prefix = "";
 	int indent = 0;
 

@@ -85,13 +85,15 @@ public:
     }
 
     void insert(uint64_t int_key, uint64_t int_val){
+    	DBGLOG("insert %lu", int_key)
+
     	uint64_t key_buf;
 
 		Str key = make_key(int_key, key_buf);
 
 		cursor_type lp(table_, key);
-		bool found = lp.find_insert(*ti);
-		always_assert(!found, "keys should all be unique");
+		lp.find_insert(*ti);
+
 
 		lp.value() = int_val;
 
@@ -101,12 +103,12 @@ public:
 
     void insert(const std::initializer_list<uint64_t>& int_keys){
     	for(auto int_key: int_keys){
-    		DBGLOG("insert %lu", int_key)
     		insert(int_key, int_key+1);
     	}
     }
 
     void remove(uint64_t int_key){
+    	DBGLOG("remove %lu", int_key)
     	uint64_t key_buf;
 
 		Str key = make_key(int_key, key_buf);
@@ -120,14 +122,17 @@ public:
 
     void remove(const std::initializer_list<uint64_t>& int_keys){
 		for(auto int_key: int_keys){
-			DBGLOG("remove %lu", int_key)
 			remove(int_key);
 		}
 	}
 
     node_type* get_root(){
-    	return table_.fix_root();
+    	return table_.root();
     }
+
+    void set_root(void *new_root){
+		return table_.set_root(new_root);
+	}
 
     node_type*& get_root_assignable(){
 		return table_.root_assignable();
