@@ -55,6 +55,8 @@ possible explanation: if not found don't log for remove
 ## incll recovery works
 * lg+flush(node,tail)+incll(insert,update)+no recover immediate: 1845163
 
+## byte leaf 14 lw keys
+* lg+flush(node,tail)+incll(insert,update)+no recover immediate: 1902350
 
 
 
