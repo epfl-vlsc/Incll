@@ -62,8 +62,9 @@ inline bool basic_table<P>::get(Str key, value_type &value,
 {
     unlocked_tcursor<P> lp(*this, key);
     bool found = lp.find_unlocked(ti);
-    if (found)
-        value = lp.value();
+    if (found){
+    	value = lp.value();
+    }
     return found;
 }
 

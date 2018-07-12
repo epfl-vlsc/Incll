@@ -241,6 +241,7 @@ void leaf<P>::print_node() const
         	assert(false);
         }else {
             typename P::value_type tvx = lv.value();
+            printf("lv:%p", &lv_[p]);
             P::value_print_type::print(tvx, stdout, prefix, 2, Str(keybuf, l), initial_timestamp, xbuf);
         }
     }
@@ -261,9 +262,8 @@ template <typename P>
 void leaf<P>::incll_lv_::print() const{
 	if(cl_idx != invalid_idx){
 		typename P::value_type tvx = lv_.value();
-		std::cout << "incll lv:" << tvx
-				<< " idx:" << cl_idx
-				<< " le:" << loggedepoch << std::endl;
+		std::cout << "incll lv:" << tvx;
+		printf(" idx:%d le:%u\n", cl_idx, loggedepoch);
 	}
 }
 

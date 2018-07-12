@@ -6,7 +6,7 @@
 #pragma once
 
 //Debug Logging
-//#define DBG
+#define DBG
 #ifdef DBG
 #define REC_ASSERT(cond) assert(cond);
 #define DBGLOG(f_, ...) \
