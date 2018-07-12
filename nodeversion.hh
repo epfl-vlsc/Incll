@@ -133,13 +133,9 @@ class nodeversion {
     	v_ &= ~P::inserting_bit;
     }
 
-    void clear_insert_extras() {
-    	//todo investigate this behavior
-		v_ &= ~P::vinsert_lowbit;
-		v_ &= ~(P::vinsert_lowbit << 1);
-		v_ &= ~(P::vinsert_lowbit << 2);
-		v_ &= ~(P::vinsert_lowbit << 3);
-	}
+    void clear_unlock(){
+    	v_ &= ~P::lock_bit;
+    }
 #endif //incll
 
     nodeversion<P> mark_insert(nodeversion<P> current_version) {

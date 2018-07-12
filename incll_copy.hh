@@ -300,7 +300,7 @@ bool is_same_node(N* n1, N* n2, bool apply_incll=false){
 #ifdef INCLL
 		if(apply_incll){
 			ln1->undo_incll();
-			ln2->undo_incll(); //todo incorrect fix later
+			ln2->fix_all(); //todo check here, make sure it is necessary
 		}
 #else //incll
 		(void)(apply_incll);
@@ -310,8 +310,6 @@ bool is_same_node(N* n1, N* n2, bool apply_incll=false){
 		auto *in1 = n1->to_internode();
 		auto *in2 = n2->to_internode();
 		is_same = is_same_internode(in1, in2);
-	}else{
-		printf("noooooooooooo\n");
 	}
 
 	if(!is_same){

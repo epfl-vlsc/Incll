@@ -145,7 +145,7 @@ class node_base : public make_nodeversion<P>::type {
 #endif //incll
 	void fix_lock(){
 		if(this->locked()){
-			this->unlock();
+			this->clear_unlock();
 		}
 	}
 
@@ -560,7 +560,7 @@ class leaf : public node_base<P> {
 		}
 
 		void fix_insert(){
-			if(this->inserting()){
+			if(this->inserting() && modstate_ == modstate_insert){
 				DBGLOG("fix_insert_state")
 				modstate_ = modstate_remove;
 				this->clear_insert();
@@ -568,11 +568,9 @@ class leaf : public node_base<P> {
 		}
 
 		void fix_all(){
-			//todo reason about this, temporary for comparisons
 			DBGLOG("fix_state")
 			this->fix_insert();
 			this->fix_lock();
-			this->not_logged=false;
 		}
 
 		void undo_incll(){
@@ -595,10 +593,6 @@ class leaf : public node_base<P> {
 				this->update_epochs(globalepoch-1);
 				this->fix_all();
 			}
-
-			//reset to a common insert state
-			this->modstate_ = modstate_insert;
-			this->clear_insert_extras();
 		}
 
 		void update_epochs(mrcu_epoch_type e){

@@ -35,7 +35,7 @@ public:
 class MockMasstree {
 public:
     static constexpr uint64_t insert_bound = 0xfffff; //0xffffff;
-    struct table_params : public Masstree::nodeparams<12,11> {
+    struct table_params : public Masstree::nodeparams<KEY_LW,15> {
         typedef uint64_t value_type;
         typedef Masstree::value_print<value_type> value_print_type;
         typedef threadinfo threadinfo_type;

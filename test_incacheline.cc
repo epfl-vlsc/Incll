@@ -18,6 +18,7 @@ kvtimestamp_t initial_timestamp;
 void adv_epoch(MockMasstree *mt){
 	globalepoch++;
 	GH::node_logger.set_log_root(mt->get_root());
+	GH::node_logger.checkpoint();
 	printf("new ge:%lu\n", globalepoch);
 }
 
@@ -164,14 +165,32 @@ void kill_root_leaf(MockMasstree *mt){
 	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
-void two_epochs(MockMasstree *mt){
+void two_incll_epochs(MockMasstree *mt){
 	mt->insert({9,5,1,3,2,4,6});
+	adv_epoch(mt);
+
+	mt->insert({0});
 	adv_epoch(mt);
 
 	void *copy = copy_tree(mt->get_root());
 
+	mt->insert({7});
+
+	set_failed_epoch(3);
+
+	undo_all(mt);
+
+	assert(is_same_tree(mt->get_root(), copy, true));
+}
+
+void two_log_epochs(MockMasstree *mt){
+	mt->insert({9,5,1,3,2,4,6});
+	adv_epoch(mt);
+
 	mt->insert({0,8});
 	adv_epoch(mt);
+
+	void *copy = copy_tree(mt->get_root());
 
 	mt->insert({7});
 
@@ -206,7 +225,7 @@ int main(){
 	DO_EXPERIMENT(mix_log)
 	DO_EXPERIMENT(split_log)
 	DO_EXPERIMENT(kill_root_leaf)
-	DO_EXPERIMENT(two_epochs)
-
+	DO_EXPERIMENT(two_incll_epochs)
+	DO_EXPERIMENT(two_log_epochs)
 	return 0;
 }
