@@ -32,9 +32,6 @@ bool tcursor<P>::find_insert(threadinfo& ti)
     if (state_){
     	//case update existing value
     	Ifincll(n_->save_cl1_2_update(kx_.p))
-
-		n_->print_node();
-
     	//Ifincll(n_->log_persistent())
     	return true;
     }

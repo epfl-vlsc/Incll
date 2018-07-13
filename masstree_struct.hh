@@ -569,15 +569,20 @@ class leaf : public node_base<P> {
 			}
 		}
 
+		void reset_state(){
+			this->clear_version_counter_bits();
+			modstate_ = modstate_insert;
+			this->clear_unlock();
+		}
+
 		void fix_all(){
 			DBGLOG("fix_state")
-			this->fix_insert();
-			this->fix_lock();
+			//this->fix_insert();
+			//this->fix_lock();
+			this->reset_state();
 		}
 
 		void undo_incll(){
-			this->print_node();
-
 			bool did_recovery = false;
 			if(cl0_idx != invalid_idx && this->loggedepoch == failedepoch){
 				permutation_ = perm_cl0;
@@ -595,7 +600,6 @@ class leaf : public node_base<P> {
 				DBGLOG("undo_incll")
 				this->invalidate_cls();
 				this->update_epochs(globalepoch-1);
-				this->fix_all();
 			}
 		}
 
