@@ -55,6 +55,8 @@ public:
 		curr = 0;
 		last_flush = 0;
 		active_records = 0;
+		if(buf_)
+			free(buf_);
 		buf_ = nullptr;
 	}
 

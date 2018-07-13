@@ -5,6 +5,12 @@
 #include "incll_trav.hh"
 #include "incll_copy.hh"
 
+#include <set>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+
 __thread typename MockMasstree::table_params::threadinfo_type* MockMasstree::ti = nullptr;
 volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
@@ -19,7 +25,7 @@ void adv_epoch(MockMasstree *mt){
 	globalepoch++;
 	GH::node_logger.set_log_root(mt->get_root());
 	GH::node_logger.checkpoint();
-	printf("new ge:%lu\n", globalepoch);
+	DBGLOG("new ge:%lu", globalepoch);
 }
 
 void undo_all(MockMasstree *mt){
@@ -32,7 +38,7 @@ void undo_all(MockMasstree *mt){
 
 void set_failed_epoch(mrcu_epoch_type fe){
 	failedepoch = fe;
-	printf("fe:%lu\n", failedepoch);
+	DBGLOG("fe:%lu", failedepoch);
 }
 
 void insert_incll(MockMasstree *mt){
@@ -201,9 +207,153 @@ void two_log_epochs(MockMasstree *mt){
 	assert(is_same_tree(mt->get_root(), copy, true));
 }
 
+//for combination test----------------------------------------------------------------
+typedef	std::vector<uint64_t> vi;
+typedef std::vector<vi> vvi;
+
+
+vvi cart_product (const vvi& v) {
+	vvi s = {{}};
+    for (auto& u : v) {
+    	vvi r;
+        for (auto& x : s) {
+            for (auto y : u) {
+                r.push_back(x);
+                r.back().push_back(y);
+            }
+        }
+        s.swap(r);
+    }
+    return s;
+}
+
+struct CartesianProduct{
+	vvi res;
+
+	CartesianProduct(int l=6, int d=3){
+		vvi vec;
+		for(int i=0;i<l;++i){
+			vi vec_entry;
+			for(int j=0;j<d;++j){
+				vec_entry.push_back(j);
+			}
+			vec.push_back(vec_entry);
+		}
+		res = cart_product(vec);
+	}
+
+	void print(){
+		for(auto v:res){
+			for (auto e:v){
+				std::cout << e << " ";
+			}std::cout << std::endl;
+		}
+	}
+};
+
+vi insert_v;
+vi remove_v;
+
+std::string op_names[3] = {"get",
+		"ins",
+		"rem"
+};
+
+enum{
+	get_op,
+	ins_op,
+	rem_op
+};
+
+void print_args(vi& argv){
+	int i=0;
+	std::cout << "Args ";
+	for(auto v:argv){
+		if(i%3 == 0) std::cout << "new epoch ";
+		i++;
+		std::cout << op_names[v] << " ";
+	}std::cout << std::endl;
+
+}
+
+void do_op(MockMasstree *mt, int i, int idx){
+	switch(i){
+	case 0:
+		mt->remove({remove_v[idx]});
+		break;
+	case 1:
+		mt->remove({remove_v[idx]});
+		break;
+	case 2:
+		mt->insert({insert_v[idx]});
+		break;
+	default:
+		assert(0);
+		break;
+	}
+}
+
+void exhaustive_testing(vi& argv){
+	print_args(argv);
+
+	auto mt = new MockMasstree();
+	globalepoch=1;
+	mt->thread_init(0);
+	GH::node_logger.init(0);
+
+	//init tree
+	for(auto e:remove_v){
+		mt->insert({e});
+	}
+
+	//function region
+	int idx = 0;
+	adv_epoch(mt);
+	do_op(mt, argv[0], idx++);
+	do_op(mt, argv[1], idx++);
+	do_op(mt, argv[2], idx++);
+
+	adv_epoch(mt);
+	void *copy = copy_tree(mt->get_root());
+	do_op(mt, argv[3], idx++);
+	do_op(mt, argv[4], idx++);
+	do_op(mt, argv[5], idx++);
+
+	set_failed_epoch(3);
+	undo_all(mt);
+	assert(is_same_tree(mt->get_root(), copy, true));
+
+	GH::node_logger.destroy();
+}
+
+void init_tree(int init_size){
+	for(int i=0;i<init_size;++i){
+		insert_v.push_back(rand());
+		remove_v.push_back(rand());
+	}
+}
+
+void do_exhaustive_testing(int init_size){
+	CartesianProduct cp;
+
+	init_tree(init_size);
+
+	for(auto v:cp.res){
+		exhaustive_testing(v);
+	}
+}
+
+void do_exhaustive_sweep(){
+	for(int i=20;i<1000;i+=50){
+		printf("init tree size: around %d----\n", i);
+		do_exhaustive_testing(i);
+	}
+}
+
 void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 	auto mt = new MockMasstree();
 	mt->thread_init(0);
+	globalepoch=1;
 	GH::node_logger.init(0);
 
 	printf("%s\n", (fnc_name + " begin").c_str());
@@ -227,5 +377,9 @@ int main(){
 	DO_EXPERIMENT(kill_root_leaf)
 	DO_EXPERIMENT(two_incll_epochs)
 	DO_EXPERIMENT(two_log_epochs)
+
+
+	do_exhaustive_sweep();
+
 	return 0;
 }
