@@ -354,6 +354,7 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 	auto mt = new MockMasstree();
 	mt->thread_init(0);
 	globalepoch=1;
+	failedepoch=0;
 	GH::node_logger.init(0);
 
 	printf("%s\n", (fnc_name + " begin").c_str());
@@ -367,6 +368,7 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 
 
 int main(){
+
 	DO_EXPERIMENT(insert_incll)
 	DO_EXPERIMENT(update_incll)
 	DO_EXPERIMENT(insert_log)
@@ -377,7 +379,6 @@ int main(){
 	DO_EXPERIMENT(kill_root_leaf)
 	DO_EXPERIMENT(two_incll_epochs)
 	DO_EXPERIMENT(two_log_epochs)
-
 
 	do_exhaustive_sweep();
 

@@ -584,15 +584,15 @@ class leaf : public node_base<P> {
 
 		void undo_incll(){
 			bool did_recovery = false;
-			if(cl0_idx != invalid_idx && this->loggedepoch == failedepoch){
+			if(this->loggedepoch == failedepoch && cl0_idx != invalid_idx){
 				permutation_ = perm_cl0;
 				did_recovery = true;
 			}
-			if(lv_cl1.cl_idx != invalid_idx && lv_cl1.loggedepoch == failedepoch){
+			if(lv_cl1.loggedepoch == failedepoch && lv_cl1.cl_idx != invalid_idx){
 				lv_[lv_cl1.cl_idx] = lv_cl1.lv_;
 				did_recovery = true;
 			}
-			if(lv_cl2.cl_idx != invalid_idx && lv_cl2.loggedepoch == failedepoch){
+			if(lv_cl2.loggedepoch == failedepoch && lv_cl2.cl_idx != invalid_idx){
 				lv_[lv_cl2.cl_idx] = lv_cl2.lv_;
 				did_recovery = true;
 			}
