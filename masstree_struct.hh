@@ -536,7 +536,7 @@ class leaf : public node_base<P> {
 		}
 
 		void save_cl1_2_update(int8_t p){
-			assert(p<width); //todo disable
+			REC_ASSERT(p<width);
 
 			if(this->loggedepoch != globalepoch){
 				DBGLOG("save incll to %p update ge:%lu le:%lu keys:%d",
@@ -583,30 +583,72 @@ class leaf : public node_base<P> {
 		}
 
 		void undo_incll(){
-			bool did_recovery = false;
+			//assume only one cacheline is active at a given time
 			if(this->loggedepoch == failedepoch && cl0_idx != invalid_idx){
-				permutation_ = perm_cl0;
-				did_recovery = true;
+				int i = GH::bucket_locks.lock(this);
+				recover_cl0();
+				recover_final();
+				GH::bucket_locks.unlock(i);
+				return;
 			}
 			if(lv_cl1.loggedepoch == failedepoch && lv_cl1.cl_idx != invalid_idx){
-				lv_[lv_cl1.cl_idx] = lv_cl1.lv_;
-				did_recovery = true;
+				int i = GH::bucket_locks.lock(this);
+				recover_cl1();
+				recover_final();
+				GH::bucket_locks.unlock(i);
+				return;
 			}
 			if(lv_cl2.loggedepoch == failedepoch && lv_cl2.cl_idx != invalid_idx){
-				lv_[lv_cl2.cl_idx] = lv_cl2.lv_;
-				did_recovery = true;
-			}
-			if(did_recovery){
-				DBGLOG("undo_incll")
-				this->invalidate_cls();
-				this->update_epochs(globalepoch-1);
+				int i = GH::bucket_locks.lock(this);
+				recover_cl2();
+				recover_final();
+				GH::bucket_locks.unlock(i);
+				return;
 			}
 		}
 
-		void lazy_recovery(){
-			int i = GH::bucket_locks.lock(this);
-			this->undo_incll();
-			GH::bucket_locks.unlock(i);
+		void recover_cl0(){
+			permutation_ = perm_cl0;
+		}
+
+		void recover_cl1(){
+			lv_[lv_cl1.cl_idx] = lv_cl1.lv_;
+		}
+
+		void recover_cl2(){
+			lv_[lv_cl2.cl_idx] = lv_cl2.lv_;
+		}
+
+		void recover_final(){
+			DBGLOG("undo_incll")
+			this->invalidate_cls();
+			this->update_epochs(globalepoch-1);
+		}
+
+		void lazy_recovery(mrcu_epoch_type fe){
+			//assume only one cacheline is active at a given time
+
+			if(this->loggedepoch == fe && cl0_idx != invalid_idx){
+				int i = GH::bucket_locks.lock(this);
+				recover_cl0();
+				recover_final();
+				GH::bucket_locks.unlock(i);
+				return;
+			}
+			if(lv_cl1.loggedepoch == fe && lv_cl1.cl_idx != invalid_idx){
+				int i = GH::bucket_locks.lock(this);
+				recover_cl1();
+				recover_final();
+				GH::bucket_locks.unlock(i);
+				return;
+			}
+			if(lv_cl2.loggedepoch == fe && lv_cl2.cl_idx != invalid_idx){
+				int i = GH::bucket_locks.lock(this);
+				recover_cl2();
+				recover_final();
+				GH::bucket_locks.unlock(i);
+				return;
+			}
 		}
 
 		void update_epochs(mrcu_epoch_type e){

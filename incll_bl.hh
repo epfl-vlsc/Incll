@@ -5,7 +5,7 @@
 
 #include "incll_configs.hh"
 
-#define BUCKET_LOCKS_SIZE 2000
+#define BUCKET_LOCKS_SIZE 10000
 
 class BucketLocks{
 	pthread_mutex_t bucket_locks[BUCKET_LOCKS_SIZE];
