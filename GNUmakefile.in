@@ -107,6 +107,12 @@ test_gf: test_gf.o incll_globals.o
 tgf: test_gf
 	./test_gf
 	
+test_minilv: test_minilv.o incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tminilv: test_minilv
+	./test_minilv
+	
 test_simplemt: test_simplemt.o compiler.o misc.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 

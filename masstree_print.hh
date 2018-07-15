@@ -68,6 +68,17 @@ class value_print<uint64_t> {
     }
 };
 
+template <>
+class value_print<uint64_t*> {
+  public:
+    static void print(uint64_t* value, FILE* f, const char* prefix,
+                      int indent, Str key, kvtimestamp_t,
+                      char* suffix) {
+        fprintf(f, "%s%*s%.*s = %" PRIu64 "%s\n",
+                prefix, indent, "", key.len, key.s, *value, suffix);
+    }
+};
+
 template <typename P>
 void leaf<P>::print(FILE *f, const char *prefix, int depth, int kdepth) const
 {

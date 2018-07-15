@@ -60,7 +60,7 @@ void update_incll(MockMasstree *mt){
 
 	void *copy = copy_tree(mt->get_root());
 
-	mt->insert(9, 8);
+	mt->insert(9, new uint64_t(8));
 
 	set_failed_epoch(2);
 
@@ -89,7 +89,7 @@ void update_log(MockMasstree *mt){
 	void *copy = copy_tree(mt->get_root());
 
 	mt->insert({8});
-	mt->insert(8, 6);
+	mt->insert(8, new uint64_t(3));
 
 	set_failed_epoch(2);
 
@@ -133,13 +133,13 @@ void mix_log(MockMasstree *mt){
 
 void split_log(MockMasstree *mt){
 	for(int i=2;i<18;++i){
-		mt->insert(i, i + 2);
+		mt->insert(i, new uint64_t(i + 2));
 	}
 	adv_epoch(mt);
 
 	void *copy = copy_tree(mt->get_root());
 
-	mt->insert(2, 2);
+	mt->insert(2, new uint64_t(21));
 	mt->insert({0});
 	mt->remove({5,7});
 	mt->insert({1,18,7});
@@ -153,7 +153,7 @@ void split_log(MockMasstree *mt){
 
 void kill_root_leaf(MockMasstree *mt){
 	for(int i=0;i<24;++i){
-		mt->insert(i, i + 2);
+		mt->insert(i, new uint64_t(i + 2));
 	}
 	adv_epoch(mt);
 
@@ -350,6 +350,7 @@ void do_exhaustive_sweep(){
 	}
 }
 
+
 void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 	auto mt = new MockMasstree();
 	mt->thread_init(0);
@@ -370,7 +371,6 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 
 
 int main(){
-
 	DO_EXPERIMENT(insert_incll)
 	DO_EXPERIMENT(update_incll)
 	DO_EXPERIMENT(insert_log)
