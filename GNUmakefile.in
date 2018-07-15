@@ -94,6 +94,12 @@ test_barrier: test_barrier.o incll_globals.o
 
 tbarrier: test_barrier
 	./test_barrier
+	
+test_bl: test_bl.o incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tbl: test_bl
+	./test_bl
 
 test_gf: test_gf.o incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
