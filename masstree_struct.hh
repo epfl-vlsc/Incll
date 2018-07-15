@@ -583,22 +583,26 @@ class leaf : public node_base<P> {
 		}
 
 		void undo_incll(){
+			undo_incll(failedepoch);
+		}
+
+		void undo_incll(mrcu_epoch_type fe){
 			//assume only one cacheline is active at a given time
-			if(this->loggedepoch == failedepoch && cl0_idx != invalid_idx){
+			if(this->loggedepoch == fe && cl0_idx != invalid_idx){
 				int i = GH::bucket_locks.lock(this);
 				recover_cl0();
 				recover_final();
 				GH::bucket_locks.unlock(i);
 				return;
 			}
-			if(lv_cl1.loggedepoch == failedepoch && lv_cl1.cl_idx != invalid_idx){
+			if(lv_cl1.loggedepoch == fe && lv_cl1.cl_idx != invalid_idx){
 				int i = GH::bucket_locks.lock(this);
 				recover_cl1();
 				recover_final();
 				GH::bucket_locks.unlock(i);
 				return;
 			}
-			if(lv_cl2.loggedepoch == failedepoch && lv_cl2.cl_idx != invalid_idx){
+			if(lv_cl2.loggedepoch == fe && lv_cl2.cl_idx != invalid_idx){
 				int i = GH::bucket_locks.lock(this);
 				recover_cl2();
 				recover_final();
@@ -626,28 +630,8 @@ class leaf : public node_base<P> {
 		}
 
 		void lazy_recovery(mrcu_epoch_type fe){
-			//assume only one cacheline is active at a given time
-
-			if(this->loggedepoch == fe && cl0_idx != invalid_idx){
-				int i = GH::bucket_locks.lock(this);
-				recover_cl0();
-				recover_final();
-				GH::bucket_locks.unlock(i);
-				return;
-			}
-			if(lv_cl1.loggedepoch == fe && lv_cl1.cl_idx != invalid_idx){
-				int i = GH::bucket_locks.lock(this);
-				recover_cl1();
-				recover_final();
-				GH::bucket_locks.unlock(i);
-				return;
-			}
-			if(lv_cl2.loggedepoch == fe && lv_cl2.cl_idx != invalid_idx){
-				int i = GH::bucket_locks.lock(this);
-				recover_cl2();
-				recover_final();
-				GH::bucket_locks.unlock(i);
-				return;
+			if(this->loggedepoch <= fe){
+				undo_incll(fe);
 			}
 		}
 
