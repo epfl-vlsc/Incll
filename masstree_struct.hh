@@ -409,29 +409,124 @@ class leaf : public node_base<P> {
     typedef typename P::phantom_epoch_type phantom_epoch_type;
     static constexpr int ksuf_keylenx = 64;
     static constexpr int layer_keylenx = 128;
-    static constexpr const int8_t invalid_idx = -1;
+    static constexpr const uint8_t invalid_idx = 7;
 
     enum {
         modstate_insert = 0, modstate_remove = 1, modstate_deleted_layer = 2
     };
 
 #ifdef INCLL
-    struct incll_lv_{										//16 bytes
-    	leafvalue_type lv_;										//8 byte
-    	int8_t cl_idx;											//1 byte
-    	uint32_t loggedepoch;									//4 byte
-    	uint8_t padding[3];										//3 byte
+    class incll_lv_{
+    private:
+    	uint64_t data_;
+    public:
+    	enum {
+    		idx_mask 			= 7, //bits 210
+    		non_idx_mask 		= ~idx_mask,
+    		not_logged_bit 		= (1UL << 63), //bit 63
+    		not_logged_reset 	= ~not_logged_bit,
+    		lv_mask 			= 0x00FFFFFFFFFFFFF8UL, //bits 56-3
+    		non_lv_mask 		= ~lv_mask,
+    		lv_idx_mask 		= 0x00FFFFFFFFFFFFFFUL,
+    		non_lv_idx_mask 	= ~lv_idx_mask,
+    		le_mask 			= 0x7F00000000000000UL, //bit 62-56
+    		ge_mask 			= 0x000000000000007FUL, //bit 14-0
+    		non_le_mask 		= ~le_mask,
+    		epoch_shift 		= 56,
+    		invalid_idx 		= 7, //111 number is invalid
+    		lv_idx_ge_mask		= 0x7FFFFFFFFFFFFFFFUL, //bits 62-0
+    		non_lv_idx_ge_mask	= ~lv_idx_ge_mask,
+    	};
 
-    	//no need to init index
-    	//because it will be overwritten in next epoch
-    	incll_lv_():cl_idx(invalid_idx), loggedepoch(globalepoch){}
+    	incll_lv_(){
+    		data_ &= 0x0;
+    		set_loggedepoch();
+    		invalidate_cl();
+    	}
+
+    	int get_cl_idx() const{
+    		return data_ & idx_mask;
+    	}
+
+    	void set_cl_idx(int p){
+    		REC_ASSERT(p < 7)
+    		data_ = (data_ & non_idx_mask) | p;
+    	}
+
+    	void invalidate_cl(){
+    		data_ |= invalid_idx;
+    	}
+
+    	mrcu_epoch_type get_loggedepoch() const{
+    		return ((data_ & le_mask) >> epoch_shift);
+    	}
+
+    	void set_loggedepoch(mrcu_epoch_type e){
+    		data_ = (data_ & non_le_mask) | ((e & ge_mask) << epoch_shift);
+    	}
+
+    	void set_loggedepoch(){
+    		data_ = (data_ & non_le_mask) | ((globalepoch & ge_mask) << epoch_shift);
+    	}
+
+    	bool is_not_logged() const{
+    		return data_ & not_logged_bit;
+    	}
+
+    	void set_not_logged(){
+    		data_ |= not_logged_bit;
+    	}
+
+    	void reset_not_logged(){
+    		data_ &= not_logged_reset;
+    	}
+
+    	void set_lv(uint64_t *lv){
+    		REC_ASSERT(!(*lv & non_lv_mask));
+    		data_ = (data_ & non_lv_mask) | *lv;
+    	}
+
+    	uint64_t get_lv() const{
+    		return data_ & lv_mask;
+    	}
+
+    	void set_lv_idx(uint64_t *lv, int p){
+    		REC_ASSERT(!(*lv & non_lv_mask));
+    		REC_ASSERT(p < 7)
+    		data_ = (data_ & non_lv_idx_mask) | *lv | p;
+
+    	}
+
+    	void set_lv_idx_ge(uint64_t *lv, int p){
+    		REC_ASSERT(!(*lv & non_lv_mask));
+    		REC_ASSERT(p < 7)
+    		data_ = (data_ & non_lv_idx_ge_mask)
+    				| *lv
+    				| p
+    				| ((globalepoch & ge_mask) << epoch_shift);
+    	}
+
+    	void recover_lv(uint64_t* lv){
+    		int p = data_ & idx_mask;
+    		lv[p] = data_ & lv_mask;
+    	}
+
+    	void recover_lv2(uint64_t* lv){
+    		int p = (data_ & idx_mask) + KEY_MID;
+    		lv[p] = data_ & lv_mask;
+    	}
 
     	bool is_le_diff(){
-			return loggedepoch != globalepoch;
-		}
+    		return ((data_ & le_mask) >> epoch_shift) != (globalepoch & ge_mask);
+    	}
 
-		void print() const;
+    	bool is_cl_valid(){
+    		return (data_ & invalid_idx) != invalid_idx;
+    	}
+
+    	void print() const;
     };
+
 #endif //incll
 
 
@@ -439,17 +534,17 @@ class leaf : public node_base<P> {
     //version value										//4 bytes
     //logged epoch										//8 bytes
     bool not_logged;									//1 byte
+	uint8_t cl0_idx;									//1 byte
     int8_t extrasize64_;								//1 byte
 	uint8_t modstate_; 									//1 byte
 	uint8_t keylenx_[width];							//12 bytes
 	typename permuter_type::storage_type permutation_;	//8 bytes
 	typename permuter_type::storage_type perm_cl0;		//8 bytes
-	int8_t cl0_idx;										//1 byte
 	external_ksuf_type* ksuf_;							//8 bytes
 
-	incll_lv_ lv_cl1;									//16 bytes
-	leafvalue_type lv_[width];							//96 bytes
-	incll_lv_ lv_cl2;									//16 bytes
+	incll_lv_ lv_cl1;									//8 bytes
+	leafvalue_type lv_[width];							//112 bytes
+	incll_lv_ lv_cl2;									//8 bytes
 
 	ikey_type ikey0_[width];							//96 bytes
 
@@ -481,8 +576,8 @@ class leaf : public node_base<P> {
 
     leaf(size_t sz, phantom_epoch_type phantom_epoch):
 #ifdef INCLL
-    	node_base<P>(true), not_logged(false), modstate_(modstate_insert),
-		permutation_(permuter_type::make_empty()), cl0_idx(invalid_idx),
+    	node_base<P>(true), not_logged(false), cl0_idx(invalid_idx),
+		modstate_(modstate_insert), permutation_(permuter_type::make_empty()),
 		ksuf_(), parent_(), iksuf_{} {
 #else //incll
 		node_base<P>(true), modstate_(modstate_insert),
@@ -495,12 +590,12 @@ class leaf : public node_base<P> {
             new((void *)&iksuf_[0]) internal_ksuf_type(width, sz - sizeof(*this));
         if (P::need_phantom_epoch)
             phantom_epoch_[0] = phantom_epoch;
-
 #ifdef INCLL
         static_assert(
         		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,
         		"incll for lv_ is not cache aligned properly");
 #endif //incll
+
     }
 		int number_of_keys(){
 			permuter_type perm = permutation_;
@@ -516,6 +611,18 @@ class leaf : public node_base<P> {
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
 			}
+		}
+
+		void recover_cl0(){
+			permutation_ = perm_cl0;
+		}
+
+		void recover_cl1(){
+			lv_cl1.recover_lv((uint64_t*)lv_);
+		}
+
+		void recover_cl2(){
+			lv_cl2.recover_lv2((uint64_t*)lv_);
 		}
 
 		void save_cl0_insert(){
@@ -542,13 +649,9 @@ class leaf : public node_base<P> {
 				DBGLOG("save incll to %p update ge:%lu le:%lu keys:%d",
 						(void*)this, globalepoch, this->loggedepoch, this->number_of_keys())
 				if(p < KEY_MID){
-					DBGLOG("incll update1 %d", p)
-					lv_cl1.lv_ = this->lv_[p];
-					lv_cl1.cl_idx = p;
+					lv_cl1.set_lv_idx_ge((uint64_t*)&this->lv_[p].value(), p);
 				}else{
-					DBGLOG("incll update2 %d", p)
-					lv_cl2.lv_ = this->lv_[p];
-					lv_cl2.cl_idx = p;
+					lv_cl2.set_lv_idx_ge((uint64_t*)&this->lv_[p].value(), p-KEY_MID);
 				}
 				this->update_epochs(globalepoch);
 				not_logged = true;
@@ -595,32 +698,20 @@ class leaf : public node_base<P> {
 				GH::bucket_locks.unlock(i);
 				return;
 			}
-			if(lv_cl1.loggedepoch == fe && lv_cl1.cl_idx != invalid_idx){
+			if(lv_cl1.get_loggedepoch() == fe && lv_cl1.is_cl_valid()){
 				int i = GH::bucket_locks.lock(this);
 				recover_cl1();
 				recover_final();
 				GH::bucket_locks.unlock(i);
 				return;
 			}
-			if(lv_cl2.loggedepoch == fe && lv_cl2.cl_idx != invalid_idx){
+			if(lv_cl2.get_loggedepoch() == fe && lv_cl2.is_cl_valid()){
 				int i = GH::bucket_locks.lock(this);
 				recover_cl2();
 				recover_final();
 				GH::bucket_locks.unlock(i);
 				return;
 			}
-		}
-
-		void recover_cl0(){
-			permutation_ = perm_cl0;
-		}
-
-		void recover_cl1(){
-			lv_[lv_cl1.cl_idx] = lv_cl1.lv_;
-		}
-
-		void recover_cl2(){
-			lv_[lv_cl2.cl_idx] = lv_cl2.lv_;
 		}
 
 		void recover_final(){
@@ -635,28 +726,31 @@ class leaf : public node_base<P> {
 			}
 		}
 
+		void update_epochs(){
+			this->loggedepoch = globalepoch;
+			lv_cl1.set_loggedepoch();
+			lv_cl2.set_loggedepoch();
+		}
+
 		void update_epochs(mrcu_epoch_type e){
-			DBGLOG("update_epochs ge:%lu", e)
-			this->loggedepoch
-				= lv_cl1.loggedepoch
-				= lv_cl2.loggedepoch
-				= e;
+			this->loggedepoch = e;
+			lv_cl1.set_loggedepoch(e);
+			lv_cl2.set_loggedepoch(e);
+		}
+
+		void update_loggedepoch(){
+			this->loggedepoch = globalepoch;
+		}
+
+		void update_loggedepoch(mrcu_epoch_type e){
+			this->loggedepoch = e;
 		}
 
 		void invalidate_cls(){
 			DBGLOG("invalidate_cls")
-			this->cl0_idx
-				= lv_cl1.cl_idx
-				= lv_cl2.cl_idx
-				= invalid_idx;
-		}
-
-		bool has_valid_cl(){
-			DBGLOG("has_valid_cl cl0:%d cl1:%d cl2:%d",
-					this->cl0_idx, lv_cl1.cl_idx, lv_cl2.cl_idx)
-			return this->cl0_idx != invalid_idx
-				|| lv_cl1.cl_idx != invalid_idx
-				|| lv_cl2.cl_idx != invalid_idx;
+			this->cl0_idx = invalid_idx;
+			lv_cl1.invalidate_cl();
+			lv_cl2.invalidate_cl();
 		}
 
 		void print_cl0() const;

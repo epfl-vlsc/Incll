@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <inttypes.h>
+#include <bitset>
 
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
@@ -271,10 +272,12 @@ void leaf<P>::print_node() const
 
 template <typename P>
 void leaf<P>::incll_lv_::print() const{
-	if(cl_idx != invalid_idx){
-		typename P::value_type tvx = lv_.value();
-		std::cout << "incll lv:" << tvx;
-		printf(" idx:%d le:%u\n", cl_idx, loggedepoch);
+	if(get_cl_idx() != invalid_idx){
+		std::bitset<64> data_bits(data_);
+		printf("incll mini cl_idx:%d lv:%lx nl:%d le:%lu hex:0x%lx bits:",
+				get_cl_idx(), get_lv(), is_not_logged(),
+				get_loggedepoch(), data_);
+		std::cout << data_bits << "\n";
 	}
 }
 
@@ -282,7 +285,7 @@ template <typename P>
 void leaf<P>::print_cl0() const{
 	if(cl0_idx != invalid_idx){
 		permuter_type perm = perm_cl0;
-		printf("incll0 %d keys %s idx:%d le:%lu\n",
+		printf("incll0 %d keys %s idx:%u le:%lu\n",
 				perm.size(), perm.unparse().c_str(),
 				cl0_idx, this->loggedepoch);
 	}

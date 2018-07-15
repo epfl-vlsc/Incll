@@ -25,7 +25,7 @@
 #define GLOBAL_FLUSH
 
 //default 15
-#define KEY_LW 12
+#define KEY_LW 14
 #define KEY_MID KEY_LW/2
 
 //disable dealloc for remove

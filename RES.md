@@ -56,6 +56,8 @@ possible explanation: if not found don't log for remove
 * lg+flush(node,tail)+incll(insert,update)+no recover immediate: 1845163
 * lg+flush(node,tail)+incll(insert,update)+lazy recovery: 1835070
 
+## all above with 14 keys
+* lg+flush(node,tail)+incll(insert,update)+lazy recovery: 1923693
 
 
 
