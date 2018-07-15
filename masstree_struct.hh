@@ -603,6 +603,12 @@ class leaf : public node_base<P> {
 			}
 		}
 
+		void lazy_recovery(){
+			int i = GH::bucket_locks.lock(this);
+			this->undo_incll();
+			GH::bucket_locks.unlock(i);
+		}
+
 		void update_epochs(mrcu_epoch_type e){
 			DBGLOG("update_epochs ge:%lu", e)
 			this->loggedepoch

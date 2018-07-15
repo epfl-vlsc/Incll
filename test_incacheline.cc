@@ -356,10 +356,12 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 	globalepoch=1;
 	failedepoch=0;
 	GH::node_logger.init(0);
+	GH::bucket_locks.init();
 
 	printf("%s\n", (fnc_name + " begin").c_str());
 	fnc(mt);
 	printf("\t%s\n", (fnc_name + " passed asserts").c_str());
+	GH::bucket_locks.destroy();
 	GH::node_logger.destroy();
 }
 
