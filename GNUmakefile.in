@@ -76,12 +76,13 @@ rand: mttest
 
 # unit tests
 UNIT_TESTS = test_barrier test_gf test_simplemt test_copy \
-		test_log test_logmt test_incacheline
+		test_log test_logmt test_incacheline test_bl
 
 test_suite: $(UNIT_TESTS)
 
 run_test_suite: test_suite
 	./test_barrier 
+	./test_bl
 	./test_gf 
 	./test_simplemt 
 	./test_copy

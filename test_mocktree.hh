@@ -25,6 +25,10 @@
 #include "incll_trav.hh"
 #include "incll_configs.hh"
 
+extern volatile mrcu_epoch_type failedepoch;
+extern volatile mrcu_epoch_type globalepoch;
+extern volatile mrcu_epoch_type active_epoch;
+
 class key_unparse_unsigned {
 public:
     static int unparse_key(Masstree::key<uint64_t> key, char* buf, int buflen) {
@@ -71,7 +75,7 @@ public:
             ti = threadinfo::make(threadinfo::TI_PROCESS, thread_id);
     }
 
-    bool find(uint64_t int_key, uint64_t*& int_val){
+    bool find(uint64_t int_key, uint64_t** int_val){
     	uint64_t key_buf;
 
 		Str key = make_key(int_key, key_buf);
@@ -80,7 +84,7 @@ public:
 		bool found = lp.find_unlocked(*ti);
 
 		if (found)
-			int_val = lp.value();
+			*int_val = lp.value();
 		return found;
     }
 
@@ -147,6 +151,26 @@ private:
         return Str((const char *)&key_buf, sizeof(key_buf));
     }
 };
+
+void adv_epoch(MockMasstree *mt){
+	globalepoch++;
+	GH::node_logger.set_log_root(mt->get_root());
+	GH::node_logger.checkpoint();
+	DBGLOG("new ge:%lu", globalepoch);
+}
+
+void undo_all(MockMasstree *mt){
+	void *undo_root = GH::node_logger.get_tree_root();
+	mt->set_root(undo_root);
+	auto last_flush = GH::node_logger.get_last_flush();
+	GH::node_logger.undo(mt->get_root());
+	GH::node_logger.undo_next_prev(mt->get_root(), last_flush);
+}
+
+void set_failed_epoch(mrcu_epoch_type fe){
+	failedepoch = fe;
+	DBGLOG("fe:%lu", failedepoch);
+}
 
 void assert_tree_size(MockMasstree *mt, size_t size_expected){
 	assert(size_expected == get_tree_size(mt->get_root()));

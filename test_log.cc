@@ -14,6 +14,7 @@
 volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
+int delaycount = 0;
 
 void test_log_simple(){
 	Node *root = get_simple_list(SMALL_SIZE);

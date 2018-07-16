@@ -21,25 +21,6 @@ kvtimestamp_t initial_timestamp;
 #define N_OPS 80
 #define INTERVAL 8
 
-void adv_epoch(MockMasstree *mt){
-	globalepoch++;
-	GH::node_logger.set_log_root(mt->get_root());
-	GH::node_logger.checkpoint();
-	DBGLOG("new ge:%lu", globalepoch);
-}
-
-void undo_all(MockMasstree *mt){
-	void *undo_root = GH::node_logger.get_tree_root();
-	mt->set_root(undo_root);
-	auto last_flush = GH::node_logger.get_last_flush();
-	GH::node_logger.undo(mt->get_root());
-	GH::node_logger.undo_next_prev(mt->get_root(), last_flush);
-}
-
-void set_failed_epoch(mrcu_epoch_type fe){
-	failedepoch = fe;
-	DBGLOG("fe:%lu", failedepoch);
-}
 
 void insert_incll(MockMasstree *mt){
 	mt->insert({9,5,1,3,7,2,4,6});
