@@ -70,6 +70,13 @@ rand: mttest
 	./mttest rand
 	./mttest rand
 	./mttest rand
+	python get_average.py
+	./mttest rand
+	./mttest rand
+	python get_average.py
+	./mttest rand
+	./mttest rand
+	./mttest rand
 	./mttest rand
 	./mttest rand
 	python get_average.py
