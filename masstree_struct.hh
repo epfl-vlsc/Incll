@@ -719,8 +719,8 @@ class leaf : public node_base<P> {
 			this->update_epochs(globalepoch-1);
 		}
 
-		void lazy_recovery(mrcu_epoch_type fe){
-			if(this->loggedepoch <= fe){
+		inline void lazy_recovery(mrcu_epoch_type fe){
+			if(unlikely(this->loggedepoch <= fe)){
 				undo_incll(fe);
 			}
 		}
