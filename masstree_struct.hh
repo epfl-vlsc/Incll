@@ -737,11 +737,11 @@ class leaf : public node_base<P> {
 			lv_cl2.set_loggedepoch(e);
 		}
 
-		void update_loggedepoch(){
+		inline void update_loggedepoch(){
 			this->loggedepoch = globalepoch;
 		}
 
-		void update_loggedepoch(mrcu_epoch_type e){
+		inline void update_loggedepoch(mrcu_epoch_type e){
 			this->loggedepoch = e;
 		}
 

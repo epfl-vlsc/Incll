@@ -62,6 +62,7 @@ possible explanation: if not found don't log for remove
 ## optimization trials:lg+flush(node,tail)+incll(insert,update)+lazy recovery
 * layout opt1: 1937639
 * extlog opt1: 1940516
+* inline opt1: 1942045
 
 
 
