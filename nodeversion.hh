@@ -128,13 +128,13 @@ class nodeversion {
         acquire_fence();
     }
 
+    void clear_unlock(){
+		v_ &= ~P::lock_bit;
+	}
+
 #ifdef INCLL
     void clear_insert() {
     	v_ &= ~P::inserting_bit;
-    }
-
-    void clear_unlock(){
-    	v_ &= ~P::lock_bit;
     }
 
     void clear_version_counter_bits(){

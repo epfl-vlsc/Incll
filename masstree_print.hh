@@ -270,6 +270,7 @@ void leaf<P>::print_node() const
     printf("--------------------------------\n");
 }
 
+#ifdef INCLL
 template <typename P>
 void leaf<P>::incll_lv_::print() const{
 	if(get_cl_idx() != invalid_idx){
@@ -281,6 +282,7 @@ void leaf<P>::incll_lv_::print() const{
 	}
 }
 
+
 template <typename P>
 void leaf<P>::print_cl0() const{
 	if(cl0_idx != invalid_idx){
@@ -290,6 +292,7 @@ void leaf<P>::print_cl0() const{
 				cl0_idx, this->loggedepoch);
 	}
 }
+#endif //incll
 
 template <typename P>
 void internode<P>::print_node() const

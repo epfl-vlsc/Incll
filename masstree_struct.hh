@@ -754,6 +754,14 @@ class leaf : public node_base<P> {
 		}
 
 		void print_cl0() const;
+#else //incll
+		void record_node(){
+			if(this->loggedepoch != globalepoch){
+				DBGLOG("record leaf ge:%lu", globalepoch)
+				GH::node_logger.record(this);
+				this->loggedepoch = globalepoch;
+			}
+		}
 #endif //incll
 
     static leaf<P>* make(int ksufsize, phantom_epoch_type phantom_epoch, threadinfo& ti) {
