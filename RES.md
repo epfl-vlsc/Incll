@@ -59,6 +59,9 @@ possible explanation: if not found don't log for remove
 ## all above with 14 keys
 * lg+flush(node,tail)+incll(insert,update)+lazy recovery: 1923693
 
+## optimization trials:lg+flush(node,tail)+incll(insert,update)+lazy recovery
+* layout opt1: 1937639
+
 
 
 

@@ -541,14 +541,14 @@ class leaf : public node_base<P> {
 	typename permuter_type::storage_type perm_cl0;		//8 bytes
 	external_ksuf_type* ksuf_;							//8 bytes
 
+	ikey_type ikey0_[width];							//112 bytes
+	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
+	leaf<P>* prev_;										//8 bytes
+
 	incll_lv_ lv_cl1;									//8 bytes
 	leafvalue_type lv_[width];							//112 bytes
 	incll_lv_ lv_cl2;									//8 bytes
 
-	ikey_type ikey0_[width];							//96 bytes
-
-	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
-	leaf<P>* prev_;										//8 bytes
 	node_base<P>* parent_;								//8 bytes
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
