@@ -23,7 +23,6 @@
 
 #include "incll_configs.hh"
 #include "incll_globals.hh"
-#include "incll_macros.hh"
 
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;

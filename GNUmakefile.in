@@ -41,7 +41,7 @@ KVTREES = query_masstree.o \
 	string_slice.o
 
 mtd: mtd.o log.o checkpoint.o file.o misc.o $(KVTREES) \
-	kvio.o libjson.a
+	kvio.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a

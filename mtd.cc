@@ -63,6 +63,10 @@
 #include "msgpack.hh"
 #include <algorithm>
 #include <deque>
+
+#include "incll_configs.hh"
+#include "incll_globals.hh"
+
 using lcdf::StringAccum;
 
 enum { CKState_Quit, CKState_Uninit, CKState_Ready, CKState_Go };
@@ -84,6 +88,8 @@ static bool logging = true;
 static bool pinthreads = false;
 static bool recovery_only = false;
 volatile uint64_t globalepoch = 1;     // global epoch, updated by main thread regularly
+volatile mrcu_epoch_type failedepoch = 0;
+int delaycount = 0;
 volatile uint64_t active_epoch = 1;
 static int port = 2117;
 static uint64_t test_limit = ~uint64_t(0);
