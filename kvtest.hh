@@ -858,11 +858,10 @@ void kvtest_ycsb(C &client,
 		printf("Create tree\n");
 		while (n < init) {
 			++n;
-			pos = op_helper.next_uniform1();
-			val = op_helper.next_uniform2();
+			pos = op_helper.next_init_key();
+			val = pos + 1;
 
-			local_size +=
-					client.put(pos, val);
+			local_size += client.put(pos, val);
 		}
 	}
 

@@ -65,8 +65,7 @@ struct OpHelper{
 
 	Generator *key_rand;
 	Generator *val_rand;
-	Generator *uni_rand1;
-	Generator *uni_rand2;
+	CounterGenerator *init_rand;
 
 	uint64_t next_key() const{
 		return key_rand->next();
@@ -80,12 +79,8 @@ struct OpHelper{
 		return key_rand->last();
 	}
 
-	uint64_t next_uniform1() const{
-		return uni_rand1->next();
-	}
-
-	uint64_t next_uniform2() const{
-		return uni_rand2->next();
+	uint64_t next_init_key() const{
+		return init_rand->next();
 	}
 
 	OpHelper(size_t init_,
@@ -102,8 +97,7 @@ struct OpHelper{
 	~OpHelper(){
 		delete key_rand;
 		delete val_rand;
-		delete uni_rand1;
-		delete uni_rand2;
+		delete init_rand;
 	}
 
 	void set_generators(key_distributions kd){
@@ -119,8 +113,7 @@ struct OpHelper{
 		default:
 			assert(0);
 		}
-		uni_rand1 = new UniformGenerator(nkeys);
-		uni_rand2 = new UniformGenerator(nkeys);
+		init_rand = new CounterGenerator(nkeys);
 	}
 };
 

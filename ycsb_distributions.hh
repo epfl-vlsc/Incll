@@ -28,6 +28,23 @@ public:
 	virtual uint64_t last() = 0;
 	virtual ~Generator() {}
 };
+
+class CounterGenerator{
+public:
+	CounterGenerator(uint64_t start) : counter_(start) { }
+	uint64_t next() {
+		return counter_.fetch_add(1);
+	}
+	uint64_t last() {
+		return counter_.load() - 1;
+	}
+	void set(uint64_t start) {
+		counter_.store(start);
+	}
+private:
+	std::atomic<uint64_t> counter_;
+};
+
 class UniformGenerator : public Generator{
 public:
 	// Both min and max are inclusive
