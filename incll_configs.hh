@@ -38,3 +38,5 @@
 #else //incll
 #define Ifincll(statement)
 #endif //incll
+
+#define YCSB

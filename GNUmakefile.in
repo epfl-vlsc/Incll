@@ -150,6 +150,12 @@ test_incacheline: test_incacheline.o compiler.o misc.o libjson.a incll_globals.o
 
 tincacheline: test_incacheline
 	./test_incacheline
+	
+test_ycsb_helper: test_ycsb_helper.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tycsbhelper: test_ycsb_helper
+	./test_ycsb_helper
 
 # helpers
 get_avg:
