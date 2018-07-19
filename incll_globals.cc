@@ -62,17 +62,18 @@ namespace GH{
 
 	}
 
-#ifdef GLOBAL_FLUSH
 	void advance_epoch(int tid, void *root){
+#ifdef GLOBAL_FLUSH
 		thread_barrier.wait_barrier(tid);
 		if(tid == 0){
 			node_logger.set_log_root(root);
+
 			global_flush.flush_manual();
 		}else{
 			global_flush.ack_flush_manual();
 		}
 		node_logger.checkpoint();
 		thread_barrier.wait_barrier(tid);
+#endif
 	}
-#endif //gf
 };

@@ -850,6 +850,9 @@ void kvtest_ycsb(C &client,
 	size_t init = op_helper.init;
 	size_t nops1 = op_helper.nops1;
 
+	quick_istr key;
+	std::vector<Str> keys(10), values(10);
+
 	uint64_t n = 0;
 	Json result = Json();
 	size_t local_size = 0;
@@ -887,8 +890,6 @@ void kvtest_ycsb(C &client,
 			local_size -= client.remove_sync(pos);
 			break;
 		case ycsbc::scan_op:{
-			quick_istr key;
-			std::vector<Str> keys, values;
 			key.set(pos, 8);
 			client.scan_sync(key.string(), 10, keys, values);
 			}break;
