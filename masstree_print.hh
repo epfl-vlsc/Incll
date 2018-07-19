@@ -285,11 +285,11 @@ void leaf<P>::incll_lv_::print() const{
 
 template <typename P>
 void leaf<P>::print_cl0() const{
-	if(cl0_idx != invalid_idx){
+	if(this->cl0_idx != invalid_idx){
 		permuter_type perm = perm_cl0;
 		printf("incll0 %d keys %s idx:%u le:%lu\n",
 				perm.size(), perm.unparse().c_str(),
-				cl0_idx, this->loggedepoch);
+				this->cl0_idx, this->loggedepoch);
 	}
 }
 #endif //incll

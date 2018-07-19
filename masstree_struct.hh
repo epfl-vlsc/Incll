@@ -60,6 +60,8 @@ class node_base : public make_nodeversion<P>::type {
     typedef typename make_nodeversion<P>::type nodeversion_type;
     typedef typename P::threadinfo_type threadinfo;
 
+	bool not_logged;									//1 byte
+	uint8_t cl0_idx;									//1 byte
     mrcu_epoch_type loggedepoch;
 
     node_base(bool isleaf):
@@ -532,11 +534,9 @@ class leaf : public node_base<P> {
 #ifdef INCLL
     //version value										//4 bytes
     //logged epoch										//8 bytes
-    bool not_logged;									//1 byte
-	uint8_t cl0_idx;									//1 byte
     int8_t extrasize64_;								//1 byte
 	uint8_t modstate_; 									//1 byte
-	uint8_t keylenx_[width];							//12 bytes
+	uint8_t keylenx_[width];							//14 bytes
 	typename permuter_type::storage_type permutation_;	//8 bytes
 	typename permuter_type::storage_type perm_cl0;		//8 bytes
 	external_ksuf_type* ksuf_;							//8 bytes
@@ -544,12 +544,13 @@ class leaf : public node_base<P> {
 	ikey_type ikey0_[width];							//112 bytes
 	union {leaf<P>* ptr;uintptr_t x;} next_;			//8 bytes
 	leaf<P>* prev_;										//8 bytes
+	node_base<P>* parent_;								//8 bytes
 
 	incll_lv_ lv_cl1;									//8 bytes
 	leafvalue_type lv_[width];							//112 bytes
 	incll_lv_ lv_cl2;									//8 bytes
 
-	node_base<P>* parent_;								//8 bytes
+
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
 	kvtimestamp_t created_at_[P::debug_level > 0];
@@ -575,8 +576,8 @@ class leaf : public node_base<P> {
 
     leaf(size_t sz, phantom_epoch_type phantom_epoch):
 #ifdef INCLL
-    	node_base<P>(true), not_logged(false), cl0_idx(invalid_idx),
-		modstate_(modstate_insert), permutation_(permuter_type::make_empty()),
+    	node_base<P>(true), modstate_(modstate_insert),
+		permutation_(permuter_type::make_empty()),
 		ksuf_(), parent_(), iksuf_{} {
 #else //incll
 		node_base<P>(true), modstate_(modstate_insert),
@@ -590,11 +591,32 @@ class leaf : public node_base<P> {
         if (P::need_phantom_epoch)
             phantom_epoch_[0] = phantom_epoch;
 #ifdef INCLL
+
+        this->not_logged = false;
+        this->cl0_idx = invalid_idx;
+
         static_assert(
         		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,
         		"incll for lv_ is not cache aligned properly");
-#endif //incll
 
+#endif //incll
+        /*
+        printf("es:%ld ms:%ld kl:%ld nl:%ld p:%ld pm:%ld pmc:%ld ks:%ld ik:%ld next:%ld prev:%ld par:%ld pad:%ld lvcl:%ld\n",
+        (uintptr_t)(&((leaf<P>*)0)->extrasize64_),
+        (uintptr_t)(&((leaf<P>*)0)->modstate_),
+        (uintptr_t)(&((leaf<P>*)0)->keylenx_),
+        (uintptr_t)(&((leaf<P>*)0)->not_logged),
+        (uintptr_t)(&((leaf<P>*)0)->cl0_idx),
+        (uintptr_t)(&((leaf<P>*)0)->permutation_),
+        (uintptr_t)(&((leaf<P>*)0)->perm_cl0),
+        (uintptr_t)(&((leaf<P>*)0)->ksuf_),
+        (uintptr_t)(&((leaf<P>*)0)->ikey0_),
+        (uintptr_t)(&((leaf<P>*)0)->next_),
+        (uintptr_t)(&((leaf<P>*)0)->prev_),
+        (uintptr_t)(&((leaf<P>*)0)->parent_),
+        (uintptr_t)(&((leaf<P>*)0)->padding),
+        (uintptr_t)(&((leaf<P>*)0)->lv_cl1)
+        );*/
     }
 		int number_of_keys(){
 			permuter_type perm = permutation_;
@@ -603,9 +625,9 @@ class leaf : public node_base<P> {
 
 #ifdef INCLL
 		void record_node(){
-			if(this->loggedepoch != globalepoch || not_logged){
+			if(this->loggedepoch != globalepoch || this->not_logged){
 				DBGLOG("record leaf ge:%lu nl:%d keys:%d", globalepoch, not_logged, this->number_of_keys())
-				not_logged=false;
+				this->not_logged=false;
 				GH::node_logger.record(this);
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
@@ -629,13 +651,13 @@ class leaf : public node_base<P> {
 				DBGLOG("save incll insert to %p ge:%lu le:%lu keys:%d",
 						(void*)this, globalepoch, this->loggedepoch, this->number_of_keys())
 				perm_cl0 = permutation_;
-				cl0_idx = 0;
+				this->cl0_idx = 0;
 				this->update_epochs(globalepoch);
-				not_logged = true;
-			}else if(not_logged){
+				this->not_logged = true;
+			}else if(this->not_logged){
 				DBGLOG("log node insert to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
-				not_logged=false;
+				this->not_logged=false;
 				GH::node_logger.record(this);
 				this->invalidate_cls();
 			}
@@ -653,11 +675,11 @@ class leaf : public node_base<P> {
 					lv_cl2.set_lv_idx_ge((uint64_t*)&this->lv_[p].value(), p-KEY_MID);
 				}
 				this->update_epochs(globalepoch);
-				not_logged = true;
+				this->not_logged = true;
 			}else if(this->not_logged){
 				DBGLOG("log node update to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
-				not_logged=false;
+				this->not_logged=false;
 				GH::node_logger.record(this);
 				this->invalidate_cls();
 			}
@@ -690,7 +712,7 @@ class leaf : public node_base<P> {
 
 		void undo_incll(mrcu_epoch_type fe){
 			//assume only one cacheline is active at a given time
-			if(this->loggedepoch == fe && cl0_idx != invalid_idx){
+			if(this->loggedepoch == fe && this->cl0_idx != invalid_idx){
 				int i = GH::bucket_locks.lock(this);
 				recover_cl0();
 				recover_final();
