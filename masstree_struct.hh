@@ -111,11 +111,13 @@ class node_base : public make_nodeversion<P>::type {
 
     void record_node(){
     	REC_ASSERT(this->locked())
+		#ifdef EXTLOG
 		if(this->isleaf()){
 			this->to_leaf()->record_node();
 		}else{
 			this->to_internode()->record_node();
 		}
+		#endif //extlog
 	}
 
     int number_of_keys(){
@@ -240,11 +242,13 @@ class internode : public node_base<P> {
     }
 
     void record_node(){
+		#ifdef EXTLOG
 		if(this->loggedepoch != globalepoch){
 			DBGLOG("record internode ge:%lu", globalepoch)
 			GH::node_logger.record(this);
 			this->loggedepoch = globalepoch;
 		}
+		#endif //extlog
 	}
 
     int number_of_keys(){
@@ -550,7 +554,8 @@ class leaf : public node_base<P> {
 	leafvalue_type lv_[width];							//112 bytes
 	incll_lv_ lv_cl2;									//8 bytes
 	char tmp; //todo: consider removing.
-	//Without this it deadlock on rand, but improve perf by 2%
+	//Without this it deadlock on rand, but improve perf by 2%, by having 5cl
+	//instead of 6
 
 
 
@@ -627,6 +632,7 @@ class leaf : public node_base<P> {
 
 #ifdef INCLL
 		void record_node(){
+			#ifdef EXTLOG
 			if(this->loggedepoch != globalepoch || this->not_logged){
 				DBGLOG("record leaf ge:%lu nl:%d keys:%d", globalepoch, not_logged, this->number_of_keys())
 				this->not_logged=false;
@@ -634,6 +640,7 @@ class leaf : public node_base<P> {
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
 			}
+			#endif //extlog
 		}
 
 		void recover_cl0(){
@@ -779,11 +786,14 @@ class leaf : public node_base<P> {
 		void print_cl0() const;
 #else //incll
 		void record_node(){
+			#ifdef EXTLOG
+
 			if(this->loggedepoch != globalepoch){
 				DBGLOG("record leaf ge:%lu", globalepoch)
 				GH::node_logger.record(this);
 				this->loggedepoch = globalepoch;
 			}
+			#endif //extlog
 		}
 #endif //incll
 

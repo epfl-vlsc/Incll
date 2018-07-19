@@ -39,4 +39,6 @@
 #define Ifincll(statement)
 #endif //incll
 
+#define EXTLOG
+
 #define YCSB
