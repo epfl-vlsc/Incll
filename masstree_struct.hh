@@ -225,10 +225,20 @@ class internode : public node_base<P> {
     ikey_type ikey0_[width];
     node_base<P>* child_[width + 1];
     node_base<P>* parent_;
+
+
+#ifdef COLLECT_STATS
+	size_t n_records;
+#endif
+
     kvtimestamp_t created_at_[P::debug_level > 0];
 
     internode(uint32_t height)
         : node_base<P>(false), nkeys_(0), height_(height), parent_() {
+
+#ifdef COLLECT_STATS
+		n_records = 0;
+#endif
     }
 
     static internode<P>* make(uint32_t height, threadinfo& ti) {
@@ -247,6 +257,10 @@ class internode : public node_base<P> {
 			DBGLOG("record internode ge:%lu", globalepoch)
 			GH::node_logger.record(this);
 			this->loggedepoch = globalepoch;
+
+			#ifdef COLLECT_STATS
+				n_records++;
+			#endif
 		}
 		#endif //extlog
 	}
@@ -559,6 +573,7 @@ class leaf : public node_base<P> {
 
 #ifdef COLLECT_STATS
 	size_t n_modifications;
+	size_t n_records;
 #endif //collect stats
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
@@ -606,6 +621,7 @@ class leaf : public node_base<P> {
 
 #ifdef COLLECT_STATS
         n_modifications = 0;
+        n_records = 0;
 #endif
 
         static_assert(
@@ -645,6 +661,10 @@ class leaf : public node_base<P> {
 				GH::node_logger.record(this);
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				#endif
 			}
 			#endif //extlog
 		}
@@ -672,9 +692,15 @@ class leaf : public node_base<P> {
 			}else if(this->not_logged){
 				DBGLOG("log node insert to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
+				#ifdef EXTLOG
 				this->not_logged=false;
 				GH::node_logger.record(this);
 				this->invalidate_cls();
+				#endif //extlog
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				#endif
 			}
 		}
 
@@ -694,9 +720,15 @@ class leaf : public node_base<P> {
 			}else if(this->not_logged){
 				DBGLOG("log node update to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
+				#ifdef EXTLOG
 				this->not_logged=false;
 				GH::node_logger.record(this);
 				this->invalidate_cls();
+				#endif //extlog
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				#endif
 			}
 		}
 

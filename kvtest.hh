@@ -862,7 +862,6 @@ void kvtest_ycsb(C &client,
 	size_t local_size = 0;
 
 	if(client.id() == 0){
-		printf("Create tree\n");
 		while (n < init) {
 			++n;
 			pos = op_helper.next_init_key();
@@ -870,10 +869,18 @@ void kvtest_ycsb(C &client,
 
 			local_size += client.put(pos, val);
 		}
+
+		print_tree_summary(client.get_root(), true);
+		printf("Created tree--------------------\n");
+
 	}
 
 	//Barrier-------------------------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
+	client.rcu_quiesce();
+#ifdef GLOBAL_FLUSH
+		GH::global_flush.ack_flush();
+#endif
 
 	n = 0;
 
@@ -910,7 +917,7 @@ void kvtest_ycsb(C &client,
 #endif
 	}
 	double t1 = client.now();
-	//result.set("time", t1-t0);
+	result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
 
 #ifdef GLOBAL_FLUSH

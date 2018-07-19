@@ -101,6 +101,10 @@ volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
 
+#ifdef COLLECT_STATS
+size_t n_ge_changes;
+#endif
+
 kvepoch_t global_log_epoch = 0;
 static int port = 2117;
 static int rscale_ncores = 0;
@@ -143,9 +147,13 @@ void set_global_epoch(mrcu_epoch_type e) {
 
         active_epoch = threadinfo::min_active_epoch();
 
+#ifdef COLLECT_STATS
+        n_ge_changes++;
+#endif //collect stats
+
 #ifdef GLOBAL_FLUSH
         shouldFlush = true;
-#endif
+#endif //gf
     }
     global_epoch_lock.unlock();
 
@@ -580,18 +588,18 @@ MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
 MAKE_TESTRUNNER(ycsb_a,
 kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
 		ycsbc::OpRatios(50, 50, 0, 0)));
 
 
 MAKE_TESTRUNNER(ycsb_b,
 kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
 		ycsbc::OpRatios(95, 5, 0, 0)));
 
 MAKE_TESTRUNNER(ycsb_c,
 		kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
 		ycsbc::OpRatios(100, 0, 0, 0)));
 
 
@@ -603,7 +611,7 @@ kvtest_ycsb(client));
 
 MAKE_TESTRUNNER(ycsb_e,
 		kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
 		ycsbc::OpRatios(0, 5, 0, 95)));
 
 /*

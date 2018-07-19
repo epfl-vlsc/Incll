@@ -110,8 +110,10 @@ size_t get_num_nodes(N* root){
 }
 
 #ifdef COLLECT_STATS
+extern size_t n_ge_changes;
+
 template <typename N>
-void print_tree_summary(N* root){
+void print_tree_summary(N* root, bool reset_nodes=false){
 	N* node = root;
 
 	std::queue<N*> q;
@@ -122,7 +124,9 @@ void print_tree_summary(N* root){
 	size_t n_keys = 0;
 	size_t n_internodes = 0;
 	size_t n_leafs = 0;
-	double avg_leaf_mods = 0;
+	double tot_leaf_mods = 0;
+	double tot_leaf_records = 0;
+	double tot_in_records = 0;
 
 	while(!q.empty()){
 		node = q.front();
@@ -135,20 +139,38 @@ void print_tree_summary(N* root){
 			size_t nkeys = get_num_keys_leaf(ln);
 			n_keys += nkeys;
 			n_leafs++;
-			avg_leaf_mods += ln->n_modifications;
+			tot_leaf_mods += ln->n_modifications;
+			tot_leaf_records += ln->n_records;
+
+			if(reset_nodes){
+				ln->n_modifications = 0;
+			}
 		}else{
-			get_num_keys_internode(node->to_internode());
+			auto *in = node->to_internode();
+			get_num_keys_internode(in);
 			n_internodes++;
+			tot_in_records += in->n_records;
 		}
 		n_nodes++;
 	}
-	avg_leaf_mods /= n_nodes;
+	double avg_leaf_mods = tot_leaf_mods / n_leafs;
+	double avg_leaf_records = tot_leaf_records / n_leafs;
+	double avg_in_records = tot_in_records / n_internodes;
 
 	printf("Tree summary\n"
 			"Nodes:%lu IN:%lu LN:%lu Keys:%lu\n"
-			"Avg LN-Mods per node:%f\n",
+			"Epochs:%lu\n"
+			"Tot LN-inserts %f LN-records %f IN-records %f\n"
+			"Avg LN-inserts per node:%f per epoch:%f\n"
+			"Avg LN-records per node:%f per epoch:%f\n"
+			"Avg IN-records per node:%f per epoch:%f\n",
 			n_nodes, n_internodes, n_leafs, n_keys,
-			avg_leaf_mods);
+			n_ge_changes,
+			tot_leaf_mods, tot_leaf_records, tot_in_records,
+			avg_leaf_mods, avg_leaf_mods/n_ge_changes,
+			avg_leaf_records, avg_leaf_records/n_ge_changes,
+			avg_in_records, avg_in_records/n_ge_changes
+			);
 }
 #endif //collect stats
 
