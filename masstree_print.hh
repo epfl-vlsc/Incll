@@ -69,6 +69,17 @@ class value_print<uint64_t> {
     }
 };
 
+template <>
+class value_print<uint64_t*> {
+  public:
+    static void print(uint64_t* value, FILE* f, const char* prefix,
+                      int indent, Str key, kvtimestamp_t,
+                      char* suffix) {
+        fprintf(f, "%s%*s%.*s = %" PRIu64 "%s\n",
+                prefix, indent, "", key.len, key.s, *value, suffix);
+    }
+};
+
 template <typename P>
 void leaf<P>::print(FILE *f, const char *prefix, int depth, int kdepth) const
 {
@@ -242,6 +253,7 @@ void leaf<P>::print_node() const
         	assert(false);
         }else {
             typename P::value_type tvx = lv.value();
+            printf("lv:%p", &lv_[p]);
             P::value_print_type::print(tvx, stdout, prefix, 2, Str(keybuf, l), initial_timestamp, xbuf);
         }
     }
@@ -258,24 +270,29 @@ void leaf<P>::print_node() const
     printf("--------------------------------\n");
 }
 
+#ifdef INCLL
 template <typename P>
 void leaf<P>::incll_lv_::print() const{
-	std::bitset<64> data_bits(data_);
-	printf("incll mini cl_idx:%d lv:%lx nl:%d le:%lu hex:0x%lx bits:",
-			get_cl_idx(), get_lv(), is_not_logged(),
-			get_loggedepoch(), data_);
-	std::cout << data_bits << "\n";
+	if(get_cl_idx() != invalid_idx){
+		std::bitset<64> data_bits(data_);
+		printf("incll mini cl_idx:%d lv:%lx nl:%d le:%lu hex:0x%lx bits:",
+				get_cl_idx(), get_lv(), is_not_logged(),
+				get_loggedepoch(), data_);
+		std::cout << data_bits << "\n";
+	}
 }
+
 
 template <typename P>
 void leaf<P>::print_cl0() const{
 	if(cl0_idx != invalid_idx){
 		permuter_type perm = perm_cl0;
-		printf("incll0 %d keys %s idx:%d le:%lu\n",
+		printf("incll0 %d keys %s idx:%u le:%lu\n",
 				perm.size(), perm.unparse().c_str(),
 				cl0_idx, this->loggedepoch);
 	}
 }
+#endif //incll
 
 template <typename P>
 void internode<P>::print_node() const

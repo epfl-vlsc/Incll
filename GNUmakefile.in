@@ -41,7 +41,7 @@ KVTREES = query_masstree.o \
 	string_slice.o
 
 mtd: mtd.o log.o checkpoint.o file.o misc.o $(KVTREES) \
-	kvio.o libjson.a
+	kvio.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a
@@ -70,18 +70,26 @@ rand: mttest
 	./mttest rand
 	./mttest rand
 	./mttest rand
+	python get_average.py
+	./mttest rand
+	./mttest rand
+	python get_average.py
+	./mttest rand
+	./mttest rand
+	./mttest rand
 	./mttest rand
 	./mttest rand
 	python get_average.py
 
 # unit tests
 UNIT_TESTS = test_barrier test_gf test_simplemt test_copy \
-		test_log test_logmt test_incacheline
+		test_log test_logmt test_incacheline test_bl
 
 test_suite: $(UNIT_TESTS)
 
 run_test_suite: test_suite
 	./test_barrier 
+	./test_bl
 	./test_gf 
 	./test_simplemt 
 	./test_copy
@@ -94,12 +102,24 @@ test_barrier: test_barrier.o incll_globals.o
 
 tbarrier: test_barrier
 	./test_barrier
+	
+test_bl: test_bl.o incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tbl: test_bl
+	./test_bl
 
 test_gf: test_gf.o incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 tgf: test_gf
 	./test_gf
+	
+test_minilv: test_minilv.o incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tminilv: test_minilv
+	./test_minilv
 	
 test_simplemt: test_simplemt.o compiler.o misc.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
@@ -130,6 +150,12 @@ test_incacheline: test_incacheline.o compiler.o misc.o libjson.a incll_globals.o
 
 tincacheline: test_incacheline
 	./test_incacheline
+	
+test_ycsb_helper: test_ycsb_helper.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tycsbhelper: test_ycsb_helper
+	./test_ycsb_helper
 
 
 test_minilv: test_minilv.o

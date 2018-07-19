@@ -578,11 +578,43 @@ static pthread_cond_t subtest_cond;
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
+MAKE_TESTRUNNER(ycsb_a,
+kvtest_ycsb(client,
+		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpRatios(50, 50, 0, 0)));
+
+
+MAKE_TESTRUNNER(ycsb_b,
+kvtest_ycsb(client,
+		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpRatios(95, 5, 0, 0)));
+
+MAKE_TESTRUNNER(ycsb_c,
+		kvtest_ycsb(client,
+		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpRatios(100, 0, 0, 0)));
+
+
+/*
+MAKE_TESTRUNNER(ycsb_d,
+kvtest_ycsb(client));
+*/
+
+
+MAKE_TESTRUNNER(ycsb_e,
+		kvtest_ycsb(client,
+		ycsbc::OpHelper(20000000, 1000000, 0, 1000000, ycsbc::kgd_zipfian),
+		ycsbc::OpRatios(0, 5, 0, 95)));
+
+/*
+MAKE_TESTRUNNER(ycsb_f,
+kvtest_ycsb(client));
+*/
+
+
+/*
 MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, 500, 200));
 MAKE_TESTRUNNER(intensive, kvtest_intensive(client, 5000000, 2000000));
-
-
-
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
 // MAKE_TESTRUNNER(palma, kvtest_palma(client));
 // MAKE_TESTRUNNER(palmb, kvtest_palmb(client));
@@ -621,7 +653,7 @@ MAKE_TESTRUNNER(rscan1, kvtest_rscan1(client, 0));
 MAKE_TESTRUNNER(rscan1q80, kvtest_rscan1(client, 0.8));
 MAKE_TESTRUNNER(splitremove1, kvtest_splitremove1(client));
 MAKE_TESTRUNNER(url, kvtest_url(client));
-
+*/
 
 enum {
     test_thread_initialize = 1,

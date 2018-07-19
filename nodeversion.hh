@@ -128,18 +128,18 @@ class nodeversion {
         acquire_fence();
     }
 
+    void clear_unlock(){
+		v_ &= ~P::lock_bit;
+	}
+
 #ifdef INCLL
     void clear_insert() {
     	v_ &= ~P::inserting_bit;
     }
 
-    void clear_insert_extras() {
-    	//todo investigate this behavior
-		v_ &= ~P::vinsert_lowbit;
-		v_ &= ~(P::vinsert_lowbit << 1);
-		v_ &= ~(P::vinsert_lowbit << 2);
-		v_ &= ~(P::vinsert_lowbit << 3);
-	}
+    void clear_version_counter_bits(){
+    	v_ &= P::version_counter_mask;
+    }
 #endif //incll
 
     nodeversion<P> mark_insert(nodeversion<P> current_version) {
@@ -326,6 +326,7 @@ template <> struct nodeversion_parameters<uint32_t> {
         isleaf_bit = (1U << 31),
         split_unlock_mask = ~(root_bit | unused1_bit | (vsplit_lowbit - 1)),
         unlock_mask = ~(unused1_bit | (vinsert_lowbit - 1)),
+		version_counter_mask = ~(0x3FFFFFFF), //clear version after recovery
         top_stable_bits = 4
     };
 

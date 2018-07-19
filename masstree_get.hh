@@ -28,6 +28,8 @@ bool unlocked_tcursor<P>::find_unlocked(threadinfo& ti)
 
  retry:
     n_ = root->reach_leaf(ka_, v_, ti);
+    Ifincll(n_->lazy_recovery(failedepoch))
+
 
  forward:
     if (v_.deleted())
@@ -62,8 +64,9 @@ inline bool basic_table<P>::get(Str key, value_type &value,
 {
     unlocked_tcursor<P> lp(*this, key);
     bool found = lp.find_unlocked(ti);
-    if (found)
-        value = lp.value();
+    if (found){
+    	value = lp.value();
+    }
     return found;
 }
 
@@ -76,6 +79,8 @@ bool tcursor<P>::find_locked(threadinfo& ti)
 
  retry:
     n_ = root->reach_leaf(ka_, v, ti);
+    Ifincll(n_->lazy_recovery(failedepoch))
+
 
  forward:
     if (v.deleted())
@@ -102,7 +107,7 @@ bool tcursor<P>::find_locked(threadinfo& ti)
     n_->lock(v, ti.lock_fence(tc_leaf_lock));
 #else //incll
     n_->lock_persistent(v, ti.lock_fence(tc_leaf_lock));
-#endif
+#endif //incll
 
     if (n_->has_changed(v) || n_->permutation() != perm) {
         ti.mark(threadcounter(tc_stable_leaf_insert + n_->simple_has_split(v)));

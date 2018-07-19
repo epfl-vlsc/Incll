@@ -221,6 +221,7 @@ void test_incll_lv(){
 	assert(cl.get_loggedepoch() == globalepoch);
 	assert(cl.get_cl_idx() == 1);
 	assert(cl.get_lv() == lvs[1].value());
+	printf("passed asserts\n");
 }
 
 

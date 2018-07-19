@@ -54,9 +54,15 @@ possible explanation: if not found don't log for remove
 
 ## incll recovery works
 * lg+flush(node,tail)+incll(insert,update)+no recover immediate: 1845163
+* lg+flush(node,tail)+incll(insert,update)+lazy recovery: 1835070
 
-## byte leaf 14 lw keys
-* lg+flush(node,tail)+incll(insert,update)+no recover immediate: 1902350
+## all above with 14 keys
+* lg+flush(node,tail)+incll(insert,update)+lazy recovery: 1923693
+
+## optimization trials:lg+flush(node,tail)+incll(insert,update)+lazy recovery
+* layout opt1: 1937639
+* extlog opt1: 1940516
+* inline opt1: 1942045
 
 
 

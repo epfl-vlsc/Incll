@@ -2,6 +2,7 @@
 
 namespace GH{
 	ThreadBarrier thread_barrier;
+	Ifincll(BucketLocks bucket_locks)
 
 	std::string exp_name;
 	uint64_t n_keys = 50;
@@ -10,7 +11,6 @@ namespace GH{
 	uint64_t n_ops2 = 5;
 	uint64_t get_rate = 50;
 	uint64_t put_rate = 25;
-
 
 	void check_rate(uint64_t rate){
 		assert(rate <= 100);
@@ -55,20 +55,25 @@ namespace GH{
 #ifdef GLOBAL_FLUSH
 		global_flush.init(nthreads);
 #endif //gf
+
+#ifdef INCLL
+		bucket_locks.init();
+#endif
+
 	}
 
-#ifdef GLOBAL_FLUSH
 	void advance_epoch(int tid, void *root){
+#ifdef GLOBAL_FLUSH
 		thread_barrier.wait_barrier(tid);
 		if(tid == 0){
 			node_logger.set_log_root(root);
+
 			global_flush.flush_manual();
 		}else{
 			global_flush.ack_flush_manual();
 		}
 		node_logger.checkpoint();
 		thread_barrier.wait_barrier(tid);
+#endif
 	}
-#endif //gf
-
 };

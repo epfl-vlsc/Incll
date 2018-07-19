@@ -8,6 +8,7 @@ __thread typename MockMasstree::table_params::threadinfo_type* MockMasstree::ti 
 volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
+int delaycount = 0;
 
 #define N_OPS 80
 #define INTERVAL 8
@@ -15,7 +16,7 @@ volatile mrcu_epoch_type active_epoch = 1;
 
 void insert_t8_body(MockMasstree *mt, int tid){
 	mt->thread_init(tid);
-	uint64_t val;
+	uint64_t* val = nullptr;
 
 	if(tid == 0)
 		assert_tree_size(mt, 0);
@@ -23,7 +24,7 @@ void insert_t8_body(MockMasstree *mt, int tid){
 	GH::thread_barrier.wait_barrier(tid);
 
 	for(uint64_t i=tid;i<N_OPS;i+=INTERVAL){
-		mt->insert(i, i+1);
+		mt->insert(i, new uint64_t(i+1));
 	}
 
 	GH::thread_barrier.wait_barrier(tid);
@@ -33,8 +34,8 @@ void insert_t8_body(MockMasstree *mt, int tid){
 
 		//check all keys
 		for(uint64_t i=0;i<N_OPS;++i){
-			assert(mt->find(i, val));
-			assert(val == i+1);
+			assert(mt->find(i, &val));
+			assert(*val == i+1);
 		}
 	}
 }
@@ -49,7 +50,7 @@ void insert_t8(MockMasstree *mt){
 }
 
 void all_t8_body(MockMasstree *mt, int tid){
-	uint64_t val;
+	uint64_t *val = nullptr;
 
 	insert_t8_body(mt, tid);
 
@@ -62,7 +63,7 @@ void all_t8_body(MockMasstree *mt, int tid){
 	if(tid == 0){
 		assert_tree_size(mt, 0);
 		for(uint64_t i=0;i<N_OPS;++i){
-			assert(!mt->find(i, val));
+			assert(!mt->find(i, &val));
 		}
 	}
 }
@@ -77,26 +78,26 @@ void all_t8(MockMasstree *mt){
 }
 
 void insert_t1(MockMasstree *mt){
-	uint64_t val;
+	uint64_t *val = nullptr;
 
 	//check size
 	assert_tree_size(mt, 0);
 
 	for(uint64_t i=0;i<N_OPS;++i){
-		mt->insert(i, i+1);
+		mt->insert(i, new uint64_t(i+1));
 	}
 
 	assert_tree_size(mt, N_OPS);
 
 	//check all keys
 	for(uint64_t i=0;i<N_OPS;++i){
-		assert(mt->find(i, val));
-		assert(val == i+1);
+		assert(mt->find(i, &val));
+		assert(*val == i+1);
 	}
 }
 
 void all_t1(MockMasstree *mt){
-	uint64_t val;
+	uint64_t *val = nullptr;
 
 	insert_t1(mt);
 
@@ -108,44 +109,44 @@ void all_t1(MockMasstree *mt){
 
 	//check all keys
 	for(uint64_t i=0;i<N_OPS;++i){
-		bool found = mt->find(i, val);
+		bool found = mt->find(i, &val);
 
 		if(i%INTERVAL == 0){
 			assert(!found);
 		}else{
 			assert(found);
-			assert(val == i+1);
+			assert(*val == i+1);
 		}
 	}
 
 	//put keys back
 	for(uint64_t i=0;i<N_OPS;i+=INTERVAL){
-		mt->insert(i, i+1);
+		mt->insert(i, new uint64_t(i+1));
 	}
 
 	assert_tree_size(mt, N_OPS);
 
 	//check all keys
 	for(uint64_t i=0;i<N_OPS;++i){
-		assert(mt->find(i, val));
-		assert(val == i+1);
+		assert(mt->find(i, &val));
+		assert(*val == i+1);
 	}
 }
 
 void rand_inserts_t1(MockMasstree *mt){
-	uint64_t key, val;
+	uint64_t key, *val = nullptr;
 	std::vector<uint64_t> inserted_nums;
 
 	for(uint64_t i=0;i<N_OPS;++i){
 		key = rand()%100000;
-		mt->insert(key, key+1);
+		mt->insert(key, new uint64_t(key+1));
 		inserted_nums.push_back(key);
 	}
 
 	//check all keys
 	for(auto e: inserted_nums){
-		assert(mt->find(e, val));
-		assert(val == e+1);
+		assert(mt->find(e, &val));
+		assert(*val == e+1);
 	}
 }
 

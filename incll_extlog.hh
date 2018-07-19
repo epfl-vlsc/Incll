@@ -55,6 +55,8 @@ public:
 		curr = 0;
 		last_flush = 0;
 		active_records = 0;
+		if(buf_)
+			free(buf_);
 		buf_ = nullptr;
 	}
 
@@ -96,30 +98,21 @@ public:
 				reinterpret_cast<nvm_logrec_node *>(entry);
 		size_t entry_size = get_entry_size(node_size);
 
-		//almost circular buffer
-		if(curr + entry_size > buf_size){
-			printf("Warning in record: back to the beginning of log\n");
-			assert(0);
-			curr = 0;
-			entry = (char*)buf_ + curr;
-			lr = reinterpret_cast<nvm_logrec_node *>(entry);
-		}
-
 		lr->size_ = entry_size;
 		lr->node_addr_ = node_ptr;
 		lr->validity = entry_valid_magic;
 		std::memcpy(lr->node_content_, node_ptr, node_size);
 
 		void *beg = (void*)lr->node_content_;
-		void *end = (void*)((char*)beg + node_size);
-		sync_range(beg, end);
+		//void *end = ;
+		sync_range(beg, (void*)((char*)beg + node_size));
 
 		curr += entry_size;
 		active_records++;
 
 		beg = (void*)&curr;
-		end = (void*)((char*)beg + sizeof(curr));
-		sync_range(beg, end);
+		//end = ;
+		sync_range(beg, (void*)((char*)beg + sizeof(curr)));
 	}
 
 
@@ -144,16 +137,6 @@ public:
 			nvm_logrec_node *lr =
 					reinterpret_cast<nvm_logrec_node *>(entry);
 			size_t entry_size = lr->size_;
-
-			//almost circular buffer
-			if(!lr->check_validity() || last_flush + entry_size > buf_size){
-				printf("Warning in undo: back to the beginning of log\n");
-				assert(0);
-				last_flush = 0;
-				entry = (char*)buf_ + last_flush;
-				lr = reinterpret_cast<nvm_logrec_node *>(entry);
-				entry_size = lr->size_;
-			}
 
 			size_t copy_size = entry_size - sizeof(*lr);
 			std::memcpy(lr->node_addr_, (void*)lr->node_content_, copy_size);
@@ -193,15 +176,6 @@ public:
 			nvm_logrec_node *lr =
 					reinterpret_cast<nvm_logrec_node *>(entry);
 			size_t entry_size = lr->size_;
-			//almost circular buffer
-			if(!lr->check_validity() || temp_flush + entry_size > buf_size){
-				printf("Warning in undo: back to the beginning of log\n");
-				assert(0);
-				temp_flush = 0;
-				entry = (char*)buf_ + temp_flush;
-				lr = reinterpret_cast<nvm_logrec_node *>(entry);
-				entry_size = lr->size_;
-			}
 
 			N* node = (N*)lr->node_addr_;
 			DBGLOG("Undoing next prev node %p le %lu %s ge:%lu inkeys:%d curr:%lu lf:%lu",

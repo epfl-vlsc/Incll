@@ -136,12 +136,15 @@ void query<R>::run_get(T& table, Json& req, threadinfo& ti) {
 
 template <typename R> template <typename T>
 bool query<R>::run_get1(T& table, Str key, int col, Str& value, threadinfo& ti) {
-    typename T::unlocked_cursor_type lp(table, key);
+	DBGLOG("get")
+	typename T::unlocked_cursor_type lp(table, key);
     bool found = lp.find_unlocked(ti);
     if (found && row_is_marker(lp.value()))
         found = false;
-    if (found)
-        value = lp.value()->col(col);
+    if (found){
+    	DBGLOG("-------get found %p", (void*)lp.node())
+    	value = lp.value()->col(col);
+    }
     return found;
 }
 
@@ -167,6 +170,7 @@ result_t query<R>::run_put(T& table, Str key,
     bool found = lp.find_insert(ti);
     if (!found)
         ti.observe_phantoms(lp.node());
+
     bool inserted = apply_put(lp.value(), found, firstreq, lastreq, ti);
     lp.finish(1, ti);
     return inserted ? Inserted : Updated;
@@ -235,9 +239,11 @@ inline bool query<R>::apply_replace(R*& value, bool found, Str new_value,
 
 template <typename R> template <typename T>
 bool query<R>::run_remove(T& table, Str key, threadinfo& ti) {
-    typename T::cursor_type lp(table, key);
+	DBGLOG("remove")
+	typename T::cursor_type lp(table, key);
     bool found = lp.find_locked(ti);
     if (found){
+    	DBGLOG("-------remove found %p", (void*)lp.node())
     	Ifincll(lp.log_persistent())
         apply_remove(lp.value(), lp.node()->phantom_epoch_[0], ti);
     }

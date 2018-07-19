@@ -59,6 +59,16 @@ struct Node{
 	bool isleaf(){
 		return true;
 	}
+
+	void fix_lock(){}
+
+	void fix_all(){}
+
+	Node* to_leaf(){
+		return this;
+	}
+
+
 };
 
 Node* get_simple_list(uint8_t N){

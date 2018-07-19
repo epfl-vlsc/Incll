@@ -23,6 +23,7 @@ template <typename P>
 bool tcursor<P>::find_insert(threadinfo& ti)
 {
     find_locked(ti);
+    DBGLOG("insert %p %d", (void*)n_, n_->isleaf())
 
     original_n_ = n_;
     original_v_ = n_->full_unlocked_version_value();
@@ -156,6 +157,7 @@ template <typename P>
 inline void tcursor<P>::finish(int state, threadinfo& ti)
 {
     if (state < 0 && state_ == 1) {
+    	DBGLOG("remove")
         if (finish_remove(ti))
             return;
     } else if (state > 0 && state_ == 2)
