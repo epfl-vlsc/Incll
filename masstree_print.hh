@@ -268,9 +268,6 @@ void leaf<P>::print_node() const
 	this->lv_cl2.print();
 #endif //incll
 
-#ifdef COLLECT_STATS
-	printf("modifications: %lu\n", this->n_modifications);
-#endif
     printf("--------------------------------\n");
 }
 

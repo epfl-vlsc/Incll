@@ -869,8 +869,9 @@ void kvtest_ycsb(C &client,
 
 			local_size += client.put(pos, val);
 		}
-
+#ifdef COLLECT_STATS
 		print_tree_summary(client.get_root(), true);
+#endif //collect stats
 		printf("Created tree--------------------\n");
 
 	}

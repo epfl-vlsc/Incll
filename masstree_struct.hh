@@ -111,13 +111,11 @@ class node_base : public make_nodeversion<P>::type {
 
     void record_node(){
     	REC_ASSERT(this->locked())
-		#ifdef EXTLOG
 		if(this->isleaf()){
 			this->to_leaf()->record_node();
 		}else{
 			this->to_internode()->record_node();
 		}
-		#endif //extlog
 	}
 
     int number_of_keys(){
@@ -252,17 +250,17 @@ class internode : public node_base<P> {
     }
 
     void record_node(){
-		#ifdef EXTLOG
 		if(this->loggedepoch != globalepoch){
 			DBGLOG("record internode ge:%lu", globalepoch)
+#ifdef IN_EXTLOG
 			GH::node_logger.record(this);
+#endif //in extlog
 			this->loggedepoch = globalepoch;
 
 			#ifdef COLLECT_STATS
 				n_records++;
 			#endif
 		}
-		#endif //extlog
 	}
 
     int number_of_keys(){
@@ -572,8 +570,12 @@ class leaf : public node_base<P> {
 	//instead of 6
 
 #ifdef COLLECT_STATS
-	size_t n_modifications;
+	size_t n_inserts;
 	size_t n_records;
+	size_t n_incll_inserts;
+	size_t n_incll_updates;
+	size_t n_incll_logs;
+	size_t n_extlog_logs;
 #endif //collect stats
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
@@ -620,8 +622,12 @@ class leaf : public node_base<P> {
         this->cl0_idx = invalid_idx;
 
 #ifdef COLLECT_STATS
-        n_modifications = 0;
+        n_inserts = 0;
         n_records = 0;
+        n_incll_inserts = 0;
+		n_incll_updates = 0;
+		n_incll_logs = 0;
+		n_extlog_logs = 0;
 #endif
 
         static_assert(
@@ -654,19 +660,21 @@ class leaf : public node_base<P> {
 
 #ifdef INCLL
 		void record_node(){
-			#ifdef EXTLOG
 			if(this->loggedepoch != globalepoch || this->not_logged){
 				DBGLOG("record leaf ge:%lu nl:%d keys:%d", globalepoch, not_logged, this->number_of_keys())
 				this->not_logged=false;
+#ifdef LN_EXTLOG
 				GH::node_logger.record(this);
+#endif //ln extlog
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
 
 				#ifdef COLLECT_STATS
 				n_records++;
+				n_extlog_logs++;
 				#endif
 			}
-			#endif //extlog
+
 		}
 
 		void recover_cl0(){
@@ -689,17 +697,23 @@ class leaf : public node_base<P> {
 				this->cl0_idx = 0;
 				this->update_epochs(globalepoch);
 				this->not_logged = true;
+
+#ifdef COLLECT_STATS
+				n_incll_inserts++;
+#endif
 			}else if(this->not_logged){
 				DBGLOG("log node insert to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
-				#ifdef EXTLOG
 				this->not_logged=false;
+#ifdef EXTLOG
 				GH::node_logger.record(this);
+#endif //ln extlog incll
 				this->invalidate_cls();
-				#endif //extlog
+
 
 				#ifdef COLLECT_STATS
 				n_records++;
+				n_incll_logs++;
 				#endif
 			}
 		}
@@ -717,18 +731,22 @@ class leaf : public node_base<P> {
 				}
 				this->update_epochs(globalepoch);
 				this->not_logged = true;
+
+#ifdef COLLECT_STATS
+				n_incll_updates++;
+#endif
 			}else if(this->not_logged){
 				DBGLOG("log node update to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
-				#ifdef EXTLOG
 				this->not_logged=false;
+#ifdef LN_EXTLOG_INCLL
 				GH::node_logger.record(this);
+#endif //ln extlog incll
 				this->invalidate_cls();
-				#endif //extlog
-
 				#ifdef COLLECT_STATS
 				n_records++;
-				#endif
+				n_incll_logs++;
+				#endif // collect stats
 			}
 		}
 
@@ -824,14 +842,19 @@ class leaf : public node_base<P> {
 		void print_cl0() const;
 #else //incll
 		void record_node(){
-			#ifdef EXTLOG
-
 			if(this->loggedepoch != globalepoch){
 				DBGLOG("record leaf ge:%lu", globalepoch)
+#ifdef LN_EXTLOG
 				GH::node_logger.record(this);
+#endif //extlog
 				this->loggedepoch = globalepoch;
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				n_extlog_logs++;
+				#endif
 			}
-			#endif //extlog
+
 		}
 #endif //incll
 

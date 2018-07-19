@@ -26,7 +26,7 @@ bool tcursor<P>::find_insert(threadinfo& ti)
     DBGLOG("insert %p %d", (void*)n_, n_->isleaf())
 
 #ifdef COLLECT_STATS
-    ++n_->n_modifications;
+    n_->n_inserts++;
 #endif //collect stats
 
 

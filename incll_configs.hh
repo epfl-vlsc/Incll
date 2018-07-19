@@ -40,7 +40,13 @@
 #endif //incll
 
 #define EXTLOG
+#ifdef EXTLOG
+#define LN_EXTLOG
+#define LN_EXTLOG_INCLL
+#define IN_EXTLOG
+#endif //extlog
 
-#define COLLECT_STATS
+
+//#define COLLECT_STATS
 
 #define YCSB

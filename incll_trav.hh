@@ -124,8 +124,15 @@ void print_tree_summary(N* root, bool reset_nodes=false){
 	size_t n_keys = 0;
 	size_t n_internodes = 0;
 	size_t n_leafs = 0;
-	double tot_leaf_mods = 0;
-	double tot_leaf_records = 0;
+
+	//ln
+	double tot_ln_inserts = 0;
+	double tot_ln_records = 0;
+	double tot_ln_incll_inserts = 0;
+	double tot_ln_incll_updates = 0;
+	double tot_ln_incll_logs = 0;
+	double tot_ln_extlog_logs = 0;
+	//in
 	double tot_in_records = 0;
 
 	while(!q.empty()){
@@ -139,11 +146,15 @@ void print_tree_summary(N* root, bool reset_nodes=false){
 			size_t nkeys = get_num_keys_leaf(ln);
 			n_keys += nkeys;
 			n_leafs++;
-			tot_leaf_mods += ln->n_modifications;
-			tot_leaf_records += ln->n_records;
+			tot_ln_inserts += ln->n_inserts;
+			tot_ln_records += ln->n_records;
+			tot_ln_incll_inserts += ln->n_incll_inserts;
+			tot_ln_incll_updates += ln->n_incll_updates;
+			tot_ln_incll_logs += ln->n_incll_logs;
+			tot_ln_extlog_logs += ln->n_extlog_logs;
 
 			if(reset_nodes){
-				ln->n_modifications = 0;
+				ln->n_inserts = 0;
 			}
 		}else{
 			auto *in = node->to_internode();
@@ -153,23 +164,36 @@ void print_tree_summary(N* root, bool reset_nodes=false){
 		}
 		n_nodes++;
 	}
-	double avg_leaf_mods = tot_leaf_mods / n_leafs;
-	double avg_leaf_records = tot_leaf_records / n_leafs;
+
+	//ln
+	double avg_ln_inserts = tot_ln_inserts / n_leafs;
+	double avg_ln_records = tot_ln_records / n_leafs;
+	double avg_ln_incll_inserts = tot_ln_incll_inserts / n_leafs;
+	double avg_ln_incll_updates = tot_ln_incll_updates / n_leafs;
+	double avg_ln_incll_logs = tot_ln_incll_logs / n_leafs;
+	double avg_ln_extlog_logs = tot_ln_extlog_logs / n_leafs;
+	//in
 	double avg_in_records = tot_in_records / n_internodes;
 
 	printf("Tree summary\n"
 			"Nodes:%lu IN:%lu LN:%lu Keys:%lu\n"
 			"Epochs:%lu\n"
-			"Tot LN-inserts %f LN-records %f IN-records %f\n"
-			"Avg LN-inserts per node:%f per epoch:%f\n"
-			"Avg LN-records per node:%f per epoch:%f\n"
-			"Avg IN-records per node:%f per epoch:%f\n",
+			"Tot LN-inserts %f Avg LN-inserts per node:%f per epoch:%f\n"
+			"Tot LN-records %f Avg LN-records per node:%f per epoch:%f\n"
+			"Tot LN-incll ins %f Avg LN-incll ins per node:%f per epoch:%f\n"
+			"Tot LN-incll upd %f Avg LN-incll upd per node:%f per epoch:%f\n"
+			"Tot LN-incll log %f Avg LN-incll log per node:%f per epoch:%f\n"
+			"Tot LN-extlog log %f Avg LN-extlog log per node:%f per epoch:%f\n"
+			"Tot IN-records %f Avg IN-records per node:%f per epoch:%f\n",
 			n_nodes, n_internodes, n_leafs, n_keys,
 			n_ge_changes,
-			tot_leaf_mods, tot_leaf_records, tot_in_records,
-			avg_leaf_mods, avg_leaf_mods/n_ge_changes,
-			avg_leaf_records, avg_leaf_records/n_ge_changes,
-			avg_in_records, avg_in_records/n_ge_changes
+			tot_ln_inserts, avg_ln_inserts, avg_ln_inserts/n_ge_changes,
+			tot_ln_records, avg_ln_records, avg_ln_records/n_ge_changes,
+			tot_ln_incll_inserts, avg_ln_incll_inserts, avg_ln_incll_inserts/n_ge_changes,
+			tot_ln_incll_updates, avg_ln_incll_updates, avg_ln_incll_updates/n_ge_changes,
+			tot_ln_incll_logs, avg_ln_incll_logs, avg_ln_incll_logs/n_ge_changes,
+			tot_ln_extlog_logs, avg_ln_extlog_logs, avg_ln_extlog_logs/n_ge_changes,
+			tot_in_records, avg_in_records, avg_in_records/n_ge_changes
 			);
 }
 #endif //collect stats
