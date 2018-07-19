@@ -549,6 +549,8 @@ class leaf : public node_base<P> {
 	incll_lv_ lv_cl1;									//8 bytes
 	leafvalue_type lv_[width];							//112 bytes
 	incll_lv_ lv_cl2;									//8 bytes
+	char tmp; //todo: consider removing.
+	//Without this it deadlock on rand, but improve perf by 2%
 
 
 
