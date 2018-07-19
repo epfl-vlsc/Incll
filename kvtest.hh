@@ -837,6 +837,9 @@ void kvtest_rand(C &client, uint64_t n_keys){
 	//check size
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
+#ifdef COLLECT_STATS
+		print_tree_summary(client.get_root());
+#endif //collect stats
 	}
 }
 
@@ -924,7 +927,12 @@ void kvtest_ycsb(C &client,
 	//check size
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
+#ifdef COLLECT_STATS
+		print_tree_summary(client.get_root());
+#endif //collect stats
 	}
+
+
 
 }
 #endif //ycsb

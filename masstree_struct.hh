@@ -557,7 +557,9 @@ class leaf : public node_base<P> {
 	//Without this it deadlock on rand, but improve perf by 2%, by having 5cl
 	//instead of 6
 
-
+#ifdef COLLECT_STATS
+	size_t n_modifications;
+#endif //collect stats
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
 	kvtimestamp_t created_at_[P::debug_level > 0];
@@ -601,6 +603,10 @@ class leaf : public node_base<P> {
 
         this->not_logged = false;
         this->cl0_idx = invalid_idx;
+
+#ifdef COLLECT_STATS
+        n_modifications = 0;
+#endif
 
         static_assert(
         		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,

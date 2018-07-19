@@ -41,4 +41,6 @@
 
 #define EXTLOG
 
+#define COLLECT_STATS
+
 #define YCSB

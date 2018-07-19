@@ -109,6 +109,49 @@ size_t get_num_nodes(N* root){
 	return num_nodes;
 }
 
+#ifdef COLLECT_STATS
+template <typename N>
+void print_tree_summary(N* root){
+	N* node = root;
+
+	std::queue<N*> q;
+
+	q.push(node);
+
+	size_t n_nodes = 0;
+	size_t n_keys = 0;
+	size_t n_internodes = 0;
+	size_t n_leafs = 0;
+	double avg_leaf_mods = 0;
+
+	while(!q.empty()){
+		node = q.front();
+		q.pop();
+
+		get_children(q, node);
+
+		if(node->isleaf()){
+			auto *ln = node->to_leaf();
+			size_t nkeys = get_num_keys_leaf(ln);
+			n_keys += nkeys;
+			n_leafs++;
+			avg_leaf_mods += ln->n_modifications;
+		}else{
+			get_num_keys_internode(node->to_internode());
+			n_internodes++;
+		}
+		n_nodes++;
+	}
+	avg_leaf_mods /= n_nodes;
+
+	printf("Tree summary\n"
+			"Nodes:%lu IN:%lu LN:%lu Keys:%lu\n"
+			"Avg LN-Mods per node:%f\n",
+			n_nodes, n_internodes, n_leafs, n_keys,
+			avg_leaf_mods);
+}
+#endif //collect stats
+
 template <typename N>
 void print_tree(N* root){
 	N* node = root;
