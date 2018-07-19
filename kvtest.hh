@@ -849,6 +849,7 @@ void kvtest_ycsb(C &client,
 	uint64_t pos = 0, val = 0;
 	size_t init = op_helper.init;
 	size_t nops1 = op_helper.nops1;
+	size_t nkeys = op_helper.nkeys;
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -876,8 +877,8 @@ void kvtest_ycsb(C &client,
 	double t0 = client.now();
 	while(n < nops1){
 		n++;
-		pos = op_helper.next_key();
-		val = op_helper.next_val();
+		pos = client.rand.next() % nkeys;
+		val = client.rand.next() % nkeys;
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
 		case ycsbc::get_op:
