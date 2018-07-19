@@ -846,8 +846,8 @@ void kvtest_rand(C &client, uint64_t n_keys){
 #ifdef YCSB
 template <typename C>
 void kvtest_ycsb(C &client,
-		const ycsbc::OpHelper& op_helper,
-		const ycsbc::OpRatios& op_ratios){
+		ycsbc::OpHelper op_helper,
+		ycsbc::OpRatios op_ratios){
 	GH::node_logger.init(client.id());
 	uint64_t pos = 0, val = 0;
 	size_t init = op_helper.init;

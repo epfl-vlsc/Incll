@@ -19,32 +19,26 @@ enum key_distributions{
 
 
 struct OpRatios{
-	double get_;
-	double get_put_;
-	double get_put_rem_;
+	const int get_;
+	const int get_put_;
+	const int get_put_rem_;
 	static constexpr const int MAX_FREQ = 100;
 
-	UniformGenerator *uni_rand;
+	kvrandom_lcg_nr rand;
 
 	OpRatios(int get_freq,
 			int put_freq,
 			int rem_freq,
-			int scan_freq){
-		get_ = get_freq;
-		get_put_ = get_ + put_freq;
-		get_put_rem_ = get_put_ + rem_freq;
+			int scan_freq):
+				get_(get_freq),
+				get_put_(get_ + put_freq),
+				get_put_rem_(get_put_ + rem_freq){
 
 		assert(get_put_rem_ + scan_freq == MAX_FREQ);
-
-		uni_rand = new UniformGenerator(MAX_FREQ);
 	}
 
-	~OpRatios(){
-		delete uni_rand;
-	}
-
-	ycsb_op get_next_op() const{
-		double op = uni_rand->next();
+	ycsb_op get_next_op(){
+		double op = rand.next()%MAX_FREQ;
 		if(op < get_){
 			return get_op;
 		}else if(op < get_put_){
