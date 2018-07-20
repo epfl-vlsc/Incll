@@ -2,29 +2,34 @@
 
 #include <cstdio>
 
+using namespace ycsbc;
+
 #define N 10000
 
-void print_dist(const ycsbc::OpHelper& op_helper){
+template <typename R1, typename R2, typename R3>
+void print_dist(ycsbc::OpHelper<R1, R2, R3>& op_helper){
 	for(int i=0;i<N;++i){
-		printf("%lu\n", op_helper.next_key());
+		printf("%d\n", op_helper.key_rand.next());
 	}
 }
 
-void assert_avg(const ycsbc::OpHelper& op_helper, uint64_t avg){
+template <typename R1, typename R2, typename R3>
+void assert_avg(OpHelper<R1, R2, R3>& op_helper, uint64_t avg){
 	uint64_t sum = 0;
 	for(int i=0;i<N;++i){
-		sum += op_helper.next_key();
+		sum += op_helper.key_rand.next();
 	}
 	assert(sum/N < avg);
+	print_dist(op_helper);
 }
 
 void test_zipfian(){
-	ycsbc::OpHelper op_helper(1,1,1,100,ycsbc::kgd_zipfian);
+	OpHelper<ZipfianDist, ZipfianDist, ZipfianDist> op_helper(1,1,1,100);
 	assert_avg(op_helper,20);
 }
 
 void test_uniform(){
-	ycsbc::OpHelper op_helper(1,1,1,100,ycsbc::kgd_uniform);
+	OpHelper<UniformDist, UniformDist, UniformDist> op_helper(1,1,1,100);
 	assert_avg(op_helper,55);
 }
 

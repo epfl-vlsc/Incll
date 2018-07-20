@@ -56,23 +56,15 @@ struct OpHelper{
 	Rkey key_rand;
 	Rval val_rand;
 
-	uint64_t next_key(){
-		return key_rand.next();
-	}
-
-	uint64_t next_val(){
-		return val_rand.next();
-	}
-
-	uint64_t next_init_key(){
-		return init_rand.next();
-	}
-
 	OpHelper(size_t init_, size_t nops1_,
 			size_t nops2_, size_t nkeys_):
 	init(init_), nops1(nops1_),
 	nops2(nops2_), nkeys(nkeys_)
-	{}
+	{
+		init_rand.init(nkeys_);
+		key_rand.init(nkeys_);
+		val_rand.init(nkeys_);
+	}
 
 };
 

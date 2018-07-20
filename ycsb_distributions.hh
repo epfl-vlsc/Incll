@@ -30,28 +30,51 @@ double rand_val(int seed){
 	x_div_q = x / q;
 	x_mod_q = x % q;
 	x_new = (a * x_mod_q) - (r * x_div_q);
-	if (x_new > 0){
+	if (x_new > 0)
 		x = x_new;
-	}else{
+	else
 		x = x_new + m;
-	}
 
 	// Return a random value between 0.0 and 1.0
 	return((double) x / m);
 }
 
-struct Zipfian{
+struct UpperBound{
 	int n;
-	double alpha;
+
+	UpperBound():n(0){}
+
+	void init(int n_){
+		n = n_;
+	}
+};
+
+struct UniformDist: public kvrandom_lcg_nr, public UpperBound{
+	int next(){
+		return kvrandom_lcg_nr::next() % UpperBound::n;
+	}
+};
+
+struct ZipfianDist: public UpperBound{
 	double c = 0;          // Normalization constant
 	double *sum_probs;     // Pre-calculated sum of probabilities
 
 
-	Zipfian(int n_, double alpha_=0.99):n(n_), alpha(alpha_), sum_probs(nullptr){
-		first();
+	ZipfianDist():sum_probs(nullptr){}
+
+	~ZipfianDist(){
+		if(sum_probs)
+			free(sum_probs);
 	}
 
-	void first(){
+	void init(int n_, double alpha_=0.99){
+		UpperBound::init(n_);
+		first(alpha_);
+		rand_val(1);
+	}
+
+	void first(double alpha){
+		assert(n);
 		for (int i=1; i<=n; i++){
 			c = c + (1.0 / pow((double) i, alpha));
 		}
@@ -65,25 +88,24 @@ struct Zipfian{
 	}
 
 	int next(){
-		double z;                   // Uniform random number (0 < z < 1)
-		int zipf_value;             // Computed exponential value to be returned
+		double z;                     // Uniform random number (0 < z < 1)
+		int zipf_value;               // Computed exponential value to be returned
 
 		// Pull a uniform random number (0 < z < 1)
 		do{
 			z = rand_val(0);
-		}
-		while ((z == 0) || (z == 1));
+		}while ((z == 0) || (z == 1));
 
 		// Map z to the value
-		int low = 1, high = n, mid; // Binary-search bounds
+		int low = 1, high = n, mid;
 		do {
 			mid = floor((low+high)/2);
 			if (sum_probs[mid] >= z && sum_probs[mid-1] < z) {
 				zipf_value = mid;
 				break;
-			} else if (sum_probs[mid] >= z) {
+			}else if (sum_probs[mid] >= z) {
 				high = mid-1;
-			} else {
+			}else {
 				low = mid+1;
 			}
 		} while (low <= high);
@@ -94,8 +116,6 @@ struct Zipfian{
 		return(zipf_value);
 	}
 };
-
-
 
 
 }; //ycsb
