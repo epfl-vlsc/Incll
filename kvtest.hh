@@ -844,9 +844,9 @@ void kvtest_rand(C &client, uint64_t n_keys){
 }
 
 #ifdef YCSB
-template <typename C>
+template <typename C, typename Rinit, typename Rkey, typename Rval>
 void kvtest_ycsb(C &client,
-		ycsbc::OpHelper op_helper,
+		ycsbc::OpHelper<Rinit, Rkey, Rval> op_helper,
 		ycsbc::OpRatios op_ratios){
 	GH::node_logger.init(client.id());
 	uint64_t pos = 0, val = 0;
@@ -864,7 +864,7 @@ void kvtest_ycsb(C &client,
 	if(client.id() == 0){
 		while (n < init) {
 			++n;
-			pos = op_helper.next_init_key();
+			pos = n;
 			val = pos + 1;
 
 			local_size += client.put(pos, val);
