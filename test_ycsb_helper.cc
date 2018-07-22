@@ -2,31 +2,40 @@
 
 #include <cstdio>
 
+using namespace ycsbc;
+
 #define N 10000
 
-void print_dist(const ycsbc::OpHelper& op_helper){
+template <typename Dist>
+void print_dist(Dist& dist){
 	for(int i=0;i<N;++i){
-		printf("%lu\n", op_helper.next_key());
+		printf("%d\n", dist.next());
 	}
 }
 
-void assert_avg(const ycsbc::OpHelper& op_helper, uint64_t avg){
+template <typename Dist>
+void assert_avg(Dist& dist, uint64_t avg){
 	uint64_t sum = 0;
 	for(int i=0;i<N;++i){
-		sum += op_helper.next_key();
+		sum += dist.next();
 	}
 	assert(sum/N < avg);
 }
 
-void test_zipfian(){
-	ycsbc::OpHelper op_helper(1,1,1,100,ycsbc::kgd_zipfian);
-	assert_avg(op_helper,20);
+void test_distributions(){
+	CounterGen cg;
+	cg.init(100);
+	assert_avg(cg,51);
+
+	UniformGen ug;
+	ug.init(100);
+	assert_avg(ug,55);
+
+	ZipfianGen zg;
+	zg.init(100);
+	assert_avg(zg,20);
 }
 
-void test_uniform(){
-	ycsbc::OpHelper op_helper(1,1,1,100,ycsbc::kgd_uniform);
-	assert_avg(op_helper,55);
-}
 
 void do_experiment(std::string fnc_name, void (*fnc)()){
 	printf("%s\n", (fnc_name + " begin").c_str());
@@ -40,8 +49,7 @@ void do_experiment(std::string fnc_name, void (*fnc)()){
 
 
 int main(){
-	DO_EXPERIMENT(test_zipfian)
-	DO_EXPERIMENT(test_uniform)
+	DO_EXPERIMENT(test_distributions)
 
 	return 0;
 }

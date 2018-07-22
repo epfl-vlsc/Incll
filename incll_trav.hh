@@ -109,6 +109,95 @@ size_t get_num_nodes(N* root){
 	return num_nodes;
 }
 
+#ifdef COLLECT_STATS
+extern size_t n_ge_changes;
+
+template <typename N>
+void print_tree_summary(N* root, bool reset_nodes=false){
+	N* node = root;
+
+	std::queue<N*> q;
+
+	q.push(node);
+
+	size_t n_nodes = 0;
+	size_t n_keys = 0;
+	size_t n_internodes = 0;
+	size_t n_leafs = 0;
+
+	//ln
+	double tot_ln_inserts = 0;
+	double tot_ln_records = 0;
+	double tot_ln_incll_inserts = 0;
+	double tot_ln_incll_updates = 0;
+	double tot_ln_incll_logs = 0;
+	double tot_ln_extlog_logs = 0;
+	//in
+	double tot_in_records = 0;
+
+	while(!q.empty()){
+		node = q.front();
+		q.pop();
+
+		get_children(q, node);
+
+		if(node->isleaf()){
+			auto *ln = node->to_leaf();
+			size_t nkeys = get_num_keys_leaf(ln);
+			n_keys += nkeys;
+			n_leafs++;
+			tot_ln_inserts += ln->n_inserts;
+			tot_ln_records += ln->n_records;
+			tot_ln_incll_inserts += ln->n_incll_inserts;
+			tot_ln_incll_updates += ln->n_incll_updates;
+			tot_ln_incll_logs += ln->n_incll_logs;
+			tot_ln_extlog_logs += ln->n_extlog_logs;
+
+			if(reset_nodes){
+				ln->n_inserts = 0;
+			}
+		}else{
+			auto *in = node->to_internode();
+			get_num_keys_internode(in);
+			n_internodes++;
+			tot_in_records += in->n_records;
+		}
+		n_nodes++;
+	}
+
+	//ln
+	double avg_ln_inserts = tot_ln_inserts / n_leafs;
+	double avg_ln_records = tot_ln_records / n_leafs;
+	double avg_ln_incll_inserts = tot_ln_incll_inserts / n_leafs;
+	double avg_ln_incll_updates = tot_ln_incll_updates / n_leafs;
+	double avg_ln_incll_logs = tot_ln_incll_logs / n_leafs;
+	double avg_ln_extlog_logs = tot_ln_extlog_logs / n_leafs;
+	//in
+	double avg_in_records = tot_in_records / n_internodes;
+
+	printf("Tree summary\n"
+			"Nodes:%lu IN:%lu LN:%lu Keys:%lu\n"
+			"Epochs:%lu\n"
+			"Tot LN-inserts %f Avg LN-inserts per node:%f per epoch:%f\n"
+			"Tot LN-records %f Avg LN-records per node:%f per epoch:%f\n"
+			"Tot LN-incll ins %f Avg LN-incll ins per node:%f per epoch:%f\n"
+			"Tot LN-incll upd %f Avg LN-incll upd per node:%f per epoch:%f\n"
+			"Tot LN-incll log %f Avg LN-incll log per node:%f per epoch:%f\n"
+			"Tot LN-extlog log %f Avg LN-extlog log per node:%f per epoch:%f\n"
+			"Tot IN-records %f Avg IN-records per node:%f per epoch:%f\n",
+			n_nodes, n_internodes, n_leafs, n_keys,
+			n_ge_changes,
+			tot_ln_inserts, avg_ln_inserts, avg_ln_inserts/n_ge_changes,
+			tot_ln_records, avg_ln_records, avg_ln_records/n_ge_changes,
+			tot_ln_incll_inserts, avg_ln_incll_inserts, avg_ln_incll_inserts/n_ge_changes,
+			tot_ln_incll_updates, avg_ln_incll_updates, avg_ln_incll_updates/n_ge_changes,
+			tot_ln_incll_logs, avg_ln_incll_logs, avg_ln_incll_logs/n_ge_changes,
+			tot_ln_extlog_logs, avg_ln_extlog_logs, avg_ln_extlog_logs/n_ge_changes,
+			tot_in_records, avg_in_records, avg_in_records/n_ge_changes
+			);
+}
+#endif //collect stats
+
 template <typename N>
 void print_tree(N* root){
 	N* node = root;

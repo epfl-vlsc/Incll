@@ -223,10 +223,20 @@ class internode : public node_base<P> {
     ikey_type ikey0_[width];
     node_base<P>* child_[width + 1];
     node_base<P>* parent_;
+
+
+#ifdef COLLECT_STATS
+	size_t n_records;
+#endif
+
     kvtimestamp_t created_at_[P::debug_level > 0];
 
     internode(uint32_t height)
         : node_base<P>(false), nkeys_(0), height_(height), parent_() {
+
+#ifdef COLLECT_STATS
+		n_records = 0;
+#endif
     }
 
     static internode<P>* make(uint32_t height, threadinfo& ti) {
@@ -242,8 +252,14 @@ class internode : public node_base<P> {
     void record_node(){
 		if(this->loggedepoch != globalepoch){
 			DBGLOG("record internode ge:%lu", globalepoch)
+#ifdef IN_EXTLOG
 			GH::node_logger.record(this);
+#endif //in extlog
 			this->loggedepoch = globalepoch;
+
+			#ifdef COLLECT_STATS
+				n_records++;
+			#endif
 		}
 	}
 
@@ -549,8 +565,18 @@ class leaf : public node_base<P> {
 	incll_lv_ lv_cl1;									//8 bytes
 	leafvalue_type lv_[width];							//112 bytes
 	incll_lv_ lv_cl2;									//8 bytes
+	char tmp; //todo: consider removing.
+	//Without this it deadlock on rand, but improve perf by 2%, by having 5cl
+	//instead of 6
 
-
+#ifdef COLLECT_STATS
+	size_t n_inserts;
+	size_t n_records;
+	size_t n_incll_inserts;
+	size_t n_incll_updates;
+	size_t n_incll_logs;
+	size_t n_extlog_logs;
+#endif //collect stats
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
 	kvtimestamp_t created_at_[P::debug_level > 0];
@@ -595,6 +621,15 @@ class leaf : public node_base<P> {
         this->not_logged = false;
         this->cl0_idx = invalid_idx;
 
+#ifdef COLLECT_STATS
+        n_inserts = 0;
+        n_records = 0;
+        n_incll_inserts = 0;
+		n_incll_updates = 0;
+		n_incll_logs = 0;
+		n_extlog_logs = 0;
+#endif
+
         static_assert(
         		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,
         		"incll for lv_ is not cache aligned properly");
@@ -628,10 +663,18 @@ class leaf : public node_base<P> {
 			if(this->loggedepoch != globalepoch || this->not_logged){
 				DBGLOG("record leaf ge:%lu nl:%d keys:%d", globalepoch, not_logged, this->number_of_keys())
 				this->not_logged=false;
+#ifdef LN_EXTLOG
 				GH::node_logger.record(this);
+#endif //ln extlog
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				n_extlog_logs++;
+				#endif
 			}
+
 		}
 
 		void recover_cl0(){
@@ -654,12 +697,24 @@ class leaf : public node_base<P> {
 				this->cl0_idx = 0;
 				this->update_epochs(globalepoch);
 				this->not_logged = true;
+
+#ifdef COLLECT_STATS
+				n_incll_inserts++;
+#endif
 			}else if(this->not_logged){
 				DBGLOG("log node insert to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
 				this->not_logged=false;
+#ifdef EXTLOG
 				GH::node_logger.record(this);
+#endif //ln extlog incll
 				this->invalidate_cls();
+
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				n_incll_logs++;
+				#endif
 			}
 		}
 
@@ -676,12 +731,22 @@ class leaf : public node_base<P> {
 				}
 				this->update_epochs(globalepoch);
 				this->not_logged = true;
+
+#ifdef COLLECT_STATS
+				n_incll_updates++;
+#endif
 			}else if(this->not_logged){
 				DBGLOG("log node update to %p ge:%lu le:%lu",
 						(void*)this, globalepoch, this->loggedepoch)
 				this->not_logged=false;
+#ifdef LN_EXTLOG_INCLL
 				GH::node_logger.record(this);
+#endif //ln extlog incll
 				this->invalidate_cls();
+				#ifdef COLLECT_STATS
+				n_records++;
+				n_incll_logs++;
+				#endif // collect stats
 			}
 		}
 
@@ -779,9 +844,17 @@ class leaf : public node_base<P> {
 		void record_node(){
 			if(this->loggedepoch != globalepoch){
 				DBGLOG("record leaf ge:%lu", globalepoch)
+#ifdef LN_EXTLOG
 				GH::node_logger.record(this);
+#endif //extlog
 				this->loggedepoch = globalepoch;
+
+				#ifdef COLLECT_STATS
+				n_records++;
+				n_extlog_logs++;
+				#endif
 			}
+
 		}
 #endif //incll
 

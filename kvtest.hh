@@ -837,19 +837,21 @@ void kvtest_rand(C &client, uint64_t n_keys){
 	//check size
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
+#ifdef COLLECT_STATS
+		print_tree_summary(client.get_root());
+#endif //collect stats
 	}
 }
 
 #ifdef YCSB
-template <typename C>
+template <typename C, typename OpH>
 void kvtest_ycsb(C &client,
-		const ycsbc::OpHelper& op_helper,
-		const ycsbc::OpRatios& op_ratios){
+		OpH op_helper,
+		ycsbc::OpRatios op_ratios){
 	GH::node_logger.init(client.id());
-	uint64_t pos = 0, val = 0;
-	size_t init = op_helper.init;
-	size_t nops1 = op_helper.nops1;
-	size_t nkeys = op_helper.nkeys;
+	long pos = 0, val = 0;
+	size_t init = op_helper.ninitops;
+	size_t nops1 = op_helper.nops;
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -859,7 +861,6 @@ void kvtest_ycsb(C &client,
 	size_t local_size = 0;
 
 	if(client.id() == 0){
-		printf("Create tree\n");
 		while (n < init) {
 			++n;
 			pos = op_helper.next_init_key();
@@ -867,33 +868,43 @@ void kvtest_ycsb(C &client,
 
 			local_size += client.put(pos, val);
 		}
+#ifdef COLLECT_STATS
+		print_tree_summary(client.get_root(), true);
+#endif //collect stats
+		printf("Created tree--------------------\n");
+
 	}
 
 	//Barrier-------------------------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
+	client.rcu_quiesce();
+#ifdef GLOBAL_FLUSH
+		GH::global_flush.ack_flush();
+#endif
 
 	n = 0;
 
 	double t0 = client.now();
 	while(n < nops1){
 		n++;
-		pos = client.rand.next() % nkeys;
-		val = client.rand.next() % nkeys;
+
+		pos = op_helper.next_key();
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
-		case ycsbc::get_op:
+		case ycsbc::get_op:{
 			client.get_sync(pos);
-			break;
-		case ycsbc::put_op:
+		}break;
+		case ycsbc::put_op:{
+			val = op_helper.next_val();
 			local_size += client.put(pos, val);
-			break;
-		case ycsbc::rem_op:
+		}break;
+		case ycsbc::rem_op:{
 			local_size -= client.remove_sync(pos);
-			break;
+		}break;
 		case ycsbc::scan_op:{
 			key.set(pos, 8);
 			client.scan_sync(key.string(), 10, keys, values);
-			}break;
+		}break;
 		default:
 			assert(0);
 			break;
@@ -907,7 +918,7 @@ void kvtest_ycsb(C &client,
 #endif
 	}
 	double t1 = client.now();
-	//result.set("time", t1-t0);
+	result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
 
 #ifdef GLOBAL_FLUSH
@@ -924,7 +935,12 @@ void kvtest_ycsb(C &client,
 	//check size
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
+#ifdef COLLECT_STATS
+		print_tree_summary(client.get_root());
+#endif //collect stats
 	}
+
+
 
 }
 #endif //ycsb
