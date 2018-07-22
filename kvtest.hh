@@ -844,15 +844,14 @@ void kvtest_rand(C &client, uint64_t n_keys){
 }
 
 #ifdef YCSB
-template <typename C, typename Rinit, typename Rkey, typename Rval>
+template <typename C, typename OpH>
 void kvtest_ycsb(C &client,
-		ycsbc::OpHelper<Rinit, Rkey, Rval> op_helper,
+		OpH op_helper,
 		ycsbc::OpRatios op_ratios){
 	GH::node_logger.init(client.id());
-	uint64_t pos = 0, val = 0;
+	long pos = 0, val = 0;
 	size_t init = op_helper.ninitops;
 	size_t nops1 = op_helper.nops;
-	size_t nkeys = op_helper.nkeys;
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -864,7 +863,7 @@ void kvtest_ycsb(C &client,
 	if(client.id() == 0){
 		while (n < init) {
 			++n;
-			pos = n;
+			pos = op_helper.next_init_key();
 			val = pos + 1;
 
 			local_size += client.put(pos, val);
@@ -888,23 +887,24 @@ void kvtest_ycsb(C &client,
 	double t0 = client.now();
 	while(n < nops1){
 		n++;
-		pos = client.rand.next() % nkeys;
-		val = client.rand.next() % nkeys;
+
+		pos = op_helper.next_key();
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
-		case ycsbc::get_op:
+		case ycsbc::get_op:{
 			client.get_sync(pos);
-			break;
-		case ycsbc::put_op:
+		}break;
+		case ycsbc::put_op:{
+			val = op_helper.next_val();
 			local_size += client.put(pos, val);
-			break;
-		case ycsbc::rem_op:
+		}break;
+		case ycsbc::rem_op:{
 			local_size -= client.remove_sync(pos);
-			break;
+		}break;
 		case ycsbc::scan_op:{
 			key.set(pos, 8);
 			client.scan_sync(key.string(), 10, keys, values);
-			}break;
+		}break;
 		default:
 			assert(0);
 			break;
