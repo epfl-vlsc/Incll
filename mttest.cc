@@ -587,27 +587,27 @@ MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
 #ifdef YCSB
-typedef ycsbc::UniformDist UD;
-typedef ycsbc::ZipfianDist ZD;
+typedef ycsbc::UniformGen UG;
+typedef ycsbc::ZipfianGen ZG;
 
 MAKE_TESTRUNNER(ycsb_a,
 kvtest_ycsb(client,
-		ycsbc::OpHelper<UD, UD, UD>(20000000, 1000000, 0, 20000000),
+		ycsbc::OpHelper<UG, UG, UG>(20000000, 1000000, 20000000),
 ycsbc::OpRatios(50, 50, 0, 0)));
 
 MAKE_TESTRUNNER(ycsb_b,
 kvtest_ycsb(client,
-ycsbc::OpHelper<UD, UD, UD>(20000000, 1000000, 0, 20000000),
+ycsbc::OpHelper<UG, UG, UG>(20000000, 1000000, 20000000),
 ycsbc::OpRatios(95, 5, 0, 0)));
 
 MAKE_TESTRUNNER(ycsb_c,
 kvtest_ycsb(client,
-ycsbc::OpHelper<UD, UD, UD>(20000000, 1000000, 0, 20000000),
+ycsbc::OpHelper<UG, UG, UG>(20000000, 1000000, 20000000),
 ycsbc::OpRatios(100, 0, 0, 0)));
 
 MAKE_TESTRUNNER(ycsb_e,
 kvtest_ycsb(client,
-ycsbc::OpHelper<UD, UD, UD>(20000000, 1000000, 0, 20000000),
+ycsbc::OpHelper<UG, UG, UG>(20000000, 1000000, 20000000),
 ycsbc::OpRatios(0, 5, 0, 95)));
 #endif //ycsb
 

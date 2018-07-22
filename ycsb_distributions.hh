@@ -10,59 +10,79 @@
 
 namespace ycsbc {
 
-double rand_val(int seed){
-	const long  a =      16807;  // Multiplier
-	const long  m = 2147483647;  // Modulus
-	const long  q =     127773;  // m div a
-	const long  r =       2836;  // m mod a
-	static long x;               // Random int value
-	long        x_div_q;         // x divided by q
-	long        x_mod_q;         // x modulo q
-	long        x_new;           // New x value
-
-	// Set the seed if argument is non-zero and then return zero
-	if (seed > 0){
-		x = seed;
-		return(0.0);
-	}
-
-	// RNG using integer arithmetic
-	x_div_q = x / q;
-	x_mod_q = x % q;
-	x_new = (a * x_mod_q) - (r * x_div_q);
-	if (x_new > 0)
-		x = x_new;
-	else
-		x = x_new + m;
+double rand_val(){
+	static kvrandom_lcg_nr rand;
+	const static long  m = 2147483647;  // Modulus
 
 	// Return a random value between 0.0 and 1.0
-	return((double) x / m);
+	return((double) rand.next() / m);
+}
+
+const long FNV_OFFSET_BASIS_64 = 0xCBF29CE484222325;
+const long FNV_PRIME_64 = 1099511628211;
+inline long fnvhash64(long val) {
+	long hash = FNV_OFFSET_BASIS_64;
+
+	for (int i = 0; i < 8; i++) {
+		long octet = val & 0x00ff;
+		val = val >> 8;
+
+		hash = hash ^ octet;
+		hash = hash * FNV_PRIME_64;
+	}
+	return abs(hash);
 }
 
 struct UpperBound{
-	int n;
+	long n;
 
 	UpperBound():n(0){}
 
-	void init(int n_){
+	void init(long n_){
 		n = n_;
 	}
-};
 
-struct UniformDist: public kvrandom_lcg_nr, public UpperBound{
-	int next(){
-		return kvrandom_lcg_nr::next() % UpperBound::n;
+	void init(long n_, void* ptr){
+		n = n_;
+		(void)(ptr);
 	}
 };
 
-struct ZipfianDist: public UpperBound{
+struct CounterGen: public UpperBound{
+	std::atomic<long> counter;
+	long n_low;
+
+	CounterGen():UpperBound(),
+			counter(0), n_low(0){}
+
+	long next(){
+		assert(n);
+		return counter.fetch_add(1) % n;
+	}
+
+	long last(){
+		return (counter.load() - 1) % n;
+	}
+
+	void init(long n_, long n_low_ = 0){
+		n = n_;
+		n_low = n_low_;
+	}
+};
+
+struct UniformGen: public kvrandom_lcg_nr, public UpperBound{
+	long next(){
+		return kvrandom_lcg_nr::next() % n;
+	}
+};
+
+struct ZipfianGen: public UpperBound{
 	double c = 0;          // Normalization constant
 	double *sum_probs;     // Pre-calculated sum of probabilities
 
+	ZipfianGen():sum_probs(nullptr){}
 
-	ZipfianDist():sum_probs(nullptr){}
-
-	~ZipfianDist(){
+	~ZipfianGen(){
 		if(sum_probs)
 			free(sum_probs);
 	}
@@ -70,7 +90,6 @@ struct ZipfianDist: public UpperBound{
 	void init(int n_, double alpha_=0.99){
 		UpperBound::init(n_);
 		first(alpha_);
-		rand_val(1);
 	}
 
 	void first(double alpha){
@@ -87,17 +106,21 @@ struct ZipfianDist: public UpperBound{
 		}
 	}
 
-	int next(){
+	long next(){
+		return next(n);
+	}
+
+	long next(long n_){
 		double z;                     // Uniform random number (0 < z < 1)
-		int zipf_value;               // Computed exponential value to be returned
+		long zipf_value = 0;           // Computed exponential value to be returned
 
 		// Pull a uniform random number (0 < z < 1)
 		do{
-			z = rand_val(0);
+			z = rand_val();
 		}while ((z == 0) || (z == 1));
 
 		// Map z to the value
-		int low = 1, high = n, mid;
+		int low = 0, high = n_, mid;
 		do {
 			mid = floor((low+high)/2);
 			if (sum_probs[mid] >= z && sum_probs[mid-1] < z) {
@@ -111,11 +134,30 @@ struct ZipfianDist: public UpperBound{
 		} while (low <= high);
 
 		// Assert that zipf_value is between 1 and N
-		assert((zipf_value >=1) && (zipf_value <= n));
+		assert((zipf_value >=1) && (zipf_value <= n_));
 
-		return(zipf_value);
+		return zipf_value-1;
 	}
 };
 
+struct ScrambledZipfianGen: public ZipfianGen{
+	long next(){
+		return fnvhash64(ZipfianGen::next()) % n;
+	}
+};
+
+struct SkewedLatestGen: public ZipfianGen{
+	CounterGen *insert_rand;
+
+	void init(int n_, CounterGen *insert_rand_){
+		ZipfianGen::init(n_);
+		insert_rand = insert_rand_;
+	}
+
+	long next(){
+		long max = insert_rand->last();
+		return max - ZipfianGen::next(max);
+	}
+};
 
 }; //ycsb

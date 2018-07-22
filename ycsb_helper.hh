@@ -47,19 +47,19 @@ struct OpRatios{
 
 template <typename Rinit, typename Rkey, typename Rval>
 struct OpHelper{
-	size_t init;
-	size_t nops1;
-	size_t nops2;
+	size_t ninitops;
+	size_t nops;
 	size_t nkeys;
 
 	Rinit init_rand;
 	Rkey key_rand;
 	Rval val_rand;
 
-	OpHelper(size_t init_, size_t nops1_,
-			size_t nops2_, size_t nkeys_):
-	init(init_), nops1(nops1_),
-	nops2(nops2_), nkeys(nkeys_)
+	OpHelper(size_t ninitops_, size_t nops_,
+			size_t nkeys_):
+				ninitops(ninitops_),
+				nops(nops_),
+				nkeys(nkeys_)
 	{
 		init_rand.init(nkeys_);
 		key_rand.init(nkeys_);

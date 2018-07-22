@@ -850,8 +850,8 @@ void kvtest_ycsb(C &client,
 		ycsbc::OpRatios op_ratios){
 	GH::node_logger.init(client.id());
 	uint64_t pos = 0, val = 0;
-	size_t init = op_helper.init;
-	size_t nops1 = op_helper.nops1;
+	size_t init = op_helper.ninitops;
+	size_t nops1 = op_helper.nops;
 	size_t nkeys = op_helper.nkeys;
 
 	quick_istr key;
