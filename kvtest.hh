@@ -862,11 +862,11 @@ void kvtest_ycsb(C &client,
 
 	if(client.id() == 0){
 		while (n < init) {
-			++n;
-			pos = op_helper.next_init_key();
+			pos = n;
 			val = pos + 1;
 
 			local_size += client.put(pos, val);
+			++n;
 		}
 #ifdef COLLECT_STATS
 		print_tree_summary(client.get_root(), true);
