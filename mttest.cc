@@ -586,27 +586,40 @@ static pthread_cond_t subtest_cond;
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 //MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
+//UniGen()
+//Zipfian(nkeys)
+//ScrambledZipGen(nkeys, put_ratio, nops, alpha)
+
+
 MAKE_TESTRUNNER(ycsb_a,
 kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
-		ycsbc::OpRatios(50, 50, 0, 0)));
+		ycsbc::OpHelper(20000000, 1000000, 20000000),
+		ycsbc::OpRatios(50, 50, 0, 0),
+		UniGen()
+));
 
 
 MAKE_TESTRUNNER(ycsb_b,
 kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
-		ycsbc::OpRatios(95, 5, 0, 0)));
+		ycsbc::OpHelper(20000000, 1000000, 20000000),
+		ycsbc::OpRatios(95, 5, 0, 0),
+		UniGen()
+));
 
 MAKE_TESTRUNNER(ycsb_c,
 		kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
-		ycsbc::OpRatios(100, 0, 0, 0)));
+		ycsbc::OpHelper(20000000, 1000000, 20000000),
+		ycsbc::OpRatios(100, 0, 0, 0),
+		UniGen()
+));
 
 
 MAKE_TESTRUNNER(ycsb_e,
 		kvtest_ycsb(client,
-		ycsbc::OpHelper(20000000, 1000000, 0, 20000000, ycsbc::kgd_zipfian),
-		ycsbc::OpRatios(0, 5, 0, 95)));
+		ycsbc::OpHelper(20000000, 1000000, 20000000),
+		ycsbc::OpRatios(0, 5, 0, 95),
+		UniGen()
+));
 
 
 /*

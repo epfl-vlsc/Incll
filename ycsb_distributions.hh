@@ -1,163 +1,146 @@
-#pragma once
+/*
+ * zipf.h
+ *
+ *  Created on: 13 Jun 2018
+ *      Author: ncohen
+ */
 
-#include <cassert>
+
+#include <algorithm>
 #include <cmath>
-#include <cstdint>
-#include <mutex>
-#include <atomic>
-#include <mutex>
 #include <random>
 
-namespace ycsbc {
+/** Zipf-like random distribution.
+ *
+ * "Rejection-inversion to generate variates from monotone discrete
+ * distributions", Wolfgang Hörmann and Gerhard Derflinger
+ * ACM TOMACS 6.3 (1996): 169-184
+ */
+template<class IntType = unsigned long, class RealType = double>
+class ZipfianDist{
+public:
+    typedef RealType input_type;
+    typedef IntType result_type;
 
-double rand_val(){
-	static kvrandom_lcg_nr rand;
-	const static long  m = 2147483647;  // Modulus
+    std::mt19937 rng;
 
-	// Return a random value between 0.0 and 1.0
-	return((double) rand.next() / m);
+    static_assert(std::numeric_limits<IntType>::is_integer, "");
+    static_assert(!std::numeric_limits<RealType>::is_integer, "");
+
+    ZipfianDist(const IntType n=std::numeric_limits<IntType>::max(),
+                      const RealType q=0.99): n(n), q(q), H_x1(H(1.5) - 1.0)
+    , H_n(H(n + 0.5)), dist(H_x1, H_n){}
+
+    void reset(int seed){
+    	rng.seed(seed);
+    }
+
+    IntType next(){
+        while (true) {
+            const RealType u = dist(rng);
+            const RealType x = H_inv(u);
+            const IntType  k = clamp<IntType>(std::round(x), 1, n);
+            if (u >= H(k + 0.5) - h(k)) {
+                return k;
+            }
+        }
+    }
+
+protected:
+    /** Clamp x to [min, max]. */
+    template<typename T>
+    static constexpr T clamp(const T x, const T min, const T max)
+    {
+        return std::max(min, std::min(max, x));
+    }
+
+    /** exp(x) - 1 / x */
+    static double
+    expxm1bx(const double x)
+    {
+        return (std::abs(x) > epsilon)
+        ? std::expm1(x) / x
+        : (1.0 + x/2.0 * (1.0 + x/3.0 * (1.0 + x/4.0)));
+    }
+
+    /** H(x) = log(x) if q == 1, (x^(1-q) - 1)/(1 - q) otherwise.
+     * H(x) is an integral of h(x).
+     *
+     * Note the numerator is one less than in the paper order to work with all
+     * positive q.
+     */
+    const RealType H(const RealType x)
+    {
+        const RealType log_x = std::log(x);
+        return expxm1bx((1.0 - q) * log_x) * log_x;
+    }
+
+    /** log(1 + x) / x */
+    static RealType
+    log1pxbx(const RealType x)
+    {
+        return (std::abs(x) > epsilon)
+        ? std::log1p(x) / x
+        : 1.0 - x * ((1/2.0) - x * ((1/3.0) - x * (1/4.0)));
+    }
+
+    /** The inverse function of H(x) */
+    const RealType H_inv(const RealType x)
+    {
+        const RealType t = std::max(-1.0, x * (1.0 - q));
+        return std::exp(log1pxbx(t) * x);
+    }
+
+    /** That hat function h(x) = 1 / (x ^ q) */
+    const RealType h(const RealType x)
+    {
+        return std::exp(-q * std::log(x));
+    }
+
+    static constexpr RealType epsilon = 1e-8;
+
+    IntType                                  n;     ///< Number of elements
+    RealType                                 q;     ///< Exponent
+    RealType                                 H_x1;  ///< H(x_1)
+    RealType                                 H_n;   ///< H(n)
+    std::uniform_real_distribution<RealType> dist;  ///< [H(x_1), H(n)]
+};
+
+
+const uint64_t kFNVOffsetBasis64 = 0xCBF29CE484222325;
+const uint64_t kFNVPrime64 = 1099511628211;
+template <class IntType>
+inline uint64_t FNVHash64(IntType val) {
+	uint64_t hash = kFNVOffsetBasis64;
+
+  for (int i = 0; i < 8; i++) {
+	  uint64_t octet = val & 0x00ff;
+    val = val >> 8;
+
+    hash = hash ^ octet;
+    hash = hash * kFNVPrime64;
+  }
+  return hash;
 }
 
-const long FNV_OFFSET_BASIS_64 = 0xCBF29CE484222325;
-const long FNV_PRIME_64 = 1099511628211;
-inline long fnvhash64(long val) {
-	long hash = FNV_OFFSET_BASIS_64;
+template<class IntType = unsigned long, class RealType = double>
+class ScrambledZipfianDist: public ZipfianDist<IntType, RealType>{
+public:
+	ScrambledZipfianDist(
+			const IntType n=std::numeric_limits<IntType>::max(), double insert_ratio=0.5,
+			int op_count=1000000, const RealType q=0.99):
+				ZipfianDist<IntType, RealType>(n + 2 * op_count * insert_ratio, q){}
 
-	for (int i = 0; i < 8; i++) {
-		long octet = val & 0x00ff;
-		val = val >> 8;
-
-		hash = hash ^ octet;
-		hash = hash * FNV_PRIME_64;
-	}
-	return abs(hash);
-}
-
-struct UpperBound{
-	long n;
-
-	UpperBound():n(0){}
-
-	void init(long n_){
-		n = n_;
+	IntType next(){
+		return scramble(ZipfianDist<IntType, RealType>::next());
 	}
 
-	void init(long n_, void* ptr){
-		n = n_;
-		(void)(ptr);
+	IntType scramble(IntType rand_num){
+		return FNVHash64(rand_num) % ZipfianDist<IntType, RealType>::n;
 	}
 };
 
-struct CounterGen: public UpperBound{
-	std::atomic<long> counter;
-	long n_low;
+typedef kvrandom_lcg_nr UniGen;
+typedef ZipfianDist<uint32_t, double> ZipGen;
+typedef ScrambledZipfianDist<uint32_t, double> ScrambledZipGen;
 
-	CounterGen():UpperBound(),
-			counter(0), n_low(0){}
-
-	long next(){
-		assert(n);
-		return counter.fetch_add(1) % n;
-	}
-
-	long last(){
-		return (counter.load() - 1) % n;
-	}
-
-	void init(long n_, long n_low_ = 0){
-		n = n_;
-		n_low = n_low_;
-	}
-};
-
-struct UniformGen: public kvrandom_lcg_nr, public UpperBound{
-	long next(){
-		return kvrandom_lcg_nr::next() % n;
-	}
-};
-
-struct ZipfianGen: public UpperBound{
-	double c = 0;          // Normalization constant
-	double *sum_probs;     // Pre-calculated sum of probabilities
-
-	ZipfianGen():sum_probs(nullptr){}
-
-	~ZipfianGen(){
-		if(sum_probs)
-			free(sum_probs);
-	}
-
-	void init(int n_, double alpha_=0.99){
-		UpperBound::init(n_);
-		first(alpha_);
-	}
-
-	void first(double alpha){
-		assert(n);
-		for (int i=1; i<=n; i++){
-			c = c + (1.0 / pow((double) i, alpha));
-		}
-		c = 1.0 / c;
-
-		sum_probs = (double*)malloc((n+1)*sizeof(*sum_probs));
-		sum_probs[0] = 0;
-		for (int i=1; i<=n; i++) {
-			sum_probs[i] = sum_probs[i-1] + c / pow((double) i, alpha);
-		}
-	}
-
-	long next(){
-		return next(n);
-	}
-
-	long next(long n_){
-		double z;                     // Uniform random number (0 < z < 1)
-		long zipf_value = 0;           // Computed exponential value to be returned
-
-		// Pull a uniform random number (0 < z < 1)
-		do{
-			z = rand_val();
-		}while ((z == 0) || (z == 1));
-
-		// Map z to the value
-		int low = 0, high = n_, mid;
-		do {
-			mid = floor((low+high)/2);
-			if (sum_probs[mid] >= z && sum_probs[mid-1] < z) {
-				zipf_value = mid;
-				break;
-			}else if (sum_probs[mid] >= z) {
-				high = mid-1;
-			}else {
-				low = mid+1;
-			}
-		} while (low <= high);
-
-		// Assert that zipf_value is between 1 and N
-		assert((zipf_value >=1) && (zipf_value <= n_));
-
-		return zipf_value-1;
-	}
-};
-
-struct ScrambledZipfianGen: public ZipfianGen{
-	long next(){
-		return fnvhash64(ZipfianGen::next()) % n;
-	}
-};
-
-struct SkewedLatestGen: public ZipfianGen{
-	CounterGen *insert_rand;
-
-	void init(int n_, CounterGen *insert_rand_){
-		ZipfianGen::init(n_);
-		insert_rand = insert_rand_;
-	}
-
-	long next(){
-		long max = insert_rand->last();
-		return max - ZipfianGen::next(max);
-	}
-};
-
-}; //ycsb

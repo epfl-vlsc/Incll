@@ -12,6 +12,12 @@ enum ycsb_op{
 	num_possible_ops
 };
 
+enum key_distributions{
+	kgd_uniform,
+	kgd_zipfian
+};
+
+
 struct OpRatios{
 	const int get_;
 	const int get_put_;
@@ -45,38 +51,16 @@ struct OpRatios{
 	}
 };
 
-template <typename RandKey, typename RandVal>
 struct OpHelper{
 	size_t ninitops;
 	size_t nops;
 	size_t nkeys;
 
-	RandKey init_rand;
-	RandKey key_rand;
-	RandVal val_rand;
-
-	long next_key(){
-		return key_rand.next();
-	}
-
-	long next_val(){
-		return val_rand.next();
-	}
-
-	long next_init_key(){
-		return init_rand.next();
-	}
-
-	OpHelper(size_t ninitops_, size_t nops_,
+	OpHelper(size_t ninitops_,
+			size_t nops_,
 			size_t nkeys_):
-				ninitops(ninitops_),
-				nops(nops_),
-				nkeys(nkeys_){
-		init_rand.init(nkeys_);
-		key_rand.init(nkeys_);
-		val_rand.init(nkeys_);
-	}
-
+	ninitops(ninitops_), nops(nops_), nkeys(nkeys_)
+	{}
 };
 
 

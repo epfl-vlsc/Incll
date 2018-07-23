@@ -777,7 +777,6 @@ void kvtest_rand(C &client, uint64_t n_keys){
 
 
 	if(client.id() == 0){
-		printf("Create tree\n");
 		while (n < n_keys/2) {
 			++n;
 			pos = rand() % n_keys;
@@ -785,6 +784,7 @@ void kvtest_rand(C &client, uint64_t n_keys){
 			local_size +=
 					client.put(pos, pos + 1);
 		}
+		printf("Created tree\n");
 	}
 
 	//Barrier-------------------------------------------------------------
@@ -844,14 +844,20 @@ void kvtest_rand(C &client, uint64_t n_keys){
 }
 
 #ifdef YCSB
-template <typename C, typename OpH>
+template <typename C, typename RandGen>
 void kvtest_ycsb(C &client,
-		OpH op_helper,
-		ycsbc::OpRatios op_ratios){
-	GH::node_logger.init(client.id());
-	long pos = 0, val = 0;
+		ycsbc::OpHelper op_helper,
+		ycsbc::OpRatios op_ratios,
+		RandGen key_rand){
+	uint64_t pos = 0, val = 0;
 	size_t init = op_helper.ninitops;
 	size_t nops1 = op_helper.nops;
+	size_t nkeys = op_helper.nkeys;
+
+	GH::node_logger.init(client.id());
+	UniGen val_rand;
+	val_rand.reset(client.id());
+	key_rand.reset(client.id());
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -887,24 +893,24 @@ void kvtest_ycsb(C &client,
 	double t0 = client.now();
 	while(n < nops1){
 		n++;
+		pos = key_rand.next() % nkeys;
 
-		pos = op_helper.next_key();
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
-		case ycsbc::get_op:{
+		case ycsbc::get_op:
 			client.get_sync(pos);
-		}break;
+			break;
 		case ycsbc::put_op:{
-			val = op_helper.next_val();
+			val = val_rand.next();
 			local_size += client.put(pos, val);
 		}break;
-		case ycsbc::rem_op:{
+		case ycsbc::rem_op:
 			local_size -= client.remove_sync(pos);
-		}break;
+			break;
 		case ycsbc::scan_op:{
 			key.set(pos, 8);
 			client.scan_sync(key.string(), 10, keys, values);
-		}break;
+			}break;
 		default:
 			assert(0);
 			break;
