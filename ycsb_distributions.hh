@@ -1,183 +1,105 @@
-//
-//
-//  Created by Jinglei Ren on 12/7/14.
-//  Copyright (c) 2014 Jinglei Ren <jinglei@ren.systems>.
-//
+/*
+ * zipf.h
+ *
+ *  Created on: 13 Jun 2018
+ *      Author: ncohen
+ */
 
-#pragma once
 
-#include <cassert>
+#include <algorithm>
 #include <cmath>
-#include <cstdint>
-#include <mutex>
-#include <atomic>
-#include <mutex>
 #include <random>
 
-namespace ycsbc {
-
-inline double RandomDouble(double min = 0.0, double max = 1.0) {
-  static std::default_random_engine generator;
-  static std::uniform_real_distribution<double> uniform(min, max);
-  return uniform(generator);
-}
-
-class Generator {
+/** Zipf-like random distribution.
+ *
+ * "Rejection-inversion to generate variates from monotone discrete
+ * distributions", Wolfgang Hörmann and Gerhard Derflinger
+ * ACM TOMACS 6.3 (1996): 169-184
+ */
+template<class IntType = unsigned long, class RealType = double>
+class ZipfianDist
+{
 public:
-	virtual uint64_t next() = 0;
-	virtual uint64_t last() = 0;
-	virtual ~Generator() {}
-};
+    typedef RealType input_type;
+    typedef IntType result_type;
 
-class CounterGenerator{
-public:
-	CounterGenerator(uint64_t start) : counter_(start) { }
-	uint64_t next() {
-		return counter_.fetch_add(1);
-	}
-	uint64_t last() {
-		return counter_.load() - 1;
-	}
-	void set(uint64_t start) {
-		counter_.store(start);
-	}
-private:
-	std::atomic<uint64_t> counter_;
-};
+    static_assert(std::numeric_limits<IntType>::is_integer, "");
+    static_assert(!std::numeric_limits<RealType>::is_integer, "");
 
-class UniformGenerator : public Generator{
-public:
-	// Both min and max are inclusive
-	UniformGenerator(uint64_t min, uint64_t max):
-		dist_(min, max) {
-		next();
-	}
+    ZipfianDist(const IntType n=std::numeric_limits<IntType>::max(),
+                      const RealType q=1.0): n(n), q(q), H_x1(H(1.5) - 1.0)
+    , H_n(H(n + 0.5)), dist(H_x1, H_n){}
 
-	UniformGenerator(uint64_t num_items):
-		dist_(0, num_items - 1) {
-	}
-
-
-	uint64_t next();
-	uint64_t last();
+    IntType operator()(std::mt19937& rng)
+    {
+        while (true) {
+            const RealType u = dist(rng);
+            const RealType x = H_inv(u);
+            const IntType  k = clamp<IntType>(std::round(x), 1, n);
+            if (u >= H(k + 0.5) - h(k)) {
+                return k;
+            }
+        }
+    }
 
 private:
-	std::mt19937_64 generator_;
-	std::uniform_int_distribution<uint64_t> dist_;
-	uint64_t last_int_;
-	std::mutex mutex_;
+    /** Clamp x to [min, max]. */
+    template<typename T>
+    static constexpr T clamp(const T x, const T min, const T max)
+    {
+        return std::max(min, std::min(max, x));
+    }
+
+    /** exp(x) - 1 / x */
+    static double
+    expxm1bx(const double x)
+    {
+        return (std::abs(x) > epsilon)
+        ? std::expm1(x) / x
+        : (1.0 + x/2.0 * (1.0 + x/3.0 * (1.0 + x/4.0)));
+    }
+
+    /** H(x) = log(x) if q == 1, (x^(1-q) - 1)/(1 - q) otherwise.
+     * H(x) is an integral of h(x).
+     *
+     * Note the numerator is one less than in the paper order to work with all
+     * positive q.
+     */
+    const RealType H(const RealType x)
+    {
+        const RealType log_x = std::log(x);
+        return expxm1bx((1.0 - q) * log_x) * log_x;
+    }
+
+    /** log(1 + x) / x */
+    static RealType
+    log1pxbx(const RealType x)
+    {
+        return (std::abs(x) > epsilon)
+        ? std::log1p(x) / x
+        : 1.0 - x * ((1/2.0) - x * ((1/3.0) - x * (1/4.0)));
+    }
+
+    /** The inverse function of H(x) */
+    const RealType H_inv(const RealType x)
+    {
+        const RealType t = std::max(-1.0, x * (1.0 - q));
+        return std::exp(log1pxbx(t) * x);
+    }
+
+    /** That hat function h(x) = 1 / (x ^ q) */
+    const RealType h(const RealType x)
+    {
+        return std::exp(-q * std::log(x));
+    }
+
+    static constexpr RealType epsilon = 1e-8;
+
+    IntType                                  n;     ///< Number of elements
+    RealType                                 q;     ///< Exponent
+    RealType                                 H_x1;  ///< H(x_1)
+    RealType                                 H_n;   ///< H(n)
+    std::uniform_real_distribution<RealType> dist;  ///< [H(x_1), H(n)]
 };
 
-inline uint64_t UniformGenerator::next() {
-	std::lock_guard<std::mutex> lock(mutex_);
-	return last_int_ = dist_(generator_);
-}
-
-inline uint64_t UniformGenerator::last() {
-	std::lock_guard<std::mutex> lock(mutex_);
-	return last_int_;
-}
-
-class ZipfianGenerator : public Generator {
-public:
-	constexpr static const double kZipfianConst = 0.99;
-	static const uint64_t kMaxNumItems = (UINT64_MAX >> 24);
-
-	ZipfianGenerator(uint64_t min, uint64_t max,
-			double zipfian_const = kZipfianConst) :
-		num_items_(max - min + 1), base_(min), theta_(zipfian_const),
-		zeta_n_(0), n_for_zeta_(0) {
-		assert(num_items_ >= 2 && num_items_ < kMaxNumItems);
-		zeta_2_ = Zeta(2, theta_);
-		alpha_ = 1.0 / (1.0 - theta_);
-		RaiseZeta(num_items_);
-		eta_ = Eta();
-
-		next();
-	}
-
-	ZipfianGenerator(uint64_t num_items) :
-		ZipfianGenerator(0, num_items - 1, kZipfianConst) {}
-
-	uint64_t next(uint64_t num_items);
-
-	uint64_t next() {
-		return next(num_items_);
-	}
-
-	uint64_t last();
-
-private:
-	///
-	/// Compute the zeta constant needed for the distribution.
-	/// Remember the number of items, so if it is changed, we can recompute zeta.
-	///
-	void RaiseZeta(uint64_t num) {
-		assert(num >= n_for_zeta_);
-		zeta_n_ = Zeta(n_for_zeta_, num, theta_, zeta_n_);
-		n_for_zeta_ = num;
-	}
-
-	double Eta() {
-		return (1 - std::pow(2.0 / num_items_, 1 - theta_))
-			/ (1 - zeta_2_ / zeta_n_);
-	}
-
-	///
-	/// Calculate the zeta constant needed for a distribution.
-	/// Do this incrementally from the last_num of items to the cur_num.
-	/// Use the zipfian constant as theta. Remember the new number of items
-	/// so that, if it is changed, we can recompute zeta.
-	///
-	static double Zeta(uint64_t last_num, uint64_t cur_num,
-			 double theta, double last_zeta) {
-		double zeta = last_zeta;
-		for (uint64_t i = last_num + 1; i <= cur_num; ++i) {
-			zeta += 1 / std::pow(i, theta);
-		}
-		return zeta;
-	}
-
-	static double Zeta(uint64_t num, double theta) {
-		return Zeta(0, num, theta, 0);
-	}
-
-	uint64_t num_items_;
-	uint64_t base_; /// Min number of items to generate
-
-	// Computed parameters for generating the distribution
-	double theta_, zeta_n_, eta_, alpha_, zeta_2_;
-	uint64_t n_for_zeta_; /// Number of items used to compute zeta_n
-	uint64_t last_value_;
-	std::mutex mutex_;
-};
-
-inline uint64_t ZipfianGenerator::next(uint64_t num) {
-	assert(num >= 2 && num < kMaxNumItems);
-	std::lock_guard<std::mutex> lock(mutex_);
-
-	if (num > n_for_zeta_) { // Recompute zeta_n and eta
-		RaiseZeta(num);
-		eta_ = Eta();
-	}
-
-	double u = RandomDouble();
-	double uz = u * zeta_n_;
-
-	if (uz < 1.0) {
-		return last_value_ = 0;
-	}
-
-	if (uz < 1.0 + std::pow(0.5, theta_)) {
-		return last_value_ = 1;
-	}
-
-	return last_value_ = base_ + num * std::pow(eta_ * u - eta_ + 1, alpha_);
-}
-
-inline uint64_t ZipfianGenerator::last() {
-	std::lock_guard<std::mutex> lock(mutex_);
-	return last_value_;
-}
-
-}; //ycsb
+typedef kvrandom_lcg_nr UniGen;

@@ -844,15 +844,20 @@ void kvtest_rand(C &client, uint64_t n_keys){
 }
 
 #ifdef YCSB
-template <typename C>
+template <typename C, typename RandGen>
 void kvtest_ycsb(C &client,
 		ycsbc::OpHelper op_helper,
-		ycsbc::OpRatios op_ratios){
-	GH::node_logger.init(client.id());
+		ycsbc::OpRatios op_ratios,
+		RandGen key_rand){
 	uint64_t pos = 0, val = 0;
-	size_t init = op_helper.init;
-	size_t nops1 = op_helper.nops1;
+	size_t init = op_helper.ninitops;
+	size_t nops1 = op_helper.nops;
 	size_t nkeys = op_helper.nkeys;
+
+	GH::node_logger.init(client.id());
+	UniGen val_rand;
+	val_rand.reset(client.id());
+	key_rand.reset(client.id());
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -888,16 +893,17 @@ void kvtest_ycsb(C &client,
 	double t0 = client.now();
 	while(n < nops1){
 		n++;
-		pos = client.rand.next() % nkeys;
-		val = client.rand.next() % nkeys;
+		pos = key_rand.next() % nkeys;
+
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
 		case ycsbc::get_op:
 			client.get_sync(pos);
 			break;
-		case ycsbc::put_op:
+		case ycsbc::put_op:{
+			val = val_rand.next();
 			local_size += client.put(pos, val);
-			break;
+		}break;
 		case ycsbc::rem_op:
 			local_size -= client.remove_sync(pos);
 			break;

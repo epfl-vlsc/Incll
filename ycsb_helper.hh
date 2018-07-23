@@ -52,17 +52,14 @@ struct OpRatios{
 };
 
 struct OpHelper{
-	size_t init;
-	size_t nops1;
-	size_t nops2;
+	size_t ninitops;
+	size_t nops;
 	size_t nkeys;
 
-	OpHelper(size_t init_,
-			size_t nops1_,
-			size_t nops2_,
+	OpHelper(size_t ninitops_,
+			size_t nops_,
 			size_t nkeys_):
-	init(init_), nops1(nops1_),
-	nops2(nops2_), nkeys(nkeys_)
+	ninitops(ninitops_), nops(nops_), nkeys(nkeys_)
 	{}
 };
 
