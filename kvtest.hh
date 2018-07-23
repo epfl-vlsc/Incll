@@ -777,7 +777,6 @@ void kvtest_rand(C &client, uint64_t n_keys){
 
 
 	if(client.id() == 0){
-		printf("Create tree\n");
 		while (n < n_keys/2) {
 			++n;
 			pos = rand() % n_keys;
@@ -785,6 +784,7 @@ void kvtest_rand(C &client, uint64_t n_keys){
 			local_size +=
 					client.put(pos, pos + 1);
 		}
+		printf("Created tree\n");
 	}
 
 	//Barrier-------------------------------------------------------------

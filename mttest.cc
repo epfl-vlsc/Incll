@@ -586,6 +586,11 @@ static pthread_cond_t subtest_cond;
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 //MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
+//UniGen()
+//Zipfian(nkeys)
+//ScrambledZipGen(nkeys, put_ratio, nops, alpha)
+
+
 MAKE_TESTRUNNER(ycsb_a,
 kvtest_ycsb(client,
 		ycsbc::OpHelper(20000000, 1000000, 20000000),

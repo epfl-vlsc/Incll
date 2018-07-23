@@ -17,21 +17,25 @@
  * ACM TOMACS 6.3 (1996): 169-184
  */
 template<class IntType = unsigned long, class RealType = double>
-class ZipfianDist
-{
+class ZipfianDist{
 public:
     typedef RealType input_type;
     typedef IntType result_type;
+
+    std::mt19937 rng;
 
     static_assert(std::numeric_limits<IntType>::is_integer, "");
     static_assert(!std::numeric_limits<RealType>::is_integer, "");
 
     ZipfianDist(const IntType n=std::numeric_limits<IntType>::max(),
-                      const RealType q=1.0): n(n), q(q), H_x1(H(1.5) - 1.0)
+                      const RealType q=0.99): n(n), q(q), H_x1(H(1.5) - 1.0)
     , H_n(H(n + 0.5)), dist(H_x1, H_n){}
 
-    IntType operator()(std::mt19937& rng)
-    {
+    void reset(int seed){
+    	rng.seed(seed);
+    }
+
+    IntType next(){
         while (true) {
             const RealType u = dist(rng);
             const RealType x = H_inv(u);
@@ -42,7 +46,7 @@ public:
         }
     }
 
-private:
+protected:
     /** Clamp x to [min, max]. */
     template<typename T>
     static constexpr T clamp(const T x, const T min, const T max)
@@ -102,4 +106,41 @@ private:
     std::uniform_real_distribution<RealType> dist;  ///< [H(x_1), H(n)]
 };
 
+
+const uint64_t kFNVOffsetBasis64 = 0xCBF29CE484222325;
+const uint64_t kFNVPrime64 = 1099511628211;
+template <class IntType>
+inline uint64_t FNVHash64(IntType val) {
+	uint64_t hash = kFNVOffsetBasis64;
+
+  for (int i = 0; i < 8; i++) {
+	  uint64_t octet = val & 0x00ff;
+    val = val >> 8;
+
+    hash = hash ^ octet;
+    hash = hash * kFNVPrime64;
+  }
+  return hash;
+}
+
+template<class IntType = unsigned long, class RealType = double>
+class ScrambledZipfianDist: public ZipfianDist<IntType, RealType>{
+public:
+	ScrambledZipfianDist(
+			const IntType n=std::numeric_limits<IntType>::max(), double insert_ratio=0.5,
+			int op_count=1000000, const RealType q=0.99):
+				ZipfianDist<IntType, RealType>(n + 2 * op_count * insert_ratio, q){}
+
+	IntType next(){
+		return scramble(ZipfianDist<IntType, RealType>::next());
+	}
+
+	IntType scramble(IntType rand_num){
+		return FNVHash64(rand_num) % ZipfianDist<IntType, RealType>::n;
+	}
+};
+
 typedef kvrandom_lcg_nr UniGen;
+typedef ZipfianDist<uint32_t, double> ZipGen;
+typedef ScrambledZipfianDist<uint32_t, double> ScrambledZipGen;
+
