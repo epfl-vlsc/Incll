@@ -856,8 +856,8 @@ void kvtest_ycsb(C &client,
 
 	GH::node_logger.init(client.id());
 	UniGen val_rand;
-	val_rand.reset(client.id());
-	key_rand.reset(client.id());
+	ycsbc::reset_all_seeds(client.id(), key_rand,
+			val_rand, op_ratios.op_rand);
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -950,6 +950,104 @@ void kvtest_ycsb(C &client,
 
 }
 #endif //ycsb
+
+#ifdef LFBENCH
+template <typename C, typename RandGen>
+void kvtest_lfbench(C &client,
+		ycsbc::OpHelper op_helper,
+		ycsbc::OpRatios op_ratios,
+		RandGen key_rand){
+	/*
+	uint64_t pos = 0, val = 0;
+	size_t nops = op_helper.nops;
+	size_t nkeys = op_helper.nkeys;
+
+	GH::node_logger.init(client.id());
+	UniGen val_rand;
+	val_rand.reset(client.id());
+	key_rand.reset(client.id());
+
+	uint64_t n = 0;
+	Json result = Json();
+	size_t local_size = 0;
+
+	if(client.id() == 0){
+		while (n < nkeys/2) {
+			pos = key_rand.next() % nkeys;
+			val = pos + 1;
+
+			local_size += client.put(pos, val);
+			++n;
+		}
+		printf("Created tree--------------------\n");
+	}
+
+	//Barrier-------------------------------------------------------------
+	GH::thread_barrier.wait_barrier(client.id());
+	client.rcu_quiesce();
+#ifdef GLOBAL_FLUSH
+		GH::global_flush.ack_flush();
+#endif
+
+	n = 0;
+	double t0 = client.now();
+	while(!client.timeout(0) && n < nops){
+		n++;
+		pos = key_rand.next() % nkeys;
+
+		unsigned op = op_ratios.get_next_op();
+		switch(op){
+		case ycsbc::get_op:
+			client.get_sync(pos);
+			break;
+		case ycsbc::put_op:{
+			val = val_rand.next();
+			local_size += client.put(pos, val);
+		}break;
+		case ycsbc::rem_op:
+			local_size -= client.remove_sync(pos);
+			break;
+		case ycsbc::scan_op:{
+			key.set(pos, 8);
+			client.scan_sync(key.string(), 10, keys, values);
+			}break;
+		default:
+			assert(0);
+			break;
+		}
+		if ((n % (1 << 6)) == 0){
+			client.rcu_quiesce();
+			//set_global_epoch
+		}
+#ifdef GLOBAL_FLUSH
+			GH::global_flush.ack_flush();
+#endif
+	}
+	double t1 = client.now();
+	result.set("time", t1-t0);
+	result.set("ops", (long)(n/(t1-t0)));
+
+#ifdef GLOBAL_FLUSH
+	GH::global_flush.thread_done();
+	while(!GH::global_flush.ack_flush());
+#endif
+
+	client.report(result);
+
+	global_size += local_size;
+	//Barrier-------------------------------------------------------------
+	GH::thread_barrier.wait_barrier(client.id());
+
+	//check size
+	if(client.id() == 0){
+		assert(global_size == get_tree_size(client.get_root()));
+
+	}
+
+*/
+
+}
+#endif //lfbench
 
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove

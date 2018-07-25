@@ -24,7 +24,7 @@ struct OpRatios{
 	const int rem_cum;
 	static constexpr const int MAX_FREQ = 100;
 
-	kvrandom_lcg_nr rand;
+	kvrandom_lcg_nr op_rand;
 
 	OpRatios(int get_freq,
 			int put_freq,
@@ -38,7 +38,7 @@ struct OpRatios{
 	}
 
 	ycsb_op get_next_op(){
-		double op = rand.next()%MAX_FREQ;
+		int op = op_rand.next()%MAX_FREQ;
 		if(op < get_cum){
 			return get_op;
 		}else if(op < put_cum){
@@ -48,6 +48,10 @@ struct OpRatios{
 		}else{
 			return scan_op;
 		}
+	}
+
+	int get_next_op_freq(){
+		return op_rand.next()%MAX_FREQ;
 	}
 };
 
@@ -63,6 +67,12 @@ struct OpHelper{
 	{}
 };
 
-
+template<typename RK, typename RV, typename ROP>
+void reset_all_seeds(int tid, RK& key_rand,
+		RV& val_rand, ROP& op_rand){
+	key_rand.reset(tid);
+	val_rand.reset(tid);
+	op_rand.reset(tid);
+}
 
 }; //ycsbc
