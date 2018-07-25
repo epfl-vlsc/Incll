@@ -590,6 +590,12 @@ MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 //Zipfian(nkeys)
 //ScrambledZipGen(nkeys, put_ratio, nops, alpha)
 
+MAKE_TESTRUNNER(lfbench,
+kvtest_lfbench(client,
+		ycsbc::OpHelper(20000000, 1000000, 20000000),
+		ycsbc::OpRatios(80, 10, 10, 0),
+		UniGen()
+));
 
 MAKE_TESTRUNNER(ycsb_a,
 kvtest_ycsb(client,
