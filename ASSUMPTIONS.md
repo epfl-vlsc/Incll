@@ -4,3 +4,6 @@
 * for node comparison, fine grained check instead of memcmp for leaf
 
 * clear insert extras, take a look
+
+* beware of jemalloc configuration
+run LD_LIBRARY_PATH=""

@@ -19,35 +19,39 @@ enum key_distributions{
 
 
 struct OpRatios{
-	const int get_;
-	const int get_put_;
-	const int get_put_rem_;
+	const int get_cum;
+	const int put_cum;
+	const int rem_cum;
 	static constexpr const int MAX_FREQ = 100;
 
-	kvrandom_lcg_nr rand;
+	kvrandom_lcg_nr op_rand;
 
 	OpRatios(int get_freq,
 			int put_freq,
 			int rem_freq,
 			int scan_freq):
-				get_(get_freq),
-				get_put_(get_ + put_freq),
-				get_put_rem_(get_put_ + rem_freq){
+				get_cum(get_freq),
+				put_cum(get_cum + put_freq),
+				rem_cum(put_cum + rem_freq){
 
-		assert(get_put_rem_ + scan_freq == MAX_FREQ);
+		assert(rem_cum + scan_freq == MAX_FREQ);
 	}
 
 	ycsb_op get_next_op(){
-		double op = rand.next()%MAX_FREQ;
-		if(op < get_){
+		int op = op_rand.next()%MAX_FREQ;
+		if(op < get_cum){
 			return get_op;
-		}else if(op < get_put_){
+		}else if(op < put_cum){
 			return put_op;
-		}else if(op < get_put_rem_){
+		}else if(op < rem_cum){
 			return rem_op;
 		}else{
 			return scan_op;
 		}
+	}
+
+	int get_next_op_freq(){
+		return op_rand.next()%MAX_FREQ;
 	}
 };
 
@@ -63,6 +67,12 @@ struct OpHelper{
 	{}
 };
 
-
+template<typename RK, typename RV, typename ROP>
+void reset_all_seeds(int tid, RK& key_rand,
+		RV& val_rand, ROP& op_rand){
+	key_rand.reset(tid);
+	val_rand.reset(tid);
+	op_rand.reset(tid);
+}
 
 }; //ycsbc
