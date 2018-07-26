@@ -356,24 +356,6 @@ struct kvtest_client {
 		return table_->table().root_assignable();
 	}
 
-    enum op_type{
-    	op_get,
-		op_put,
-		op_remove
-    };
-
-    op_type get_op(uint64_t get_rate, uint64_t put_rate_cum){
-    	unsigned num = rand.next()%100;
-    	if(num < get_rate){
-    		return op_get;
-    	}else if(num < put_rate_cum){
-    		return op_put;
-    	}else{
-    		return op_remove;
-    	}
-    }
-
-
     T *table_;
     threadinfo *ti_;
     query<row_type> q_[1];
@@ -584,7 +566,7 @@ static pthread_cond_t subtest_cond;
 
 
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
-//MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
+MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
 //UniGen()
 //Zipfian(nkeys)
@@ -865,7 +847,7 @@ enum { opt_pin = 1, opt_port, opt_duration,
        opt_normalize, opt_limit, opt_notebook, opt_compare, opt_no_run,
        opt_lazy_timer, opt_gid, opt_tree_stats, opt_rscale_ncores, opt_cores,
        opt_stats, opt_help, opt_yrange, opt_nkeys, opt_ninitops, opt_nops1, opt_nops2,
-	   opt_getrate, opt_putrate
+	   opt_getrate, opt_putrate, opt_remrate, opt_scanrate
 };
 static const Clp_Option options[] = {
     { "pin", 'p', opt_pin, 0, Clp_Negate },
@@ -886,8 +868,10 @@ static const Clp_Option options[] = {
 	{ "ninitops", 'i', opt_ninitops, Clp_ValUnsignedLong, 0 },
 	{ "nops1", 'o', opt_nops1, Clp_ValUnsignedLong, 0 },
 	{ "nops2", 'h', opt_nops2, Clp_ValUnsignedLong, 0 },
-	{ "getrate", 0, opt_getrate, Clp_ValUnsignedLong, 0 },
-	{ "putrate", 0, opt_putrate, Clp_ValUnsignedLong, 0 },
+	{ "getrate", 0, opt_getrate, Clp_ValInt, 0 },
+	{ "putrate", 0, opt_putrate, Clp_ValInt, 0 },
+	{ "remrate", 0, opt_remrate, Clp_ValInt, 0 },
+	{ "scanrate", 0, opt_scanrate, Clp_ValInt, 0 },
     { "trials", 'T', opt_trials, Clp_ValInt, 0 },
     { "quiet", 'q', opt_quiet, 0, Clp_Negate },
     { "print", 0, opt_print, 0, Clp_Negate },
@@ -915,6 +899,8 @@ Options:\n\
   -h, --nops2=NOPS2   	   Number of operations final.\n\
   --getrate=RATE 	  	   Number between 0 and 100.\n\
   --putrate=RATE   	   Number between 0 and 100.\n\
+  --remrate=RATE   	   Number between 0 and 100.\n\
+  --scanrate=RATE   	   Number between 0 and 100.\n\
   -p, --pin                Pin each thread to its own core.\n\
   -T, --trials=TRIALS      Run each test TRIALS times.\n\
   -q, --quiet              Do not generate verbose and Gnuplot output.\n\
@@ -1010,12 +996,20 @@ main(int argc, char *argv[])
         	GH::n_ops2 = clp->val.ul;
 			break;
         case opt_getrate:
-			GH::get_rate = clp->val.ul;
-			GH::check_rate(clp->val.ul);
+			GH::get_rate = clp->val.i;
+			GH::check_rate(GH::get_rate);
 			break;
         case opt_putrate:
-			GH::put_rate = clp->val.ul;
-			GH::check_rate(clp->val.ul);
+			GH::put_rate = clp->val.i;
+			GH::check_rate(GH::put_rate);
+			break;
+        case opt_remrate:
+			GH::rem_rate = clp->val.i;
+			GH::check_rate(GH::rem_rate);
+			break;
+		case opt_scanrate:
+			GH::scan_rate = clp->val.i;
+			GH::check_rate(GH::scan_rate);
 			break;
         case opt_trials:
             ntrials = clp->val.i;

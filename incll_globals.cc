@@ -9,18 +9,15 @@ namespace GH{
 	uint64_t n_initops = 25;
 	uint64_t n_ops1 = 20;
 	uint64_t n_ops2 = 5;
-	uint64_t get_rate = 50;
-	uint64_t put_rate = 25;
 
-	void check_rate(uint64_t rate){
+	int get_rate = 50;
+	int put_rate = 25;
+	int rem_rate = 25;
+	int scan_rate = 0;
+
+
+	void check_rate(int rate){
 		assert(rate <= 100);
-	}
-
-	uint64_t put_rate_cum(){
-		uint64_t put_rate_cumulative = put_rate + get_rate;
-		check_rate(put_rate_cumulative);
-
-		return put_rate_cumulative;
 	}
 
 #ifdef GLOBAL_FLUSH
@@ -31,10 +28,10 @@ namespace GH{
 	void print_exp_params(){
 		printf("nkeys:%lu ninitops:%lu "
 				"nops1:%lu nops2:%lu "
-				"getrate:%lu putrate:%lu removerate:%lu\n",
+				"get rate:%d put rate:%d rem rate:%d scan rate:%d\n",
 				n_keys, n_initops,
 				n_ops1, n_ops2,
-				get_rate, put_rate, 100 - put_rate_cum());
+				get_rate, put_rate, rem_rate, scan_rate);
 	}
 
 	void set_exp_name(const char *exp){

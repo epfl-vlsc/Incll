@@ -56,14 +56,14 @@ recovery: mttest
 	./mttest recovery
 	
 test_recovery: mttest
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=25
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=50
-	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=10 --nops2=1000000 --getrate=50 --putrate=50
-	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0
-	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=100 --putrate=0
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=100
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=10 --nops2=1000000 --getrate=50 --putrate=25
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=25 --remrate=25
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=50 --remrate=0
+	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=10 --nops2=1000000 --getrate=50 --putrate=50 --remrate=0
+	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0 --remrate=100
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0 --remrate=100
+	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=100 --putrate=0 --remrate=0
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=100 --remrate=0
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=10 --nops2=1000000 --getrate=50 --putrate=25 --remrate=25
 
 rand: mttest
 	rm -rf *.json

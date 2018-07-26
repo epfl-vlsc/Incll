@@ -633,8 +633,7 @@ std::atomic<size_t> global_size;
 template <typename C>
 void kvtest_recovery(C &client){
 	GH::node_logger.init(client.id());
-	uint64_t get_rate = GH::get_rate;
-	uint64_t put_rate_cum = GH::put_rate_cum();
+	ycsbc::OpRatios opratios(GH::get_rate, GH::put_rate, GH::rem_rate, GH::scan_rate);
 
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
@@ -666,8 +665,7 @@ void kvtest_recovery(C &client){
 		n++;
 		pos = client.rand.next() % GH::n_keys;
 		val = client.rand.next();
-		unsigned op =
-				client.get_op(get_rate, put_rate_cum);
+		int op = opratios.get_next_op();
 		switch(op){
 		case 0:
 			client.get_sync(pos);
@@ -679,6 +677,9 @@ void kvtest_recovery(C &client){
 		case 2:
 			local_size -=
 					client.remove_sync(pos);
+			break;
+		default:
+			assert(0);
 			break;
 		}
 	}
