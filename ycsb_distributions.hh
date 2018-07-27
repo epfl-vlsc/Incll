@@ -10,6 +10,17 @@
 #include <cmath>
 #include <random>
 
+#include "incll_globals.hh"
+
+namespace ycsbc{
+enum ycsb_op{
+	get_op,
+	put_op,
+	rem_op,
+	scan_op,
+	num_possible_ops
+};
+
 /** Zipf-like random distribution.
  *
  * "Rejection-inversion to generate variates from monotone discrete
@@ -45,6 +56,15 @@ public:
             }
         }
     }
+
+    void set_keys(){
+		n = GH::n_keys;
+	}
+
+    void init(int tid){
+		this->reset(tid);
+		this->set_keys();
+	}
 
 protected:
     /** Clamp x to [min, max]. */
@@ -127,9 +147,8 @@ template<class IntType = unsigned long, class RealType = double>
 class ScrambledZipfianDist: public ZipfianDist<IntType, RealType>{
 public:
 	ScrambledZipfianDist(
-			const IntType n=std::numeric_limits<IntType>::max(), double insert_ratio=0.5,
-			int op_count=1000000, const RealType q=0.99):
-				ZipfianDist<IntType, RealType>(n + 2 * op_count * insert_ratio, q){}
+			const IntType n=std::numeric_limits<IntType>::max(), const RealType q=0.99):
+				ZipfianDist<IntType, RealType>(n, q){}
 
 	IntType next(){
 		return scramble(ZipfianDist<IntType, RealType>::next());
@@ -138,9 +157,38 @@ public:
 	IntType scramble(IntType rand_num){
 		return FNVHash64(rand_num) % ZipfianDist<IntType, RealType>::n;
 	}
+
+	void set_keys(){
+		ZipfianDist<IntType, RealType>::n = GH::n_keys + 2 * GH::n_ops1 * GH::put_rate;
+	}
+
+	void init(int tid){
+		this->reset(tid);
+		this->set_keys();
+	}
 };
 
-typedef kvrandom_lcg_nr UniGen;
-typedef ZipfianDist<uint32_t, double> ZipGen;
-typedef ScrambledZipfianDist<uint32_t, double> ScrambledZipGen;
+class UniDist: public kvrandom_lcg_nr{
+private:
+	uint32_t n;
+public:
+	uint32_t next() {
+		return kvrandom_lcg_nr::next() % GH::n_keys;
+	}
+
+	void set_keys(){
+		n = GH::n_keys;
+	}
+
+	void init(int tid){
+		this->reset(tid);
+		this->set_keys();
+	}
+};
+
+}; //ycsbc
+
+typedef ycsbc::UniDist UniGen;
+typedef ycsbc::ZipfianDist<uint32_t, double> ZipGen;
+typedef ycsbc::ScrambledZipfianDist<uint32_t, double> ScrambledZipGen;
 

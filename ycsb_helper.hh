@@ -4,19 +4,6 @@
 #include "ycsb_distributions.hh"
 
 namespace ycsbc{
-enum ycsb_op{
-	get_op,
-	put_op,
-	rem_op,
-	scan_op,
-	num_possible_ops
-};
-
-enum key_distributions{
-	kgd_uniform,
-	kgd_zipfian
-};
-
 
 struct OpRatios{
 	const int get_cum;
@@ -68,11 +55,14 @@ struct OpHelper{
 };
 
 template<typename RK, typename RV, typename ROP>
-void reset_all_seeds(int tid, RK& key_rand,
+void exp_init_all(int tid, RK& key_rand,
 		RV& val_rand, ROP& op_rand){
-	key_rand.reset(tid);
-	val_rand.reset(tid);
+	key_rand.init(tid);
+	val_rand.init(tid);
 	op_rand.reset(tid);
 }
 
 }; //ycsbc
+
+
+
