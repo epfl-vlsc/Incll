@@ -37,7 +37,7 @@ private:
 	void *root;
 	char *buf_;
 public:
-	static constexpr const size_t buf_size = (1ull << 34);
+	static constexpr const size_t buf_size = (1ull << 30);
 	static constexpr const size_t entry_meta_size = sizeof(nvm_logrec_node);
 	static constexpr const uint8_t entry_valid_magic = 18;
 
