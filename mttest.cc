@@ -1222,9 +1222,11 @@ Try 'mttest --help' for options.\n");
     // print Gnuplot
     if (ntrials != 0)
         comparisons.insert(comparisons.begin(), "");
-    if (!isatty(STDOUT_FILENO) || (ntrials == 0 && comparisons.size()))
-        print_gnuplot(stdout, kvstats_name, kvstats_name + arraysize(kvstats_name),
+    if (!isatty(STDOUT_FILENO) || (ntrials == 0 && comparisons.size())){
+        printf("print plot\n");
+    	print_gnuplot(stdout, kvstats_name, kvstats_name + arraysize(kvstats_name),
                       comparisons, normtype);
+    }
 
     return 0;
 }

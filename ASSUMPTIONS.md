@@ -7,3 +7,4 @@
 
 * beware of jemalloc configuration
 run LD_LIBRARY_PATH=""
+todo revert repeat variable in measurements to 10

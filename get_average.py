@@ -1,30 +1,53 @@
 import json
 import sys
 
+"""
+ops_types = [
+    "ops",
+    "get_ops",
+    "put_ops",
+    "rem_ops",
+    "scan_ops"
+]
+"""
 
-def get_avg_ops():
-    ops_list = []
+ops_types = [
+    "ops"
+]
 
+
+def get_notebook():
     text = "notebook-mttest.json"
     with open(text, 'r') as f:
         json_obj = json.load(f)
         data = json_obj["data"]
-        for run in data:
-            for thread_run in data[run]:
-                ops = thread_run["ops"]
-                ops_list.append(ops)
+        return data
 
-    d = {
-        "sumops": sum(ops_list),
-        "avgops": sum(ops_list) / len(ops_list)
-    }
-    return d
+
+def get_ops_stats(data):
+    op_stats = {op_type: [] for op_type in ops_types}
+
+    for run in data:
+        for thread_run in data[run]:
+            for op_type in ops_types:
+                if op_type in thread_run:
+                    ops = thread_run[op_type]
+                    op_stats[op_type].append(ops)
+
+    return op_stats
+
+
+def analyze_ops_stats():
+    params = sys.argv[1] if len(sys.argv) > 1 else None
+    sf = "{},{},{}" if params else "{},{}"
+
+    data = get_notebook()
+    op_stats = get_ops_stats(data)
+    for k, v in op_stats.iteritems():
+        s = sf.format(sum(v), sum(v)/len(v), params)
+        print(s)
 
 
 if __name__ == '__main__':
-    avg = get_avg_ops()
-    if len(sys.argv) > 1:
-        print_type = sys.argv[1]
-        print(avg[print_type])
-    else:
-        print(avg)
+    analyze_ops_stats()
+
