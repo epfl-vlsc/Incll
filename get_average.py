@@ -1,4 +1,5 @@
 import json
+import sys
 
 
 def get_avg_ops():
@@ -13,9 +14,17 @@ def get_avg_ops():
                 ops = thread_run["ops"]
                 ops_list.append(ops)
 
-    return sum(ops_list) / len(ops_list)
+    d = {
+        "sumops": sum(ops_list),
+        "avgops": sum(ops_list) / len(ops_list)
+    }
+    return d
 
 
 if __name__ == '__main__':
     avg = get_avg_ops()
-    print(avg)
+    if len(sys.argv) > 1:
+        print_type = sys.argv[1]
+        print(avg[print_type])
+    else:
+        print(avg)

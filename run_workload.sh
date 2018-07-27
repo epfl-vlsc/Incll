@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 workload=$1
+repeat=$2
+#argument processing
+if [ -z "$2" ]
+  then
+	repeat=10
+fi
+
+echo ${repeat}
 
 make mttest
 rm -rf *.json
-for i in 0 1 2 3 4 5 6 7 8 9; do 
+for i in $(eval echo {1..$repeat}); do 
 	rm -rf /tmp/nvm.heap	
 	./mttest ${workload}
 	python get_average.py
 done
-python get_average.py
-
-

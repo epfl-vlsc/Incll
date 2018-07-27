@@ -849,18 +849,16 @@ void kvtest_rand(C &client, uint64_t n_keys){
 #ifdef YCSB
 template <typename C, typename RandGen>
 void kvtest_ycsb(C &client,
-		ycsbc::OpHelper op_helper,
 		ycsbc::OpRatios op_ratios,
 		RandGen key_rand){
 	uint64_t pos = 0, val = 0;
-	size_t init = op_helper.ninitops;
-	size_t nops1 = op_helper.nops;
-	size_t nkeys = op_helper.nkeys;
+	size_t init = GH::n_initops;
+	size_t nops1 = GH::n_ops1;
+	size_t nkeys = GH::n_keys;
 
 	GH::node_logger.init(client.id());
 	UniGen val_rand;
-	ycsbc::reset_all_seeds(client.id(), key_rand,
-			val_rand, op_ratios.op_rand);
+	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -881,7 +879,6 @@ void kvtest_ycsb(C &client,
 		print_tree_summary(client.get_root(), true);
 #endif //collect stats
 		printf("Created tree--------------------\n");
-
 	}
 
 	//Barrier-------------------------------------------------------------
@@ -948,156 +945,9 @@ void kvtest_ycsb(C &client,
 		print_tree_summary(client.get_root());
 #endif //collect stats
 	}
-
-
-
 }
 #endif //ycsb
 
-#ifdef LFBENCH
-template <typename C, typename RandGen>
-void kvtest_lfbench(C &client,
-		ycsbc::OpHelper op_helper,
-		ycsbc::OpRatios op_ratios,
-		RandGen key_rand){
-	uint64_t pos = 0, val = 0;
-	size_t nops = op_helper.nops;
-	size_t nkeys = op_helper.nkeys;
-
-	int get_cum = op_ratios.get_cum;
-	int put_cum = op_ratios.put_cum;
-	int rem_cum = op_ratios.rem_cum;
-
-	double get_tot_time = 0;
-	double put_tot_time = 0;
-	double rem_tot_time = 0;
-	size_t get_tot = 0;
-	size_t put_tot = 0;
-	size_t rem_tot = 0;
-	size_t get_suc = 0;
-	size_t put_suc = 0;
-	size_t rem_suc = 0;
-
-	GH::node_logger.init(client.id());
-	UniGen val_rand;
-	ycsbc::reset_all_seeds(client.id(), key_rand,
-				val_rand, op_ratios.op_rand);
-
-	uint64_t n = 0;
-	Json result = Json();
-	size_t local_size = 0;
-
-	if(client.id() == 0){
-		while (n < nkeys/2) {
-			pos = key_rand.next() % nkeys;
-			val = pos + 1;
-
-			local_size += client.put(pos, val);
-			++n;
-		}
-		printf("Created tree--------------------\n");
-	}
-
-	//Barrier-------------------------------------------------------------
-	GH::thread_barrier.wait_barrier(client.id());
-	client.rcu_quiesce();
-#ifdef GLOBAL_FLUSH
-		GH::global_flush.ack_flush();
-#endif
-
-	n = 0;
-	double t0 = client.now();
-	while(!client.timeout(0) && n < nops){
-		n++;
-		pos = key_rand.next() % nkeys;
-
-		int op_freq = op_ratios.get_next_op_freq();
-		if(op_freq < get_cum){
-			auto get_start = std::chrono::high_resolution_clock::now();
-			bool found = client.get_sync(pos);
-			auto get_end = std::chrono::high_resolution_clock::now();
-
-			auto get_dur = std::chrono::duration_cast<
-					std::chrono::microseconds>(get_end - get_start);
-
-			if(found){
-				get_suc++;
-			}
-			get_tot++;
-			get_tot_time+=get_dur.count();
-		}else if(op_freq < put_cum){
-			val = val_rand.next();
-			auto put_start = std::chrono::high_resolution_clock::now();
-			bool inserted = client.put(pos, val);
-			auto put_end = std::chrono::high_resolution_clock::now();
-
-			auto put_dur = std::chrono::duration_cast<
-								std::chrono::microseconds>(put_end - put_start);
-
-			if(inserted){
-				put_suc++;
-			}
-			put_tot++;
-			put_tot_time+=put_dur.count();
-		}else if(op_freq < rem_cum){
-			auto rem_start = std::chrono::high_resolution_clock::now();
-			bool removed = client.remove_sync(pos);
-			auto rem_end = std::chrono::high_resolution_clock::now();
-
-			auto rem_dur = std::chrono::duration_cast<
-								std::chrono::microseconds>(rem_end - rem_start);
-
-			if(removed){
-				rem_suc++;
-			}
-			rem_tot++;
-			rem_tot_time+=rem_dur.count();
-		}
-		if ((n % (1 << 6)) == 0){
-			client.rcu_quiesce();
-			//set_global_epoch
-		}
-#ifdef GLOBAL_FLUSH
-			GH::global_flush.ack_flush();
-#endif
-	}
-	double t1 = client.now();
-	size_t ops_tot = get_tot + put_tot + rem_tot;
-	double ops_tot_time = get_tot_time + put_tot_time + rem_tot_time;
-
-	result.set("get_tot", get_tot);
-	result.set("put_tot", put_tot);
-	result.set("rem_tot", rem_tot);
-
-	result.set("get_suc", get_suc);
-	result.set("put_suc", put_suc);
-	result.set("rem_suc", rem_suc);
-
-	result.set("time", ops_tot_time);
-	result.set("time_total", t1-t0);
-	double throughput = ops_tot / ops_tot_time;
-	result.set("ops", throughput);
-
-#ifdef GLOBAL_FLUSH
-	GH::global_flush.thread_done();
-	while(!GH::global_flush.ack_flush());
-#endif
-
-	client.report(result);
-
-	local_size += put_suc - rem_suc;
-	global_size += local_size;
-	//Barrier-------------------------------------------------------------
-	GH::thread_barrier.wait_barrier(client.id());
-
-	//check size
-	if(client.id() == 0){
-		assert(global_size == get_tree_size(client.get_root()));
-
-	}
-
-}
-#endif //lfbench
 
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
