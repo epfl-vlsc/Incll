@@ -856,6 +856,11 @@ void kvtest_ycsb(C &client,
 	size_t nops1 = GH::n_ops1;
 	size_t nkeys = GH::n_keys;
 
+	int get_ops = 0;
+	int put_ops = 0;
+	int rem_ops = 0;
+	int scan_ops = 0;
+
 	GH::node_logger.init(client.id());
 	UniGen val_rand;
 	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
@@ -897,19 +902,23 @@ void kvtest_ycsb(C &client,
 
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
-		case ycsbc::get_op:
+		case ycsbc::get_op:{
 			client.get_sync(pos);
-			break;
+			get_ops++;
+		}break;
 		case ycsbc::put_op:{
 			val = val_rand.next();
 			local_size += client.put(pos, val);
+			put_ops++;
 		}break;
-		case ycsbc::rem_op:
+		case ycsbc::rem_op:{
 			local_size -= client.remove_sync(pos);
-			break;
+			rem_ops++;
+		}break;
 		case ycsbc::scan_op:{
 			key.set(pos, 8);
 			client.scan_sync(key.string(), 10, keys, values);
+			scan_ops++;
 			}break;
 		default:
 			assert(0);
@@ -926,6 +935,10 @@ void kvtest_ycsb(C &client,
 	double t1 = client.now();
 	result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
+	result.set("get_ops", (long)(get_ops/(t1-t0)));
+	result.set("put_ops", (long)(put_ops/(t1-t0)));
+	result.set("rem_ops", (long)(rem_ops/(t1-t0)));
+	result.set("scan_ops", (long)(scan_ops/(t1-t0)));
 
 #ifdef GLOBAL_FLUSH
 	GH::global_flush.thread_done();
