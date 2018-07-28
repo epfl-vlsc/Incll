@@ -253,7 +253,7 @@ class internode : public node_base<P> {
 		if(this->loggedepoch != globalepoch){
 			DBGLOG("record internode ge:%lu", globalepoch)
 #ifdef IN_EXTLOG
-			GH::node_logger.record(this);
+			GH::node_logger->record(this);
 #endif //in extlog
 			this->loggedepoch = globalepoch;
 
@@ -664,7 +664,7 @@ class leaf : public node_base<P> {
 				DBGLOG("record leaf ge:%lu nl:%d keys:%d", globalepoch, not_logged, this->number_of_keys())
 				this->not_logged=false;
 #ifdef LN_EXTLOG
-				GH::node_logger.record(this);
+				GH::node_logger->record(this);
 #endif //ln extlog
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
@@ -706,7 +706,7 @@ class leaf : public node_base<P> {
 						(void*)this, globalepoch, this->loggedepoch)
 				this->not_logged=false;
 #ifdef EXTLOG
-				GH::node_logger.record(this);
+				GH::node_logger->record(this);
 #endif //ln extlog incll
 				this->invalidate_cls();
 
@@ -740,7 +740,7 @@ class leaf : public node_base<P> {
 						(void*)this, globalepoch, this->loggedepoch)
 				this->not_logged=false;
 #ifdef LN_EXTLOG_INCLL
-				GH::node_logger.record(this);
+				GH::node_logger->record(this);
 #endif //ln extlog incll
 				this->invalidate_cls();
 				#ifdef COLLECT_STATS
@@ -845,7 +845,7 @@ class leaf : public node_base<P> {
 			if(this->loggedepoch != globalepoch){
 				DBGLOG("record leaf ge:%lu", globalepoch)
 #ifdef LN_EXTLOG
-				GH::node_logger.record(this);
+				GH::node_logger->record(this);
 #endif //extlog
 				this->loggedepoch = globalepoch;
 

@@ -139,6 +139,12 @@ test_log: test_log.o incll_globals.o
 tlog: test_log
 	./test_log
 
+test_plog: test_plog.o incll_globals.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+
+tplog: test_plog
+	./test_plog
+
 test_logmt: test_logmt.o compiler.o misc.o libjson.a incll_globals.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 

@@ -572,7 +572,6 @@ MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 //Zipfian(nkeys)
 //ScrambledZipGen()
 
-
 MAKE_TESTRUNNER(ycsb_a_uni,
 kvtest_ycsb(client,
 		ycsbc::OpRatios(50, 50, 0, 0),

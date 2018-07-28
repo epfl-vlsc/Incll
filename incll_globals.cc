@@ -23,7 +23,8 @@ namespace GH{
 #ifdef GLOBAL_FLUSH
 	GlobalFlush global_flush;
 #endif
-	thread_local ExtNodeLogger node_logger;
+	thread_local PExtNodeLogger *node_logger;
+	PLogAllocator plog_allocator;
 
 	void print_exp_params(){
 		printf("nkeys:%lu ninitops:%lu "
@@ -57,19 +58,25 @@ namespace GH{
 		bucket_locks.init();
 #endif
 
+		plog_allocator.init();
+
+	}
+
+	void init_thread_all(int tid){
+		node_logger = plog_allocator.init_plog(tid);
 	}
 
 	void advance_epoch(int tid, void *root){
 #ifdef GLOBAL_FLUSH
 		thread_barrier.wait_barrier(tid);
 		if(tid == 0){
-			node_logger.set_log_root(root);
+			node_logger->set_log_root(root);
 
 			global_flush.flush_manual();
 		}else{
 			global_flush.ack_flush_manual();
 		}
-		node_logger.checkpoint();
+		node_logger->checkpoint();
 		thread_barrier.wait_barrier(tid);
 #endif
 	}
