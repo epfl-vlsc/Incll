@@ -24,7 +24,7 @@
 #include <fcntl.h>
 
 __thread int self_index = 0;
-#define MAX_THREAD 8
+#define MAX_THREAD 16
 #define NVM_PER_THREAD (100 * 1024 * 1024)
 static const char *filename = "/tmp/nvm.heap";
 void *mmappedData;

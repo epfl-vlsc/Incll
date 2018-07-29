@@ -24,7 +24,7 @@
 
 #define PBUF_SIZE (1ull << 30)
 #define LOG_REGION_ADDR (1ull << 30)
-#define LOG_MAX_THREAD 8
+#define LOG_MAX_THREAD 16
 
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
@@ -236,6 +236,7 @@ private:
 	static constexpr const intptr_t logExpectedAddress = LOG_REGION_ADDR;
 	void *mmappedLog;
 	int fd;
+	bool exists;
 public:
 	PExtNodeLogger* init_plog(int tid){
 		char* log_addr = (char*)LOG_REGION_ADDR + (tid * PBUF_SIZE);
@@ -246,7 +247,7 @@ public:
 	}
 
 	void init(){
-		bool exists = access( plog_filename, F_OK ) != -1;
+		exists = access( plog_filename, F_OK ) != -1;
 	    fd = open(plog_filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
 	    assert(fd != -1);
 
