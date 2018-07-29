@@ -572,7 +572,6 @@ MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 //Zipfian(nkeys)
 //ScrambledZipGen()
 
-
 MAKE_TESTRUNNER(ycsb_a_uni,
 kvtest_ycsb(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -862,7 +861,7 @@ enum { opt_pin = 1, opt_port, opt_duration,
        opt_normalize, opt_limit, opt_notebook, opt_compare, opt_no_run,
        opt_lazy_timer, opt_gid, opt_tree_stats, opt_rscale_ncores, opt_cores,
        opt_stats, opt_help, opt_yrange, opt_nkeys, opt_ninitops, opt_nops1, opt_nops2,
-	   opt_getrate, opt_putrate, opt_remrate, opt_scanrate
+	   opt_getrate, opt_putrate, opt_remrate, opt_scanrate, opt_delaycount
 };
 static const Clp_Option options[] = {
     { "pin", 'p', opt_pin, 0, Clp_Negate },
@@ -887,6 +886,7 @@ static const Clp_Option options[] = {
 	{ "putrate", 0, opt_putrate, Clp_ValInt, 0 },
 	{ "remrate", 0, opt_remrate, Clp_ValInt, 0 },
 	{ "scanrate", 0, opt_scanrate, Clp_ValInt, 0 },
+	{ "delaycount", 0, opt_delaycount, Clp_ValInt, 0 },
     { "trials", 'T', opt_trials, Clp_ValInt, 0 },
     { "quiet", 'q', opt_quiet, 0, Clp_Negate },
     { "print", 0, opt_print, 0, Clp_Negate },
@@ -916,6 +916,7 @@ Options:\n\
   --putrate=RATE   	   Number between 0 and 100.\n\
   --remrate=RATE   	   Number between 0 and 100.\n\
   --scanrate=RATE   	   Number between 0 and 100.\n\
+  --delaycount=DELAY   	   Number between 0 and 3400.\n\
   -p, --pin                Pin each thread to its own core.\n\
   -T, --trials=TRIALS      Run each test TRIALS times.\n\
   -q, --quiet              Do not generate verbose and Gnuplot output.\n\
@@ -1025,6 +1026,9 @@ main(int argc, char *argv[])
 		case opt_scanrate:
 			GH::scan_rate = clp->val.i;
 			GH::check_rate(GH::scan_rate);
+			break;
+		case opt_delaycount:
+			delaycount = clp->val.i;
 			break;
         case opt_trials:
             ntrials = clp->val.i;

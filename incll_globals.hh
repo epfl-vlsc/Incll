@@ -10,7 +10,7 @@
 #include "incll_barrier.hh"
 #include "incll_gf.hh"
 #include "incll_configs.hh"
-#include "incll_extlog.hh"
+#include "incll_pextlog.hh"
 #include "incll_bl.hh"
 
 namespace GH{
@@ -34,10 +34,12 @@ namespace GH{
 	extern GlobalFlush global_flush;
 #endif
 
-	extern thread_local ExtNodeLogger node_logger;
+	extern thread_local PExtNodeLogger *node_logger;
+	extern PLogAllocator plog_allocator;
 
 	void print_exp_params();
 	void init_all(int nthreads, const char *testname);
+	void init_thread_all(int tid);
 
 
 	void advance_epoch(int tid, void *root);

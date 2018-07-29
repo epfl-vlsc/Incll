@@ -627,12 +627,14 @@ void kvtest_rw16(C &client)
     kvtest_rw16_seed(client, kvtest_first_seed + client.id() % 48);
 }
 
+//global size for sanity checking tree size
+std::atomic<size_t> global_size;
+
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove
-std::atomic<size_t> global_size;
 template <typename C>
 void kvtest_recovery(C &client){
-	GH::node_logger.init(client.id());
+	GH::init_thread_all(client.id());
 	ycsbc::OpRatios opratios(GH::get_rate, GH::put_rate, GH::rem_rate, GH::scan_rate);
 
 	unsigned pos = 0, val =0;
@@ -739,16 +741,16 @@ void kvtest_recovery(C &client){
 
 	//Begin Undo epoch 3 ------------------------------------------------
 	if(client.id() == 0){
-		void* undo_root = GH::node_logger.get_tree_root();
+		void* undo_root = GH::node_logger->get_tree_root();
 		client.set_root(undo_root);
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 
-	auto last_flush = GH::node_logger.get_last_flush();
-	GH::node_logger.undo(client.get_root());
+	auto last_flush = GH::node_logger->get_last_flush();
+	GH::node_logger->undo(client.get_root());
 	GH::thread_barrier.wait_barrier(client.id());
 
-	GH::node_logger.undo_next_prev(client.get_root(), last_flush);
+	GH::node_logger->undo_next_prev(client.get_root(), last_flush);
 	GH::thread_barrier.wait_barrier(client.id());
 	//End Undo epoch 3 ------------------------------------------------
 
@@ -772,7 +774,8 @@ void kvtest_recovery(C &client){
 //write/delete: write to tree, meanwhile try to get keys, if found remove
 template <typename C>
 void kvtest_rand(C &client, uint64_t n_keys){
-	GH::node_logger.init(client.id());
+	GH::init_thread_all(client.id());
+
 	unsigned pos = 0, val =0;
 	uint64_t n = 0;
 	Json result = Json();
@@ -861,7 +864,7 @@ void kvtest_ycsb(C &client,
 	int rem_ops = 0;
 	int scan_ops = 0;
 
-	GH::node_logger.init(client.id());
+	GH::init_thread_all(client.id());
 	UniGen val_rand;
 	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
 
@@ -960,7 +963,6 @@ void kvtest_ycsb(C &client,
 	}
 }
 #endif //ycsb
-
 
 // generate a big tree, update the tree to current epoch as much as possible
 //write/delete: write to tree, meanwhile try to get keys, if found remove

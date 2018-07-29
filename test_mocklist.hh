@@ -15,11 +15,9 @@
 #define TAINT_VAL 100
 
 struct Node{
-	static constexpr const size_t extras = 16 + ExtNodeLogger::entry_meta_size + 1;
 	Node *next;
 	uint8_t val;
 	bool is_root_;
-	uint8_t uspace[ExtNodeLogger::buf_size/BIG_SIZE - extras];
 
 	Node(): next(nullptr), val(0), is_root_(false){}
 
@@ -101,7 +99,7 @@ void print_nodes(Node* root){
 
 void modify_nodes(Node* root, uint8_t val){
 	while(root){
-		GH::node_logger.record(root);
+		GH::node_logger->record(root);
 		root->set_val(val);
 		root = root->next;
 	}
@@ -109,7 +107,7 @@ void modify_nodes(Node* root, uint8_t val){
 
 void record_nodes(Node* root){
 	while(root){
-		GH::node_logger.record(root);
+		GH::node_logger->record(root);
 		root = root->next;
 	}
 }
@@ -134,5 +132,5 @@ bool is_list_same(std::vector<uint8_t>* v, Node* root){
 }
 
 size_t get_node_entry_size(Node* root){
-	return GH::node_logger.get_entry_size(root->allocated_size());
+	return GH::node_logger->get_entry_size(root->allocated_size());
 }

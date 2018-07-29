@@ -9,7 +9,7 @@
 
 #ifdef GLOBAL_FLUSH
 #include "incll_globals.hh"
-#include "incll_extlog.hh"
+#include "incll_pextlog.hh"
 
 #include <atomic>
 #include <semaphore.h>
@@ -22,7 +22,7 @@ extern volatile mrcu_epoch_type globalepoch;
 extern volatile mrcu_epoch_type active_epoch;
 
 namespace GH{
-	extern thread_local ExtNodeLogger node_logger;
+	extern thread_local PExtNodeLogger *node_logger;
 }
 
 class GlobalFlush{
@@ -56,7 +56,7 @@ private:
 		global_flush();
 
 		//todo check later if this belongs here
-		GH::node_logger.checkpoint();
+		GH::node_logger->checkpoint();
 	}
 
 public:
