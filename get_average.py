@@ -1,6 +1,6 @@
 import json
 import sys
-
+import numpy as np
 
 def get_notebook():
     text = "notebook-mttest.json"
@@ -22,7 +22,10 @@ class OpStats:
         self.n_trials += 1
 
     def get_avg(self):
-        return sum(self.values) / len(self.values)
+        return np.mean(self.values)
+
+    def get_std(self):
+        return np.std(self.values)
 
     def get_sum(self):
         return sum(self.values) / self.n_trials
@@ -42,12 +45,12 @@ def get_ops_stats(data):
 
 def analyze_ops_stats():
     params = sys.argv[1] if len(sys.argv) > 1 else None
-    sf = "{},{},{}" if params else "{},{}"
+    sf = "{},{},{},{}" if params else "{},{},{}"
 
     data = get_notebook()
     op_stats = get_ops_stats(data)
 
-    s = sf.format(op_stats.get_sum(), op_stats.get_avg(), params)
+    s = sf.format(op_stats.get_sum(), op_stats.get_avg(), op_stats.get_std(), params)
     print(s)
 
 
