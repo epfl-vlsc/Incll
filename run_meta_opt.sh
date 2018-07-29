@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-repeat=3
+repeat=10
 
 make mttest
 
@@ -8,7 +8,7 @@ mkdir -p output
 Oname=output/meta_opt.txt
 rm -rf ${Oname}
 
-echo "TotalOps,AvgOps,Workload" >> ${Oname}
+echo "TotalOps,AvgOps,StdOps,Workload" >> ${Oname}
 
 for WORKLOAD in rand\
 	ycsb_a_uni ycsb_b_uni ycsb_c_uni ycsb_e_uni \
