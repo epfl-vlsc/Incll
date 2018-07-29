@@ -50,4 +50,4 @@
 //#define COLLECT_STATS
 
 #define YCSB
-#define LFBENCH
+#define YCSB_RECOVERY
