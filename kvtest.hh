@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <ctime>
+#include <thread>
 
 #include "incll_copy.hh"
 #include "incll_globals.hh"
@@ -966,149 +967,214 @@ void kvtest_ycsb(C &client,
 
 
 
+
+
 #ifdef YCSB_RECOVERY
+//recovery only uses 8 threads
+#define N_SAMPLES 5000
+volatile uint64_t sampled_ops[8*sizeof(uint64_t)];
+volatile uint64_t ops_samples[N_SAMPLES];
+volatile bool sampling_done = false;
+std::chrono::milliseconds interval(8); //sleep for 8ms
+pthread_t sampler_thread;
+
+void* recovery_ops_sampler(void* arg){
+	static int count = 0;
+	(void)(arg);
+
+	while(!sampling_done && count < N_SAMPLES){
+		ops_samples[count] = 0;
+		for(int i=0;i<8;++i){
+			ops_samples[count] += sampled_ops[i*sizeof(uint64_t)];
+		}
+		++count;
+		std::this_thread::sleep_for(interval);
+	}
+	printf("sampling done\n");
+	return nullptr;
+}
+
+
+
 template <typename C, typename RandGen>
-void kvtest_ycsb_recovery(C &client,
-		ycsbc::OpRatios op_ratios,
-		RandGen key_rand){
+void ycsb_init_execution(C &client,
+		ycsbc::OpRatios &op_ratios,
+		RandGen &key_rand){
+	//initialization
 	uint64_t pos = 0, val = 0;
 	size_t init = GH::n_initops;
 	size_t nops1 = GH::n_ops1;
 	size_t nkeys = GH::n_keys;
 
-	bool is_rec = GH::is_recovery();
-
-	GH::init_thread_all(client.id());
 	UniGen val_rand;
 	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
 
-	quick_istr key;
-	std::vector<Str> keys(10), values(10);
+	uint64_t n = 0;
+
+	//Create tree----------------------------------------------------
+	if(client.id() == 0){
+		while (n < init) {
+			pos = n;
+			val = pos + 1;
+
+			client.put(pos, val);
+			++n;
+		}
+		printf("Created tree--------------------\n");
+	}
+
+	//Barrier-------------------------------------------------------------
+	GH::thread_barrier.wait_barrier(client.id());
+	client.rcu_quiesce();
+#ifdef GLOBAL_FLUSH
+	GH::global_flush.ack_flush();
+#endif
+
+	//Do ops----------------------------------------------------
+	n = 0;
+	while(n < nops1){
+		assert(n == nops1/2 && client.id() == 0 &&
+				"Power failure - System crash - Reboot please!");
+		n++;
+		pos = key_rand.next() % nkeys;
+
+		unsigned op = op_ratios.get_next_op();
+		switch(op){
+		case ycsbc::get_op:{
+			client.get_sync(pos);
+		}break;
+		case ycsbc::put_op:{
+			val = val_rand.next();
+			client.put(pos, val);
+		}break;
+		case ycsbc::rem_op:{
+			client.remove_sync(pos);
+		}break;
+		default:
+			assert(0);
+			break;
+		}
+		if ((n % (1 << 6)) == 0){
+			client.rcu_quiesce();
+			//set_global_epoch
+		}
+#ifdef GLOBAL_FLUSH
+		GH::global_flush.ack_flush();
+#endif
+	}
+
+
+}
+
+template <typename C, typename RandGen>
+void ycsb_re_execution(C &client,
+		ycsbc::OpRatios &op_ratios,
+		RandGen &key_rand){
+	//initialization
+	uint64_t pos = 0, val = 0;
+	size_t nops1 = GH::n_ops1;
 
 	uint64_t n = 0;
 	Json result = Json();
-	size_t local_size = 0;
 
-	//First execution
-	if(!is_rec){
-		if(client.id() == 0){
-			while (n < init) {
-				pos = n;
-				val = pos + 1;
+	UniGen val_rand;
+	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
 
-				client.put(pos, val);
-				++n;
-			}
-			printf("Created tree--------------------\n");
-		}
-
-		//Barrier-------------------------------------------------------------
-		GH::thread_barrier.wait_barrier(client.id());
-		client.rcu_quiesce();
-	#ifdef GLOBAL_FLUSH
-			GH::global_flush.ack_flush();
-	#endif
-
-		n = 0;
-		while(n < nops1){
-			assert(n < nops1/2);
-			n++;
-			pos = key_rand.next() % nkeys;
-
-			unsigned op = op_ratios.get_next_op();
-			switch(op){
-			case ycsbc::get_op:{
-				client.get_sync(pos);
-			}break;
-			case ycsbc::put_op:{
-				val = val_rand.next();
-				client.put(pos, val);
-			}break;
-			case ycsbc::rem_op:{
-				client.remove_sync(pos);
-			}break;
-			case ycsbc::scan_op:{
-				key.set(pos, 8);
-				client.scan_sync(key.string(), 10, keys, values);
-				}break;
-			default:
-				assert(0);
-				break;
-			}
-			if ((n % (1 << 6)) == 0){
-				client.rcu_quiesce();
-				//set_global_epoch
-			}
-	#ifdef GLOBAL_FLUSH
-				GH::global_flush.ack_flush();
-	#endif
-		}
-
-	} //first execution
-	else{ //recovery execution
-
-		//do recovery
-
-		double t0 = client.now();
-		auto last_flush = GH::node_logger->get_last_flush();
-		GH::node_logger->undo(client.get_root());
-		GH::thread_barrier.wait_barrier(client.id());
-
-		GH::node_logger->undo_next_prev(client.get_root(), last_flush);
-		double t1 = client.now();
-		result.set("recovery_time", t1-t0);
-
-		//barrier------------------------------------------
-		GH::thread_barrier.wait_barrier(client.id());
-			client.rcu_quiesce();
-		#ifdef GLOBAL_FLUSH
-				GH::global_flush.ack_flush();
-		#endif
-
-			n = 0;
-			while(n < nops1){
-				n++;
-				pos = key_rand.next() % nkeys;
-
-				unsigned op = op_ratios.get_next_op();
-				switch(op){
-				case ycsbc::get_op:{
-					client.get_sync(pos);
-				}break;
-				case ycsbc::put_op:{
-					val = val_rand.next();
-					local_size += client.put(pos, val);
-				}break;
-				case ycsbc::rem_op:{
-					local_size -= client.remove_sync(pos);
-				}break;
-				case ycsbc::scan_op:{
-					key.set(pos, 8);
-					client.scan_sync(key.string(), 10, keys, values);
-					}break;
-				default:
-					assert(0);
-					break;
-				}
-				if ((n % (1 << 6)) == 0){
-					client.rcu_quiesce();
-					//set_global_epoch
-				}
-		#ifdef GLOBAL_FLUSH
-					GH::global_flush.ack_flush();
-		#endif
-			}
+	if(client.id() == 0){
+		void* undo_root = GH::node_logger->get_tree_root();
+		client.set_root(undo_root);
 	}
+	GH::thread_barrier.wait_barrier(client.id());
+	double t0 = client.now();
+	auto last_flush = GH::node_logger->get_last_flush();
+	GH::node_logger->undo(client.get_root());
+	GH::thread_barrier.wait_barrier(client.id());
 
+	GH::node_logger->undo_next_prev(client.get_root(), last_flush);
+	GH::thread_barrier.wait_barrier(client.id());
+
+	double t1 = client.now();
+	result.set("recovery_time", t1-t0);
+
+	//barrier------------------------------------------
+	GH::thread_barrier.wait_barrier(client.id());
+	client.rcu_quiesce();
+#ifdef GLOBAL_FLUSH
+	GH::global_flush.ack_flush();
+#endif
+
+	if(client.id() == 0){
+		pthread_create(&sampler_thread, nullptr, recovery_ops_sampler, nullptr);
+	}
+	GH::thread_barrier.wait_barrier(client.id());
+
+	/*
+	n = 0;
+	while(n < nops1){
+		n++;
+		pos = key_rand.next();
+
+		unsigned op = op_ratios.get_next_op();
+		switch(op){
+		case ycsbc::get_op:{
+			client.get_sync(pos);
+		}break;
+		case ycsbc::put_op:{
+			val = val_rand.next();
+			client.put(pos, val);
+		}break;
+		case ycsbc::rem_op:{
+			client.remove_sync(pos);
+		}break;
+		default:
+			assert(0);
+			break;
+		}
+		if ((n % (1 << 6)) == 0){
+			client.rcu_quiesce();
+			sampled_ops[client.id()*sizeof(uint64_t)] = n;
+			//set_global_epoch
+		}
+#ifdef GLOBAL_FLUSH
+		GH::global_flush.ack_flush();
+#endif
+	}
 
 #ifdef GLOBAL_FLUSH
 	GH::global_flush.thread_done();
 	while(!GH::global_flush.ack_flush());
 #endif
 
+	if(client.id() == 0){
+		sampling_done = true;
+		pthread_join(sampler_thread, NULL);
+		int count = 0;
+		while(ops_samples[count] && count < N_SAMPLES){
+			printf("%lu %d\n", ops_samples[count], count);
+			count++;
+		}
+	}
+
+	*/
 	client.report(result);
 	//Barrier-------------------------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
+}
+
+template <typename C, typename RandGen>
+void kvtest_ycsb_recovery(C &client,
+		ycsbc::OpRatios op_ratios,
+		RandGen key_rand){
+
+	GH::init_thread_all(client.id());
+
+
+	bool is_rec = GH::is_recovery();
+	if(!is_rec){
+		ycsb_init_execution(client, op_ratios, key_rand);
+	}else{
+		ycsb_re_execution(client, op_ratios, key_rand);
+	}
 }
 
 #endif //ycsb recovery

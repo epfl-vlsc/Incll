@@ -67,7 +67,7 @@ namespace GH{
 	}
 
 	bool is_recovery(){
-		plog_allocator.exists;
+		return plog_allocator.exists;
 	}
 
 	void advance_epoch(int tid, void *root){

@@ -624,6 +624,32 @@ MAKE_TESTRUNNER(ycsb_e_zipf,
 		ScrambledZipGen()
 ));
 
+MAKE_TESTRUNNER(ycsb_a_uni_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(100, 0, 0, 0),
+		UniGen()
+));
+
+
+MAKE_TESTRUNNER(ycsb_b_uni_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(0, 5, 0, 95),
+		UniGen()
+));
+
+MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(100, 0, 0, 0),
+		ScrambledZipGen()
+));
+
+
+MAKE_TESTRUNNER(ycsb_b_zipf_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(0, 5, 0, 95),
+		ScrambledZipGen()
+));
+
 /*
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
 // MAKE_TESTRUNNER(palma, kvtest_palma(client));

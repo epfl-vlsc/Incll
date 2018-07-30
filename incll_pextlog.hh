@@ -249,7 +249,7 @@ public:
 
 	void init(){
 		exists = access( plog_filename, F_OK ) != -1;
-	    fd = open(plog_filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
+		fd = open(plog_filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
 	    assert(fd != -1);
 
 	    if(!exists){
