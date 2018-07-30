@@ -66,6 +66,10 @@ namespace GH{
 		node_logger = plog_allocator.init_plog(tid);
 	}
 
+	bool is_recovery(){
+		return plog_allocator.exists;
+	}
+
 	void advance_epoch(int tid, void *root){
 #ifdef GLOBAL_FLUSH
 		thread_barrier.wait_barrier(tid);

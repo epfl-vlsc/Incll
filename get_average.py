@@ -10,35 +10,46 @@ def get_notebook():
         return data
 
 
-class OpStats:
+class Trial:
     def __init__(self):
-        self.n_trials = 0
         self.values = []
 
-    def add(self, val):
+    def add_val(self, val):
         self.values.append(val)
-
-    def inc_trial(self):
-        self.n_trials += 1
 
     def get_avg(self):
         return np.mean(self.values)
 
-    def get_std(self):
-        return np.std(self.values)
+    def get_sum(self):
+        return sum(self.values)
+
+
+class OpStats:
+    def __init__(self):
+        self.trials = []
+
+    def add(self, i, val):
+        if len(self.trials) == i:
+            self.trials.append(Trial())
+        self.trials[i].add_val(val)
 
     def get_sum(self):
-        return sum(self.values) / self.n_trials
+        return np.mean([t.get_sum() for t in self.trials])
+
+    def get_sum_std(self):
+        return np.std([t.get_sum() for t in self.trials])
+
+    def get_avg(self):
+        return np.mean([t.get_avg() for t in self.trials])
 
 
 def get_ops_stats(data):
     op_stats = OpStats()
 
-    for run in data:
+    for i, run in enumerate(data):
         for thread_run in data[run]:
             ops = thread_run["ops"]
-            op_stats.add(ops)
-        op_stats.inc_trial()
+            op_stats.add(i, ops)
 
     return op_stats
 
@@ -50,7 +61,7 @@ def analyze_ops_stats():
     data = get_notebook()
     op_stats = get_ops_stats(data)
 
-    s = sf.format(op_stats.get_sum(), op_stats.get_avg(), op_stats.get_std(), params)
+    s = sf.format(op_stats.get_sum(), op_stats.get_avg(), op_stats.get_sum_std(), params)
     print(s)
 
 

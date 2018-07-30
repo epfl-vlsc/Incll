@@ -236,8 +236,9 @@ private:
 	static constexpr const intptr_t logExpectedAddress = LOG_REGION_ADDR;
 	void *mmappedLog;
 	int fd;
-	bool exists;
 public:
+	bool exists;
+
 	PExtNodeLogger* init_plog(int tid){
 		char* log_addr = (char*)LOG_REGION_ADDR + (tid * PBUF_SIZE);
 		PExtNodeLogger *plog = reinterpret_cast<PExtNodeLogger*>(log_addr);
@@ -248,7 +249,7 @@ public:
 
 	void init(){
 		exists = access( plog_filename, F_OK ) != -1;
-	    fd = open(plog_filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
+		fd = open(plog_filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
 	    assert(fd != -1);
 
 	    if(!exists){

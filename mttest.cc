@@ -152,7 +152,7 @@ void set_global_epoch(mrcu_epoch_type e) {
 #endif //collect stats
 
 #ifdef GLOBAL_FLUSH
-        shouldFlush = true;
+        shouldFlush = true && !GH::global_flush.is_in_flush();
 #endif //gf
     }
     global_epoch_lock.unlock();
@@ -620,6 +620,32 @@ MAKE_TESTRUNNER(ycsb_c_zipf,
 
 MAKE_TESTRUNNER(ycsb_e_zipf,
 		kvtest_ycsb(client,
+		ycsbc::OpRatios(0, 5, 0, 95),
+		ScrambledZipGen()
+));
+
+MAKE_TESTRUNNER(ycsb_a_uni_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(100, 0, 0, 0),
+		UniGen()
+));
+
+
+MAKE_TESTRUNNER(ycsb_b_uni_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(0, 5, 0, 95),
+		UniGen()
+));
+
+MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
+		kvtest_ycsb_recovery(client,
+		ycsbc::OpRatios(100, 0, 0, 0),
+		ScrambledZipGen()
+));
+
+
+MAKE_TESTRUNNER(ycsb_b_zipf_recovery,
+		kvtest_ycsb_recovery(client,
 		ycsbc::OpRatios(0, 5, 0, 95),
 		ScrambledZipGen()
 ));

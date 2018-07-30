@@ -6,8 +6,8 @@
 
 #include "incll_globals.hh"
 
-int NUM_THREADS = 8;
-
+int NUM_THREADS = 16;
+int delaycount = 0;
 typedef uint64_t mrcu_epoch_type;
 volatile mrcu_epoch_type globalepoch = 1;
 
@@ -16,6 +16,7 @@ void assert_epoch(uint64_t num){
 }
 
 void test_manual_body(int tid){
+	GH::node_logger = GH::plog_allocator.init_plog(tid);
 	if(tid == 0){
 		GH::global_flush.flush_manual();
 		assert_epoch(2);
@@ -45,6 +46,7 @@ void test_manual(){
 
 
 void test_automatic_body(int tid){
+	GH::node_logger = GH::plog_allocator.init_plog(tid);
 	if(tid == 0){
 		for(int i=0;i<10;++i){
 			GH::global_flush.flush(globalepoch);
@@ -74,11 +76,13 @@ void test_automatic(){
 void do_experiment(std::string fnc_name, void (*fnc)()){
 	GH::thread_barrier.init(NUM_THREADS);
 	GH::global_flush.init(NUM_THREADS);
+	GH::plog_allocator.init();
 	printf("%s\n", (fnc_name + " begin").c_str());
 	fnc();
 	printf("\t%s\n", (fnc_name + " passed asserts").c_str());
 	globalepoch = 1;
 	GH::thread_barrier.destroy();
+	GH::plog_allocator.destroy();
 }
 
 #define DO_EXPERIMENT(test) \
