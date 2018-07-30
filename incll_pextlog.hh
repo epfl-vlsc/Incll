@@ -236,8 +236,9 @@ private:
 	static constexpr const intptr_t logExpectedAddress = LOG_REGION_ADDR;
 	void *mmappedLog;
 	int fd;
-	bool exists;
 public:
+	bool exists;
+
 	PExtNodeLogger* init_plog(int tid){
 		char* log_addr = (char*)LOG_REGION_ADDR + (tid * PBUF_SIZE);
 		PExtNodeLogger *plog = reinterpret_cast<PExtNodeLogger*>(log_addr);

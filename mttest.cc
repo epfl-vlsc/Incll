@@ -152,7 +152,7 @@ void set_global_epoch(mrcu_epoch_type e) {
 #endif //collect stats
 
 #ifdef GLOBAL_FLUSH
-        shouldFlush = true;
+        shouldFlush = true && !GH::global_flush.is_in_flush();
 #endif //gf
     }
     global_epoch_lock.unlock();

@@ -101,6 +101,9 @@ public:
 			//assert(epoch == globalepoch);
 			//assert(numAcks.fetch_add(1)<=nthreads);
 
+
+			//printf("ackflush ge:%lu \n", globalepoch);
+
 			//signal acknowledge
 			sem_post(&ack_sem);
 
@@ -154,6 +157,7 @@ public:
 
 		//global flush
 		this->flush_();
+		//printf("flush ge:%lu \n", globalepoch);
 
 		//exiting flush mode
 		waitingFlush.store(false, std::memory_order_seq_cst);
@@ -163,6 +167,10 @@ public:
 			sem_post(&flush_ack_sem);
 		}
 		influshWarning.store(false, std::memory_order_release);
+	}
+
+	bool is_in_flush(){
+		return influshWarning.load(std::memory_order_acquire);
 	}
 
 };

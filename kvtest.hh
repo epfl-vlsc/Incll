@@ -1074,21 +1074,17 @@ void kvtest_ycsb_recovery(C &client,
 				switch(op){
 				case ycsbc::get_op:{
 					client.get_sync(pos);
-					get_ops++;
 				}break;
 				case ycsbc::put_op:{
 					val = val_rand.next();
 					local_size += client.put(pos, val);
-					put_ops++;
 				}break;
 				case ycsbc::rem_op:{
 					local_size -= client.remove_sync(pos);
-					rem_ops++;
 				}break;
 				case ycsbc::scan_op:{
 					key.set(pos, 8);
 					client.scan_sync(key.string(), 10, keys, values);
-					scan_ops++;
 					}break;
 				default:
 					assert(0);

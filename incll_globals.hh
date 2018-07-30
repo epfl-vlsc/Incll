@@ -40,6 +40,7 @@ namespace GH{
 	void print_exp_params();
 	void init_all(int nthreads, const char *testname);
 	void init_thread_all(int tid);
+	bool is_recovery();
 
 
 	void advance_epoch(int tid, void *root);
