@@ -661,7 +661,8 @@ class leaf : public node_base<P> {
 #ifdef INCLL
 		void record_node(){
 			if(this->loggedepoch != globalepoch || this->not_logged){
-				DBGLOG("record leaf ge:%lu nl:%d keys:%d", globalepoch, not_logged, this->number_of_keys())
+				DBGLOG("record leaf ge:%lu nl:%d keys:%d",
+						globalepoch, this->not_logged, this->number_of_keys())
 				this->not_logged=false;
 #ifdef LN_EXTLOG
 				GH::node_logger->record(this);
