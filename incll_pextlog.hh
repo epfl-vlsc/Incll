@@ -61,7 +61,9 @@ public:
 		curr = 0;
 		last_flush = 0;
 		buf_size = PBUF_SIZE - full_flush_range;
-		sync_range(&curr, (char*)curr + curr_range);
+
+		char *beg = (char*)&curr;
+		sync_range(beg, beg + curr_range);
 	}
 
 	index get_last_flush(){
@@ -69,9 +71,12 @@ public:
 	}
 
 	void checkpoint(){
+		DBGLOG("save root:%p for future", (void*)global_masstree_root)
 		root = const_cast<void*>(global_masstree_root);
 		last_flush = curr;
-		sync_range(&last_flush, (char*)last_flush+last_flush_range);
+
+		char *beg = (char*)&last_flush;
+		sync_range(beg, beg+last_flush_range);
 	}
 
 	void print_stats(){
@@ -232,7 +237,7 @@ public:
 
 class PLogAllocator{
 private:
-	static constexpr const char *plog_filename = "/tmp/nvm.log";
+	static constexpr const char *plog_filename = "/scratch/tmp/nvm.log";
 	static constexpr const size_t logMappingLength = PBUF_SIZE * LOG_MAX_THREAD;
 	static constexpr const intptr_t logExpectedAddress = LOG_REGION_ADDR;
 	void *mmappedLog;
@@ -263,11 +268,8 @@ public:
 	    //Execute mmap
 	    mmappedLog = mmap((void*)logExpectedAddress, logMappingLength, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	    assert(mmappedLog!=MAP_FAILED);
-	    if(exists){
-			printf("Found log region. Mapped to address %p\n", mmappedLog);
-		}else{
-			printf("Create log region. Mapped to address %p\n", mmappedLog);
-		}
+	    printf("%s log region. Mapped to address %p\n",
+	    	    		(exists) ? "Found":"Created", mmappedLog);
 	    assert(mmappedLog == (void *)LOG_REGION_ADDR);
 	}
 

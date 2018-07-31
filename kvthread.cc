@@ -22,11 +22,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 __thread int self_index = 0;
 #define MAX_THREAD 16
 #define NVM_PER_THREAD (100 * 1024 * 1024)
-static const char *filename = "/tmp/nvm.heap";
+static const char *filename = "/scratch/tmp/nvm.heap";
 void *mmappedData;
 __thread uint8_t *local_nvm;
 #define META_REGION_ADDR (1ull<<45)
@@ -34,20 +35,22 @@ static constexpr intptr_t const expectedAddress=META_REGION_ADDR;
 static const size_t mappingLength = NVM_PER_THREAD * MAX_THREAD;
 
 void nvm_create_mem(){
-    int fd;
-
-    fd = open(filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
+	bool exists = access( filename, F_OK ) != -1;
+	int fd = open(filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
     assert(fd != -1);
 
-    int val = 0;
-    lseek(fd, mappingLength, SEEK_SET);
-    assert(write(fd, (void*)&val, sizeof(val))==sizeof(val));
-    lseek(fd, 0, SEEK_SET);
+    if(!exists){
+		int val = 0;
+		lseek(fd, mappingLength, SEEK_SET);
+		assert(write(fd, (void*)&val, sizeof(val))==sizeof(val));
+		lseek(fd, 0, SEEK_SET);
+    }
 
     //Execute mmap
     mmappedData = mmap((void*)expectedAddress, mappingLength, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     assert(mmappedData!=MAP_FAILED);
-    printf("Create new meta region. Mapped to address %p\n", mmappedData);
+    printf("%s data region. Mapped to address %p\n",
+    	    	    		(exists) ? "Found":"Created", mmappedData);
     assert(mmappedData == (void *)META_REGION_ADDR);
 }
 

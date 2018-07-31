@@ -16,8 +16,8 @@ for WORKLOAD in rand\
 	for DELAYCOUNT in 0 340 680 1020 1360 1700 2040 2380 2720 3060 3400; do
 		rm -rf *.json
 		for i in $(eval echo {1..$repeat}); do
-			rm -rf /tmp/nvm.*
-			timeout 30 ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --delaycount=${DELAYCOUNT}
+			rm -rf /scratch/tmp/nvm.*
+			timeout 50 ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --delaycount=${DELAYCOUNT}
 		done
 		python get_average.py "${WORKLOAD},${DELAYCOUNT}" >> ${Oname}
 	done
