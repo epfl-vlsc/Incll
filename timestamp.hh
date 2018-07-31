@@ -35,7 +35,8 @@ typedef uint64_t kvtimestamp_t;
 inline kvtimestamp_t timestamp() {
     struct timeval tv;
     gettimeofday(&tv, 0);
-    return ((kvtimestamp_t) tv.tv_sec << 32) | (unsigned int)tv.tv_usec;
+    //return ((kvtimestamp_t) tv.tv_sec << 32) | (unsigned int)tv.tv_usec;
+    return (kvtimestamp_t) (tv.tv_sec * 1000000 + (unsigned int)tv.tv_usec);
 }
 
 inline kvtimestamp_t timestamp_sub(kvtimestamp_t a, kvtimestamp_t b) {
