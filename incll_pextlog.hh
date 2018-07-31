@@ -28,7 +28,7 @@
 
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
-
+extern volatile void *global_masstree_root;
 
 class PExtNodeLogger{
 private:
@@ -54,8 +54,8 @@ public:
 	static constexpr const size_t entry_meta_size = sizeof(logrec_node);
 	static constexpr const uint8_t entry_valid_magic = 18;
 	static constexpr const int full_flush_range = 32;
-	static constexpr const int curr_range = 24;
-	static constexpr const int last_flush_range = 18;
+	static constexpr const int curr_range = 32;
+	static constexpr const int last_flush_range = 24;
 
 	void init(){
 		curr = 0;
@@ -69,6 +69,7 @@ public:
 	}
 
 	void checkpoint(){
+		root = const_cast<void*>(global_masstree_root);
 		last_flush = curr;
 		sync_range(&last_flush, (char*)last_flush+last_flush_range);
 	}

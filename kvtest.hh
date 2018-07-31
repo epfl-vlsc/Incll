@@ -1073,6 +1073,7 @@ void ycsb_re_execution(C &client,
 	//initialization
 	uint64_t pos = 0, val = 0;
 	size_t nops1 = GH::n_ops1;
+	size_t nkeys = GH::n_keys;
 
 	uint64_t n = 0;
 	Json result = Json();
@@ -1108,11 +1109,10 @@ void ycsb_re_execution(C &client,
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 
-	/*
 	n = 0;
 	while(n < nops1){
 		n++;
-		pos = key_rand.next();
+		pos = key_rand.next() % nkeys;
 
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
@@ -1155,7 +1155,6 @@ void ycsb_re_execution(C &client,
 		}
 	}
 
-	*/
 	client.report(result);
 	//Barrier-------------------------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
