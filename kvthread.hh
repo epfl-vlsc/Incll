@@ -206,7 +206,6 @@ class threadinfo {
 
     // memory allocation
     void* allocate(size_t sz, memtag tag) {
-    	assert(sz<=24);
         void* p = malloc(sz + memdebug_size);
         p = memdebug::make(p, sz, tag);
         if (p)
