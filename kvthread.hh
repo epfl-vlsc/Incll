@@ -24,44 +24,9 @@
 #include <pthread.h>
 #include <sys/mman.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "incll_configs.hh"
-
-// Replace with real epoch support
-#define  get_current_epoch() globalepoch
-#define  epoch_is_valid(e)   (e == globalepoch)
-
-// Some bit definitions
-#define FIELD_GET(OFFSET, SIZE, V) ((V & (((1UL << SIZE) - 1)  << OFFSET)) >> OFFSET)
-#define FIELD_SET(OFFSET, SIZE, V) ((V &  ((1UL << SIZE) - 1)) << OFFSET)
-#define FIELD_MASK(OFFSET, SIZE, V) (V & (((1UL << SIZE) - 1)  << OFFSET))
-
-#define POOL_POINTER_SIZE   46
-#define POOL_POINTER_OFFSET 0
-#define POOL_POINTER_GET(V) FIELD_GET(POOL_POINTER_OFFSET, POOL_POINTER_SIZE, V)
-#define POOL_POINTER_SET(V) FIELD_SET(POOL_POINTER_OFFSET, POOL_POINTER_SIZE, V)
-
-#define POOL_BASE_SIZE   28
-#define POOL_BASE_OFFSET 46
-#define POOL_BASE_GET(V) FIELD_MASK(POOL_BASE_OFFSET, POOL_BASE_SIZE, V)
-
-#define POOL_C_SIZE   2
-#define POOL_C_OFFSET 46
-#define POOL_C_SET(V) FIELD_SET(POOL_C_OFFSET, POOL_C_SIZE, V)
-#define POOL_C_GET(V) FIELD_GET(POOL_C_OFFSET, POOL_C_SIZE, V)
-
-#define POOL_E_SIZE   16
-#define POOL_E_OFFSET 48
-#define POOL_E_SET(V) FIELD_SET(POOL_E_OFFSET, POOL_E_SIZE, V)
-#define POOL_E_GET(V) FIELD_GET(POOL_E_OFFSET, POOL_E_SIZE, V)
-
-#define SET_P(P, E, C, PX) (P = (POOL_POINTER_SET(PX >> 2) | POOL_C_SET(C) | POOL_E_SET(E)))
-
-#define PPP_HEADER_SIZE 16
-
-extern uint64_t base_pointer;
-void access_ppp(uint64_t *pp, void **p, bool w);
+#include "kvthread_persistent.hh"
 
 class threadinfo;
 class loginfo;
@@ -241,6 +206,7 @@ class threadinfo {
 
     // memory allocation
     void* allocate(size_t sz, memtag tag) {
+    	assert(sz<=24);
         void* p = malloc(sz + memdebug_size);
         p = memdebug::make(p, sz, tag);
         if (p)
@@ -262,47 +228,31 @@ class threadinfo {
     }
 
     void* pool_allocate(size_t sz, memtag tag) {
-        int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+        int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(nl <= pool_max_nlines);
-
-        void *p, *next;
-        access_ppp((uint64_t *)(&pool_[nl - 1][0]), &p, false);
-        if (unlikely(!p))
-        {
+        if (unlikely(!pool_[nl - 1]))
             refill_pool(nl);
-            access_ppp((uint64_t *)(&pool_[nl - 1][0]), &p, false);
-        }
+        void* p = pool_[nl - 1];
         if (p) {
-            //HILLEL: access_ppp
-            access_ppp((uint64_t *)p, &next, false);
-            access_ppp((uint64_t *)(&pool_[nl - 1][0]), &next, true);
-            //pool_[nl - 1] = *reinterpret_cast<void **>(next);
+            pool_[nl - 1] = *reinterpret_cast<void **>(p);
             p = memdebug::make(p, sz, memtag(tag + nl));
             mark(threadcounter(tc_alloc + (tag > memtag_value)),
                  nl * CACHE_LINE_SIZE);
         }
-        return ((void *)(((uint8_t *)p) + PPP_HEADER_SIZE));
+        return p;
     }
-
     void pool_deallocate(void* p, size_t sz, memtag tag) {
-        void *next;
         int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
-        p = ((void *)(((uint8_t *)p) - PPP_HEADER_SIZE));
         assert(p && nl <= pool_max_nlines);
         p = memdebug::check_free(p, sz, memtag(tag + nl));
         if (use_pool()) {
-            access_ppp((uint64_t *)(pool_[nl - 1][0]), &p, false);
-            next = (void *)(*(uint64_t *)p);
-            access_ppp((uint64_t *)(&pool_[nl - 1][0]), &next, true);
-            //*reinterpret_cast<void **>(p) = pool_[nl - 1];
-            //pool_[nl - 1] = p;
-            //access_ppp((uint64_t *)(pool_[nl - 1]), &p, true);
+            *reinterpret_cast<void **>(p) = pool_[nl - 1];
+            pool_[nl - 1] = p;
         } else
             free(p);
         mark(threadcounter(tc_alloc + (tag > memtag_value)),
              -nl * CACHE_LINE_SIZE);
     }
-
     void pool_deallocate_rcu(void* p, size_t sz, memtag tag) {
         int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(p && nl <= pool_max_nlines);
@@ -363,7 +313,7 @@ class threadinfo {
     };
 
     enum { pool_max_nlines = 20 };
-    void* pool_[pool_max_nlines][2];
+    void* pool_[pool_max_nlines];
 
     limbo_group* limbo_head_;
     limbo_group* limbo_tail_;
@@ -386,7 +336,7 @@ class threadinfo {
             p = memdebug::check_free_after_rcu(p, tag);
             int nl = tag & memtag_pool_mask;
             *reinterpret_cast<void**>(p) = pool_[nl - 1];
-            pool_[nl - 1][0] = p;
+            pool_[nl - 1] = p;
         }
     }
 

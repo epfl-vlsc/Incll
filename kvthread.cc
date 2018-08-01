@@ -19,101 +19,6 @@
 #include <stdlib.h>
 #include <new>
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-__thread int self_index = 0;
-#define MAX_THREAD 16
-#define NVM_PER_THREAD (100 * 1024 * 1024)
-static const char *filename = "/scratch/tmp/nvm.heap";
-void *mmappedData;
-__thread uint8_t *local_nvm;
-#define META_REGION_ADDR (1ull<<45)
-static constexpr intptr_t const expectedAddress=META_REGION_ADDR;
-static const size_t mappingLength = NVM_PER_THREAD * MAX_THREAD;
-
-void nvm_create_mem(){
-	bool exists = access( filename, F_OK ) != -1;
-	int fd = open(filename, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
-    assert(fd != -1);
-
-    if(!exists){
-		int val = 0;
-		lseek(fd, mappingLength, SEEK_SET);
-		assert(write(fd, (void*)&val, sizeof(val))==sizeof(val));
-		lseek(fd, 0, SEEK_SET);
-    }
-
-    //Execute mmap
-    mmappedData = mmap((void*)expectedAddress, mappingLength, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    assert(mmappedData!=MAP_FAILED);
-    printf("%s data region. Mapped to address %p\n",
-    	    	    		(exists) ? "Found":"Created", mmappedData);
-    assert(mmappedData == (void *)META_REGION_ADDR);
-}
-
-void *alloc_nvm(int size)
-{
-    void *rc;
-    rc = (void *) local_nvm;
-    size = (size + CACHE_LINE_SIZE) & (~(CACHE_LINE_SIZE - 1));
-    local_nvm = local_nvm + size;
-    return rc;
-}
-
-void access_ppp(uint64_t *pp, void **p, bool w)
-{
-    uint64_t cur_pointer, cur_epoch, buf_epoch;
-    int first_index = 0, c0, c1, c_new;
-
-    cur_epoch = get_current_epoch(); // TODO: Need to get the real value
-
-    c0 = POOL_C_GET(*pp);
-    c1 = POOL_C_GET(*(pp+1));
-
-    if(c0 == c1)
-    {
-        buf_epoch = POOL_C_GET(*pp) + POOL_C_GET(*(pp+1));
-        first_index = c0 & 1;
-        c_new = c0;
-
-        if(epoch_is_valid(buf_epoch))
-        {
-            c_new = c_new + 1;
-            first_index = !first_index;
-        }
-
-    }
-    else
-    {
-        if((c0 + 1) == c1)
-        {
-            first_index = c1 & 1;
-            c_new = c0 + 1;
-        }
-        else
-        {
-            first_index = c0 & 1;
-            c_new = c1 + 1;
-        }
-
-    }
-
-    cur_pointer = POOL_POINTER_GET(pp[!first_index]) << 2;
-
-    if(w)
-    {
-        SET_P(pp[first_index], cur_epoch, c_new, POOL_POINTER_GET(pp[first_index]));
-        SET_P(pp[!first_index], (cur_epoch >> 16), c_new, (uint64_t)*p);
-    }
-    else
-    {
-        *p = (void *)cur_pointer ;
-    }
-}
-
 #if HAVE_SUPERPAGE && !NOSUPERPAGE
 #include <sys/types.h>
 #include <dirent.h>
@@ -135,13 +40,9 @@ inline threadinfo::threadinfo(int purpose, int index) {
     ts_ = 2;
 }
 
-
 threadinfo *threadinfo::make(int purpose, int index) {
     static int threads_initialized;
-    self_index = index + 1;
-    if(index == 0)
-        nvm_create_mem();
-    local_nvm = (uint8_t *)META_REGION_ADDR + (index * NVM_PER_THREAD);
+
     threadinfo* ti = new(malloc(8192)) threadinfo(purpose, index);
     ti->next_ = allthreads;
     allthreads = ti;
@@ -279,25 +180,22 @@ static size_t superpage_size = 0;
 #endif
 
 static void initialize_pool(void* pool, size_t sz, size_t unit) {
-    unit = unit + PPP_HEADER_SIZE;
-    char* p = reinterpret_cast<char*>(pool), *p_tmp;
+    char* p = reinterpret_cast<char*>(pool);
     void** nextptr = reinterpret_cast<void**>(p);
     for (size_t off = unit; off + unit <= sz; off += unit) {
-        p_tmp = p + off;
-        access_ppp((uint64_t *)nextptr, (void **)&p_tmp, true);
-        nextptr = reinterpret_cast<void**>(p_tmp);
+        *nextptr = p + off;
+        nextptr = reinterpret_cast<void**>(p + off);
     }
-    p = 0;
-    access_ppp((uint64_t *)nextptr, (void **)&p, true);
+    *nextptr = 0;
 }
 
 void threadinfo::refill_pool(int nl) {
-    //assert(!pool_[nl - 1]);
+    assert(!pool_[nl - 1]);
 
     if (!use_pool()) {
-        pool_[nl - 1][0] = malloc((nl ) * CACHE_LINE_SIZE);
-        if (pool_[nl - 1][0])
-            *reinterpret_cast<void**>(pool_[nl - 1][0]) = 0;
+        pool_[nl - 1] = malloc(nl * CACHE_LINE_SIZE);
+        if (pool_[nl - 1])
+            *reinterpret_cast<void**>(pool_[nl - 1]) = 0;
         return;
     }
 
@@ -312,7 +210,6 @@ void threadinfo::refill_pool(int nl) {
         pool_size = superpage_size;
 # if MADV_HUGEPAGE
         if ((r = posix_memalign(&pool, pool_size, pool_size)) != 0) {
-            access_ppp((uint64_t *)(pool_), &pool, true);
             fprintf(stderr, "posix_memalign superpage: %s\n", strerror(r));
             pool = 0;
             superpage_size = (size_t) -1;
@@ -336,16 +233,12 @@ void threadinfo::refill_pool(int nl) {
 
     if (!pool) {
         pool_size = 2 << 20;
-        pool = alloc_nvm(pool_size);
-        /*
         if ((r = posix_memalign(&pool, CACHE_LINE_SIZE, pool_size)) != 0) {
             fprintf(stderr, "posix_memalign: %s\n", strerror(r));
             abort();
         }
-         */
     }
 
     initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
-    //pool_[nl - 1] = pool;
-    access_ppp((uint64_t *)(&pool_[nl - 1][0]), &pool, true);
+    pool_[nl - 1] = pool;
 }
