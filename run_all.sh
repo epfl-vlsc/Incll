@@ -28,6 +28,3 @@ echo "run keys"
 
 echo "run threads"
 ./run_ycsb_threads.sh
-
-echo "run delaycount"
-./run_ycsb_delaycount.sh
