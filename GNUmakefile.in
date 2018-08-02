@@ -163,13 +163,6 @@ test_ycsb_helper: test_ycsb_helper.o
 tycsbhelper: test_ycsb_helper
 	./test_ycsb_helper
 
-
-test_minilv: test_minilv.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
-
-tminilv: test_minilv
-	./test_minilv
-
 # helpers
 get_avg:
 	python get_average.py
