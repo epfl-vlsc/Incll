@@ -8,7 +8,7 @@
 
 #include "incll_extflush.hh"
 
-#define DATA_BUF_SIZE (4ull << 30)
+#define DATA_BUF_SIZE (1ull << 28)
 #define DATA_REGION_ADDR (1ull<<45)
 #define DATA_MAX_THREAD 18
 
@@ -26,7 +26,7 @@ private:
 	static constexpr const size_t skip_to_ti = 64;
 	static constexpr const size_t ti_size = 8192;
 	static constexpr const size_t tis_size = ti_size * DATA_MAX_THREAD;
-	static constexpr const size_t skip_to_data = tis_size + skip_to_ti;
+	static constexpr const size_t skip_to_data = (2 << 20);
 
 	void *mmappedData;
 	void *mmappedDataEnd;
@@ -36,8 +36,6 @@ private:
 	void init_curr_nvm_free(){
 		if(!exists){
 			nvm_free_addr = (char*)mmappedData+skip_to_data;
-			char *beg = (char*)nvm_free_addr;
-			sync_range(beg, beg + sizeof(void*));
 		}
 	}
 public:
@@ -58,7 +56,9 @@ public:
 		}
 
 		//Execute mmap
-		mmappedData = mmap((void*)dataExpectedAddress, dataMappingLength, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		mmappedData = mmap((void*)dataExpectedAddress, dataMappingLength,
+				PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+		memset(mmappedData, 0, dataMappingLength);
 		assert(mmappedData!=MAP_FAILED);
 		printf("%s log region. Mapped to address %p\n",
 						(exists) ? "Found":"Created", mmappedData);
@@ -84,8 +84,6 @@ public:
 		nvm_free_addr = (void*)((char*)nvm_free_addr + sz);
 		assert(tmp && nvm_free_addr < mmappedDataEnd);
 
-		char *beg = (char*)nvm_free_addr;
-		sync_range(beg, beg + sizeof(void*));
 		pthread_mutex_unlock(&nvm_lock);
 		return tmp;
 	}
