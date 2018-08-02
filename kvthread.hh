@@ -228,9 +228,11 @@ class threadinfo {
         */
     }
     void deallocate_rcu(void* p, size_t sz, memtag tag) {
-        assert(p);
+    	int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+		assert(p && nl <= pool_max_nlines);
+		p = ((void *)(((uint8_t *)p) - PPP_HEADER_SIZE));
         memdebug::check_rcu(p, sz, tag);
-        record_rcu(p, tag);
+        record_rcu(p, memtag(tag + nl));
         mark(threadcounter(tc_alloc + (tag > memtag_value)), -sz);
     }
 
@@ -262,8 +264,9 @@ class threadinfo {
              -nl * CACHE_LINE_SIZE);
     }
     void pool_deallocate_rcu(void* p, size_t sz, memtag tag) {
-        int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+        int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(p && nl <= pool_max_nlines);
+        p = ((void *)(((uint8_t *)p) - PPP_HEADER_SIZE));
         memdebug::check_rcu(p, sz, memtag(tag + nl));
         record_rcu(p, memtag(tag + nl));
         mark(threadcounter(tc_alloc + (tag > memtag_value)),
