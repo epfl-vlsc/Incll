@@ -30,6 +30,12 @@ threadinfo *threadinfo::allthreads;
 int threadinfo::no_pool_value;
 #endif
 
+//definitions for persistent pool
+volatile mrcu_epoch_type currexec;
+bool epoch_is_valid(unsigned long e){
+    return true;
+}
+
 inline threadinfo::threadinfo(int purpose, int index) {
     memset(this, 0, sizeof(*this));
     purpose_ = purpose;
@@ -45,6 +51,7 @@ threadinfo *threadinfo::make(int purpose, int index) {
     static int threads_initialized;
 
     //threadinfo is volatile
+    assert(sizeof(threadinfo)<8192);
     threadinfo* ti = new(malloc(8192)) threadinfo(purpose, index);
     ti->next_ = allthreads;
     allthreads = ti;
@@ -194,55 +201,19 @@ static void initialize_pool(void* pool, size_t sz, size_t unit) {
 void threadinfo::refill_pool(int nl) {
     assert(!pool_[nl - 1]);
 
-    /*
-    if (!use_pool()) {
-        pool_[nl - 1] = (PPP*)malloc(nl * CACHE_LINE_SIZE);
-        if (pool_[nl - 1])
-            *reinterpret_cast<PPP**>(pool_[nl - 1]) = 0;
-        return;
-    }
-    */
-
     void* pool = 0;
     size_t pool_size = 0;
     int r;
 
-#if HAVE_SUPERPAGE && !NOSUPERPAGE
-    if (!superpage_size)
-        superpage_size = read_superpage_size();
-    if (superpage_size != (size_t) -1) {
-        pool_size = superpage_size;
-# if MADV_HUGEPAGE
-        if ((r = posix_memalign(&pool, pool_size, pool_size)) != 0) {
-            fprintf(stderr, "posix_memalign superpage: %s\n", strerror(r));
-            pool = 0;
-            superpage_size = (size_t) -1;
-        } else if (madvise(pool, pool_size, MADV_HUGEPAGE) != 0) {
-            perror("madvise superpage");
-            superpage_size = (size_t) -1;
-        }
-# elif MAP_HUGETLB
-        pool = mmap(0, pool_size, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-        if (pool == MAP_FAILED) {
-            perror("mmap superpage");
-            pool = 0;
-            superpage_size = (size_t) -1;
-        }
-# else
-        superpage_size = (size_t) -1;
-# endif
-    }
-#endif
+	if (!superpage_size){
+		superpage_size = read_superpage_size();
+	}
 
-    if (!pool) {
-        pool_size = 2 << 20;
-        if ((r = posix_memalign(&pool, CACHE_LINE_SIZE, pool_size)) != 0) {
-            fprintf(stderr, "posix_memalign: %s\n", strerror(r));
-            abort();
-        }
-    }
-
+	if (superpage_size != (size_t) -1) {
+		pool_size = superpage_size;
+		assert(posix_memalign(&pool, pool_size, pool_size) == 0);
+		assert(madvise(pool, pool_size, MADV_HUGEPAGE) == 0);
+	}
     initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
     pool_[nl - 1] = pool;
 }
