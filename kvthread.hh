@@ -42,7 +42,7 @@ struct limbo_group {
     typedef mrcu_signed_epoch_type signed_epoch_type;
 
     struct limbo_element {
-        void* ptr_;
+        PPP ptr_;
         union {
             memtag tag;
             epoch_type epoch;
@@ -206,18 +206,26 @@ class threadinfo {
 
     // memory allocation
     void* allocate(size_t sz, memtag tag) {
+    	//use pool instead of malloc
+    	return pool_allocate(sz, tag);
+    	/*
         void* p = malloc(sz + memdebug_size);
         p = memdebug::make(p, sz, tag);
         if (p)
             mark(threadcounter(tc_alloc + (tag > memtag_value)), sz);
         return p;
+        */
     }
     void deallocate(void* p, size_t sz, memtag tag) {
+    	pool_deallocate(p, sz, tag);
+
+    	/*
         // in C++ allocators, 'p' must be nonnull
         assert(p);
         p = memdebug::check_free(p, sz, tag);
         free(p);
         mark(threadcounter(tc_alloc + (tag > memtag_value)), -sz);
+        */
     }
     void deallocate_rcu(void* p, size_t sz, memtag tag) {
         assert(p);
@@ -227,25 +235,26 @@ class threadinfo {
     }
 
     void* pool_allocate(size_t sz, memtag tag) {
-        int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+        int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(nl <= pool_max_nlines);
         if (unlikely(!pool_[nl - 1]))
             refill_pool(nl);
         void* p = pool_[nl - 1];
         if (p) {
-            pool_[nl - 1] = *reinterpret_cast<void **>(p);
+        	pool_[nl - 1] = (void*)*reinterpret_cast<PPP*>(p);
             p = memdebug::make(p, sz, memtag(tag + nl));
             mark(threadcounter(tc_alloc + (tag > memtag_value)),
                  nl * CACHE_LINE_SIZE);
         }
-        return p;
+        return ((void *)(((uint8_t *)p) + PPP_HEADER_SIZE));;
     }
     void pool_deallocate(void* p, size_t sz, memtag tag) {
-        int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+        int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(p && nl <= pool_max_nlines);
+        p = ((void *)(((uint8_t *)p) - PPP_HEADER_SIZE));
         p = memdebug::check_free(p, sz, memtag(tag + nl));
         if (use_pool()) {
-            *reinterpret_cast<void **>(p) = pool_[nl - 1];
+            *reinterpret_cast<PPP*>(p) = pool_[nl - 1];
             pool_[nl - 1] = p;
         } else
             free(p);
@@ -311,8 +320,8 @@ class threadinfo {
         char padding1[CACHE_LINE_SIZE];
     };
 
-    enum { pool_max_nlines = 20 };
-    void* pool_[pool_max_nlines];
+    enum { pool_max_nlines = 70 };
+    PPP pool_[pool_max_nlines];
 
     limbo_group* limbo_head_;
     limbo_group* limbo_tail_;
@@ -326,17 +335,14 @@ class threadinfo {
     void refill_rcu();
 
     void free_rcu(void *p, memtag tag) {
-        if ((tag & memtag_pool_mask) == 0) {
-            p = memdebug::check_free_after_rcu(p, tag);
-            ::free(p);
-        } else if (tag == memtag(-1))
-            (*static_cast<mrcu_callback*>(p))(*this);
-        else {
-            p = memdebug::check_free_after_rcu(p, tag);
-            int nl = tag & memtag_pool_mask;
-            *reinterpret_cast<void**>(p) = pool_[nl - 1];
-            pool_[nl - 1] = p;
-        }
+    	if (tag == memtag(-1)){
+			(*static_cast<mrcu_callback*>(p))(*this);
+    	}else {
+			p = memdebug::check_free_after_rcu(p, tag);
+			int nl = tag & memtag_pool_mask;
+			*reinterpret_cast<PPP*>(p) = pool_[nl - 1];
+			pool_[nl - 1] = p;
+		}
     }
 
     void record_rcu(void* ptr, memtag tag) {

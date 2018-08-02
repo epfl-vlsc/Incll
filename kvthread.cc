@@ -24,6 +24,7 @@
 #include <dirent.h>
 #endif
 
+
 threadinfo *threadinfo::allthreads;
 #if ENABLE_ASSERTIONS
 int threadinfo::no_pool_value;
@@ -43,6 +44,7 @@ inline threadinfo::threadinfo(int purpose, int index) {
 threadinfo *threadinfo::make(int purpose, int index) {
     static int threads_initialized;
 
+    //threadinfo is volatile
     threadinfo* ti = new(malloc(8192)) threadinfo(purpose, index);
     ti->next_ = allthreads;
     allthreads = ti;
@@ -181,23 +183,25 @@ static size_t superpage_size = 0;
 
 static void initialize_pool(void* pool, size_t sz, size_t unit) {
     char* p = reinterpret_cast<char*>(pool);
-    void** nextptr = reinterpret_cast<void**>(p);
+    PPP* nextptr = reinterpret_cast<PPP*>(p);
     for (size_t off = unit; off + unit <= sz; off += unit) {
-        *nextptr = p + off;
-        nextptr = reinterpret_cast<void**>(p + off);
+        *nextptr = reinterpret_cast<void*>(p + off);
+        nextptr = reinterpret_cast<PPP*>(p + off);
     }
-    *nextptr = 0;
+    *nextptr = nullptr;
 }
 
 void threadinfo::refill_pool(int nl) {
     assert(!pool_[nl - 1]);
 
+    /*
     if (!use_pool()) {
-        pool_[nl - 1] = malloc(nl * CACHE_LINE_SIZE);
+        pool_[nl - 1] = (PPP*)malloc(nl * CACHE_LINE_SIZE);
         if (pool_[nl - 1])
-            *reinterpret_cast<void**>(pool_[nl - 1]) = 0;
+            *reinterpret_cast<PPP**>(pool_[nl - 1]) = 0;
         return;
     }
+    */
 
     void* pool = 0;
     size_t pool_size = 0;
