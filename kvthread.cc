@@ -31,7 +31,9 @@ int threadinfo::no_pool_value;
 #endif
 
 //definitions for persistent pool
+PDataAllocator pallocator;
 volatile mrcu_epoch_type currexec;
+
 bool epoch_is_valid(unsigned long e){
     return true;
 }
@@ -50,9 +52,17 @@ inline threadinfo::threadinfo(int purpose, int index) {
 threadinfo *threadinfo::make(int purpose, int index) {
     static int threads_initialized;
 
+    //nvm
+    int pindex = index + 1;
+    if(pindex == 0){
+    	pallocator.init();
+    }
+    void *ti_ptr = malloc(8192);
+    //void *ti_ptr = pallocator.allocate_ti(pindex);
+
     //threadinfo is volatile
     assert(sizeof(threadinfo)<8192);
-    threadinfo* ti = new(malloc(8192)) threadinfo(purpose, index);
+    threadinfo* ti = new(ti_ptr) threadinfo(purpose, index);
     ti->next_ = allthreads;
     allthreads = ti;
 
