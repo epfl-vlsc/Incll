@@ -57,12 +57,12 @@ threadinfo *threadinfo::make(int purpose, int index) {
     if(pindex == 0){
     	pallocator.init();
     }
-    void *ti_ptr = malloc(8192);
-    //void *ti_ptr = pallocator.allocate_ti(pindex);
+    void *ti_ptr = pallocator.allocate_ti(pindex);
 
     //threadinfo is volatile
     assert(sizeof(threadinfo)<8192);
     threadinfo* ti = new(ti_ptr) threadinfo(purpose, index);
+
     ti->next_ = allthreads;
     allthreads = ti;
 

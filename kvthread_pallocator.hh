@@ -38,6 +38,17 @@ private:
 			nvm_free_addr = (char*)mmappedData+skip_to_data;
 		}
 	}
+
+	void access_pages(){
+		const int page_size = 4096;
+		char* tmp = (char*)mmappedData;
+		void* acc_val = nullptr;
+		for(size_t i=0;i<dataMappingLength;i+=page_size){
+			tmp += page_size;
+			acc_val = ((void**)tmp)[0];
+			(void)(acc_val);
+		}
+	}
 public:
 	bool exists;
 
@@ -60,12 +71,19 @@ public:
 				PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 		memset(mmappedData, 0, dataMappingLength);
 		assert(mmappedData!=MAP_FAILED);
-		printf("%s log region. Mapped to address %p\n",
-						(exists) ? "Found":"Created", mmappedData);
 		assert(mmappedData == (void *)DATA_REGION_ADDR);
+
+		if(!exists){
+			memset(mmappedData, 0, dataMappingLength);
+		}else{
+			access_pages();
+		}
 
 		mmappedDataEnd = (void*)((char*)mmappedData + dataMappingLength);
 		init_curr_nvm_free();
+
+		printf("%s data region. Mapped to address %p\n",
+				(exists) ? "Found":"Created", mmappedData);
 	}
 
 	void destroy(){
@@ -88,8 +106,9 @@ public:
 		return tmp;
 	}
 
-	void* malloc(size_t sz){
-		return malloc(sz);
+	void* malloc_a(size_t sz){
+		void *ptr = malloc(sz);
+		return ptr;
 	}
 
 	void unlink(){
