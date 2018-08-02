@@ -15,7 +15,7 @@ for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
 		rm -rf *.json 
 		for i in $(eval echo {1..$repeat}); do 
 			rm -rf /scratch/tmp/nvm.*
-			timeout 50 ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=${NKEYS} --nkeys=${NKEYS}
+			timeout 100 ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=${NKEYS} --nkeys=${NKEYS}
 		done
 		python get_average.py "${WORKLOAD},${NKEYS}" >> ${Oname}
 	done
