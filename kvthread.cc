@@ -30,6 +30,12 @@ threadinfo *threadinfo::allthreads;
 int threadinfo::no_pool_value;
 #endif
 
+//definitions for persistent pool
+volatile mrcu_epoch_type currexec;
+bool epoch_is_valid(unsigned long e){
+    return true;
+}
+
 inline threadinfo::threadinfo(int purpose, int index) {
     memset(this, 0, sizeof(*this));
     purpose_ = purpose;
@@ -45,6 +51,7 @@ threadinfo *threadinfo::make(int purpose, int index) {
     static int threads_initialized;
 
     //threadinfo is volatile
+    assert(sizeof(threadinfo)<8192);
     threadinfo* ti = new(malloc(8192)) threadinfo(purpose, index);
     ti->next_ = allthreads;
     allthreads = ti;
