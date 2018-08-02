@@ -194,55 +194,25 @@ static void initialize_pool(void* pool, size_t sz, size_t unit) {
 void threadinfo::refill_pool(int nl) {
     assert(!pool_[nl - 1]);
 
-    /*
-    if (!use_pool()) {
-        pool_[nl - 1] = (PPP*)malloc(nl * CACHE_LINE_SIZE);
-        if (pool_[nl - 1])
-            *reinterpret_cast<PPP**>(pool_[nl - 1]) = 0;
-        return;
-    }
-    */
-
     void* pool = 0;
     size_t pool_size = 0;
     int r;
 
-#if HAVE_SUPERPAGE && !NOSUPERPAGE
-    if (!superpage_size)
-        superpage_size = read_superpage_size();
-    if (superpage_size != (size_t) -1) {
-        pool_size = superpage_size;
-# if MADV_HUGEPAGE
-        if ((r = posix_memalign(&pool, pool_size, pool_size)) != 0) {
-            fprintf(stderr, "posix_memalign superpage: %s\n", strerror(r));
-            pool = 0;
-            superpage_size = (size_t) -1;
-        } else if (madvise(pool, pool_size, MADV_HUGEPAGE) != 0) {
-            perror("madvise superpage");
-            superpage_size = (size_t) -1;
-        }
-# elif MAP_HUGETLB
-        pool = mmap(0, pool_size, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-        if (pool == MAP_FAILED) {
-            perror("mmap superpage");
-            pool = 0;
-            superpage_size = (size_t) -1;
-        }
-# else
-        superpage_size = (size_t) -1;
-# endif
-    }
-#endif
+	if (!superpage_size){
+		superpage_size = read_superpage_size();
+	}
 
-    if (!pool) {
-        pool_size = 2 << 20;
-        if ((r = posix_memalign(&pool, CACHE_LINE_SIZE, pool_size)) != 0) {
-            fprintf(stderr, "posix_memalign: %s\n", strerror(r));
-            abort();
-        }
-    }
-
+	if (superpage_size != (size_t) -1) {
+		pool_size = superpage_size;
+		if ((r = posix_memalign(&pool, pool_size, pool_size)) != 0) {
+			fprintf(stderr, "posix_memalign superpage: %s\n", strerror(r));
+			pool = 0;
+			superpage_size = (size_t) -1;
+		}else if (madvise(pool, pool_size, MADV_HUGEPAGE) != 0) {
+			perror("madvise superpage");
+			superpage_size = (size_t) -1;
+		}
+	}
     initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
     pool_[nl - 1] = pool;
 }
