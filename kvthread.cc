@@ -203,7 +203,6 @@ void threadinfo::refill_pool(int nl) {
 
     void* pool = 0;
     size_t pool_size = 0;
-    int r;
 
 	if (!superpage_size){
 		superpage_size = read_superpage_size();

@@ -10,9 +10,7 @@ rm -rf ${Oname}
 
 echo "TotalOps,AvgOps,StdOps,Workload,Delaycount" >> ${Oname}
 
-for WORKLOAD in rand\
-	ycsb_a_uni ycsb_b_uni ycsb_c_uni ycsb_e_uni \
-	ycsb_a_zipf ycsb_b_zipf ycsb_c_zipf ycsb_e_zipf; do
+for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
 	for DELAYCOUNT in 0 340 680 1020 1360 1700 2040 2380 2720 3060 3400; do
 		rm -rf *.json
 		for i in $(eval echo {1..$repeat}); do
