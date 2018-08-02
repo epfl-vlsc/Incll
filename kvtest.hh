@@ -1020,6 +1020,7 @@ void ycsb_init_execution(C &client,
 			client.put(pos, val);
 			++n;
 		}
+		global_masstree_root = client.get_root();
 		printf("Created tree--------------------\n");
 	}
 
@@ -1029,25 +1030,35 @@ void ycsb_init_execution(C &client,
 #ifdef GLOBAL_FLUSH
 	GH::global_flush.ack_flush();
 #endif
+	GH::node_logger->checkpoint();
+	GH::thread_barrier.wait_barrier(client.id());
 
 	//Do ops----------------------------------------------------
 	n = 0;
 	while(n < nops1){
-		assert(n == nops1/2 && client.id() == 0 &&
-				"Power failure - System crash - Reboot please!");
+		if(n != nops1/2 && client.id() == 0){
+			printf("Power failure - System crash - Reboot please!\n");
+
+			printf("root:%p\n", client.get_root());
+			client.get_root()->print_node();
+			assert(0);
+		}
 		n++;
 		pos = key_rand.next() % nkeys;
 
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
 		case ycsbc::get_op:{
+			DBGLOG("get op")
 			client.get_sync(pos);
 		}break;
 		case ycsbc::put_op:{
+			DBGLOG("put op %lu", val)
 			val = val_rand.next();
 			client.put(pos, val);
 		}break;
 		case ycsbc::rem_op:{
+			DBGLOG("rem op")
 			client.remove_sync(pos);
 		}break;
 		default:
@@ -1073,6 +1084,7 @@ void ycsb_re_execution(C &client,
 	//initialization
 	uint64_t pos = 0, val = 0;
 	size_t nops1 = GH::n_ops1;
+	size_t nkeys = GH::n_keys;
 
 	uint64_t n = 0;
 	Json result = Json();
@@ -1083,6 +1095,7 @@ void ycsb_re_execution(C &client,
 	if(client.id() == 0){
 		void* undo_root = GH::node_logger->get_tree_root();
 		client.set_root(undo_root);
+		DBGLOG("setting root to %p", undo_root);
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 	double t0 = client.now();
@@ -1095,6 +1108,9 @@ void ycsb_re_execution(C &client,
 
 	double t1 = client.now();
 	result.set("recovery_time", t1-t0);
+	if(client.id() == 0){
+		DBGLOG("finished undo")
+	}
 
 	//barrier------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
@@ -1108,11 +1124,10 @@ void ycsb_re_execution(C &client,
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 
-	/*
 	n = 0;
 	while(n < nops1){
 		n++;
-		pos = key_rand.next();
+		pos = key_rand.next() % nkeys;
 
 		unsigned op = op_ratios.get_next_op();
 		switch(op){
@@ -1155,7 +1170,6 @@ void ycsb_re_execution(C &client,
 		}
 	}
 
-	*/
 	client.report(result);
 	//Barrier-------------------------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());

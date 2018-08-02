@@ -1,5 +1,7 @@
 #include "incll_globals.hh"
 
+extern volatile void *global_masstree_root;
+
 namespace GH{
 	ThreadBarrier thread_barrier;
 	Ifincll(BucketLocks bucket_locks)
@@ -74,7 +76,7 @@ namespace GH{
 #ifdef GLOBAL_FLUSH
 		thread_barrier.wait_barrier(tid);
 		if(tid == 0){
-			node_logger->set_log_root(root);
+			global_masstree_root = root;
 
 			global_flush.flush_manual();
 		}else{

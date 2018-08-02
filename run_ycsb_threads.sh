@@ -16,8 +16,8 @@ for WORKLOAD in rand\
 	for THREADS in 1 2 4 6 8 10 12 14 16; do
 		rm -rf *.json
 		for i in $(eval echo {1..$repeat}); do 
-			rm -rf /tmp/nvm.*
-			timeout 30  ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --threads=${THREADS}
+			rm -rf /scratch/tmp/nvm.*
+			timeout 50  ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --threads=${THREADS}
 		done
 		python get_average.py "${WORKLOAD},${THREADS}" >> ${Oname}
 	done

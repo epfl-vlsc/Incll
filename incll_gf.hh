@@ -54,9 +54,6 @@ private:
 	void flush_(){
 		//flush
 		global_flush();
-
-		//todo check later if this belongs here
-		GH::node_logger->checkpoint();
 	}
 
 public:
@@ -109,6 +106,8 @@ public:
 
 			// wait for flush to complete
 			sem_wait(&flush_ack_sem);
+
+			GH::node_logger->checkpoint();
 		}
 		return false;
 	}
@@ -166,6 +165,9 @@ public:
 		for(int i=0;i<other_threads;++i){
 			sem_post(&flush_ack_sem);
 		}
+
+		GH::node_logger->checkpoint();
+
 		influshWarning.store(false, std::memory_order_release);
 	}
 

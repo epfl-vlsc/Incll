@@ -12,7 +12,7 @@ echo ${repeat}
 make mttest
 rm -rf *.json
 for i in $(eval echo {1..$repeat}); do 
-	rm -rf /tmp/nvm.heap	
+	rm -rf /scratch/tmp/nvm.*	
 	./mttest ${workload} --nops1=1000000 --ninitops=20000000 --nkeys=20000000
 	python get_average.py
 done

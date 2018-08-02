@@ -100,6 +100,7 @@ volatile mrcu_epoch_type globalepoch = 1;     // global epoch, updated by main t
 volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
+volatile void *global_masstree_root = nullptr;
 
 #ifdef COLLECT_STATS
 size_t n_ge_changes;
@@ -134,7 +135,7 @@ void test_timeout(int) {
     }
 }
 
-void set_global_epoch(mrcu_epoch_type e) {
+void set_global_epoch(mrcu_epoch_type e, void *root) {
 #ifdef GLOBAL_FLUSH
 	bool shouldFlush = false;
 #endif
@@ -159,6 +160,7 @@ void set_global_epoch(mrcu_epoch_type e) {
 
 #ifdef GLOBAL_FLUSH
     if(shouldFlush){
+    	global_masstree_root = root;
     	GH::global_flush.flush(e);
     }
 #endif
@@ -320,7 +322,7 @@ struct kvtest_client {
     void rcu_quiesce() {
         mrcu_epoch_type e = timestamp() >> GL_FREQ;
         if (e != globalepoch){
-            set_global_epoch(e);
+        	set_global_epoch(e, this->get_root());
         }
         ti_->rcu_quiesce();
     }
