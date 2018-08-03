@@ -213,6 +213,9 @@ struct kvtest_client {
     double now() const {
         return ::now();
     }
+    double usec_now() const {
+		return ::usec_now();
+	}
     int ruscale_partsz() const {
         return (140 * 1000000) / 16;
     }
