@@ -1113,7 +1113,7 @@ void ycsb_re_execution(C &client,
 		client.get_root()->print_node();
 	}
 	GH::thread_barrier.wait_barrier(client.id());
-	double t0 = client.now();
+	double t0 = client.usec_now();
 	auto last_flush = GH::node_logger->get_last_flush();
 	GH::node_logger->undo(client.get_root());
 	GH::thread_barrier.wait_barrier(client.id());
@@ -1121,7 +1121,7 @@ void ycsb_re_execution(C &client,
 	GH::node_logger->undo_next_prev(client.get_root(), last_flush);
 	GH::thread_barrier.wait_barrier(client.id());
 
-	double t1 = client.now();
+	double t1 = client.usec_now();
 	result.set("recovery_time", t1-t0);
 	if(client.id() == 0){
 		DBGLOG("finished undo")

@@ -54,6 +54,12 @@ inline double now() {
     return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
+inline double usec_now() {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return (kvtimestamp_t) (tv.tv_sec * 1000000 + (unsigned int)tv.tv_usec);
+}
+
 inline struct timespec &set_timespec(struct timespec &x, double y) {
     double ipart = floor(y);
     x.tv_sec = (long) ipart;
