@@ -27,6 +27,7 @@
 
 #include "incll_configs.hh"
 #include "kvthread_persistent.hh"
+#include "kvthread_pallocator.hh"
 
 class threadinfo;
 class loginfo;
