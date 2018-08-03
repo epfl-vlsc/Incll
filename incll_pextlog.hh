@@ -237,7 +237,8 @@ public:
 
 class PLogAllocator{
 private:
-	static constexpr const char *plog_filename = "/scratch/tmp/nvm.log";
+	//static constexpr const char *plog_filename = "/scratch/tmp/nvm.log";
+	static constexpr const char *plog_filename = "/scratch/tmp/nvm.log2";
 	static constexpr const size_t logMappingLength = PBUF_SIZE * LOG_MAX_THREAD;
 	static constexpr const intptr_t logExpectedAddress = LOG_REGION_ADDR;
 	void *mmappedLog;
