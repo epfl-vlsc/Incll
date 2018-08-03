@@ -23,8 +23,8 @@
 #include "incll_configs.hh"
 
 #ifdef USE_DEV_SHM
-#define PBUF_SIZE (4ull << 20)
-#define PLOG_FILENAME "/scratch/tmp/nvm.log"
+#define PBUF_SIZE (1ull << 26)
+#define PLOG_FILENAME "/dev/shm/incll/nvm.log"
 #else //USE_DEV_SHM
 #define PBUF_SIZE (1ull << 30)
 #define PLOG_FILENAME "/scratch/tmp/nvm.log"

@@ -1118,7 +1118,9 @@ void ycsb_re_execution(C &client,
 	}
 	//undo-----------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
+#ifdef EXTLOG_STATS
 	GH::node_logger->get_active_records();
+#endif
 	GH::thread_barrier.wait_barrier(client.id());
 
 	double t0 = client.usec_now();

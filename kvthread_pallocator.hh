@@ -8,7 +8,16 @@
 
 #include "incll_extflush.hh"
 
-#define DATA_BUF_SIZE (1ull << 28)
+
+#ifdef USE_DEV_SHM
+#define DATA_BUF_SIZE (1ull << 30)
+#define PDATA_FILENAME "/dev/shm/incll/nvm.data"
+#else //USE_DEV_SHM
+#define DATA_BUF_SIZE (4ull << 30)
+#define PDATA_FILENAME "/scratch/tmp/nvm.data"
+#endif //USE_DEV_SHM
+
+
 #define DATA_REGION_ADDR (1ull<<45)
 #define DATA_MAX_THREAD 18
 
@@ -24,8 +33,7 @@ extern volatile mrcu_epoch_type currexec;
 //|loc_size pool data|loc_size pool data|
 class PDataAllocator{
 private:
-	//static constexpr const char *pdata_filename = "/dev/shm/incll/nvm.data";
-	static constexpr const char *pdata_filename = "/scratch/tmp/nvm.data";
+	static constexpr const char *pdata_filename = PDATA_FILENAME;
 
 	static constexpr const size_t pm_size = (4ull<<30);
 	static constexpr const size_t cl_size = 64;

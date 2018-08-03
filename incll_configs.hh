@@ -53,6 +53,6 @@
 #define YCSB_RECOVERY
 
 //useful for checking recovery
-#define EXTLOG_STATS
+//#define EXTLOG_STATS
 
 #define USE_DEV_SHM
