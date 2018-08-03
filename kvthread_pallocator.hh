@@ -14,6 +14,11 @@
 
 #define nvm_free_addr ((void**)mmappedData)[0]
 
+typedef uint64_t mrcu_epoch_type;
+extern volatile mrcu_epoch_type globalepoch;
+extern volatile mrcu_epoch_type failedepoch;
+extern volatile mrcu_epoch_type currexec;
+
 //nvm layout
 //|thread 1          |thread 2          |
 //|loc_size pool data|loc_size pool data|
@@ -36,9 +41,12 @@ private:
 	int fd;
 	pthread_mutex_t nvm_lock;
 
-	void init_curr_nvm_free(){
+	void init_exist(){
 		if(!exists){
-			nvm_free_addr = (char*)mmappedData+skip_to_data;
+			nvm_free_addr = (char*)mmappedData + skip_to_data;
+		}else{
+			failedepoch = read_failed_epoch();
+			currexec = globalepoch = failedepoch + 1;
 		}
 	}
 
@@ -84,10 +92,7 @@ public:
 		}
 
 		mmappedDataEnd = (void*)((char*)mmappedData + mapping_length);
-		init_curr_nvm_free();
-
-		//todo load currexec, failedepoch,globalepoch
-
+		init_exist();
 
 		printf("%s data region. Mapped to:%p. Cur free addr:%p\n",
 				(exists) ? "Found":"Created", mmappedData, nvm_free_addr);
@@ -133,13 +138,18 @@ public:
 		sync_range(beg, beg+sizeof(void*));
 	}
 
-	void block_malloc(){
+	void block_malloc_nvm(){
 		pthread_mutex_lock(&nvm_lock);
 	}
 
-	void write_failed_epoch(uint64_t e){
+	void write_failed_epoch(mrcu_epoch_type e){
 		void *epoch_addr = (void*)((char*)mmappedData + pm_size);
-		*(uint64_t*)epoch_addr = e;
+		*(mrcu_epoch_type*)epoch_addr = e;
+	}
+
+	mrcu_epoch_type read_failed_epoch(){
+		void *epoch_addr = (void*)((char*)mmappedData + pm_size);
+		return *(mrcu_epoch_type*)epoch_addr;
 	}
 };
 

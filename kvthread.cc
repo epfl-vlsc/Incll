@@ -35,7 +35,7 @@ PDataAllocator pallocator;
 volatile mrcu_epoch_type currexec;
 
 bool epoch_is_valid(unsigned long e){
-    return true;
+    return e != failedepoch;
 }
 
 inline threadinfo::threadinfo(int purpose, int index) {
