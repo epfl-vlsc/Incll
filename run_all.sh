@@ -13,3 +13,6 @@ echo "run threads"
 
 echo "run delaycount"
 ./run_ycsb_delaycount.sh
+
+echo "recovery test"
+./run_ycsb_recovery.sh

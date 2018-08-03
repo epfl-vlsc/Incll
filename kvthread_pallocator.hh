@@ -13,7 +13,7 @@
 #define DATA_BUF_SIZE (1ull << 30)
 #define PDATA_FILENAME "/dev/shm/incll/nvm.data"
 #else //USE_DEV_SHM
-#define DATA_BUF_SIZE (4ull << 30)
+#define DATA_BUF_SIZE (8ull << 30)
 #define PDATA_FILENAME "/scratch/tmp/nvm.data"
 #endif //USE_DEV_SHM
 
