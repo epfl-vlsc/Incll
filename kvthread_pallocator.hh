@@ -24,7 +24,7 @@ extern volatile mrcu_epoch_type currexec;
 //|loc_size pool data|loc_size pool data|
 class PDataAllocator{
 private:
-	static constexpr const char *pdata_filename = "/scratch/tmp/nvm.data";
+	static constexpr const char *pdata_filename = "/dev/shm/incll/nvm.data";
 
 	static constexpr const size_t pm_size = (4ull<<30);
 	static constexpr const size_t cl_size = 64;
