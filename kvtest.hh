@@ -1038,7 +1038,7 @@ void ycsb_init_execution(C &client,
 	//Do ops----------------------------------------------------
 	n = 0;
 	while(n < nops1){
-		if(n != nops1/2 && client.id() == 0){
+		if(n == nops1/2 && client.id() == 0){
 			pallocator.block_malloc_nvm();
 			GH::global_flush.block_flush();
 
