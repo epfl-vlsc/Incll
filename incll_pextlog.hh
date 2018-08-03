@@ -49,6 +49,10 @@ private:
 	size_t buf_size;		//8 bytes
 	void *root;				//8 bytes
 
+#ifdef EXTLOG_STATS
+	size_t active_records;
+#endif
+
 	char buf_[0];
 public:
 	static constexpr const size_t entry_meta_size = sizeof(logrec_node);
@@ -57,6 +61,12 @@ public:
 	static constexpr const int curr_range = 32;
 	static constexpr const int last_flush_range = 24;
 
+#ifdef EXTLOG_STATS
+	void get_active_records(){
+		printf("active recs:%lu \n", active_records);
+	}
+#endif
+
 	void init(){
 		curr = 0;
 		last_flush = 0;
@@ -64,6 +74,11 @@ public:
 
 		char *beg = (char*)&curr;
 		sync_range(beg, beg + curr_range);
+
+#ifdef EXTLOG_STATS
+		active_records = 0;
+#endif
+
 	}
 
 	index get_last_flush(){
@@ -77,6 +92,10 @@ public:
 
 		char *beg = (char*)&last_flush;
 		sync_range(beg, beg+last_flush_range);
+
+#ifdef EXTLOG_STATS
+		active_records = 0;
+#endif
 	}
 
 	void print_stats(){
@@ -137,6 +156,10 @@ public:
 
 		beg = (char*)&curr;
 		sync_range(beg, beg + sizeof(curr));
+
+#ifdef EXTLOG_STATS
+		++active_records;
+#endif
 	}
 
 
@@ -185,6 +208,9 @@ public:
 			last_flush += entry_size;
 		}
 
+#ifdef EXTLOG_STATS
+		active_records = 0;
+#endif
 	}
 
 	template <typename N>
@@ -250,7 +276,9 @@ public:
 		char* log_addr = (char*)LOG_REGION_ADDR + (tid * PBUF_SIZE);
 		PExtNodeLogger *plog = reinterpret_cast<PExtNodeLogger*>(log_addr);
 
-		plog->init();
+		if(!exists){
+			plog->init();
+		}
 		return plog;
 	}
 

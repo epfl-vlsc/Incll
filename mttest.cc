@@ -631,7 +631,7 @@ MAKE_TESTRUNNER(ycsb_e_zipf,
 
 MAKE_TESTRUNNER(ycsb_a_uni_recovery,
 		kvtest_ycsb_recovery(client,
-		ycsbc::OpRatios(100, 0, 0, 0),
+		ycsbc::OpRatios(50, 50, 0, 0),
 		UniGen()
 ));
 

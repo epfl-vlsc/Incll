@@ -51,3 +51,5 @@
 
 #define YCSB
 #define YCSB_RECOVERY
+
+#define EXTLOG_STATS

@@ -56,12 +56,16 @@ def get_ops_stats(data):
 
 def analyze_ops_stats():
     params = sys.argv[1] if len(sys.argv) > 1 else None
-    sf = "{},{},{},{}" if params else "{},{},{}"
+    sf = "{},{},{},{},{}" if params else "{},{},{},{}"
 
     data = get_notebook()
     op_stats = get_ops_stats(data)
 
-    s = sf.format(op_stats.get_sum(), op_stats.get_avg(), op_stats.get_sum_std(), params)
+    stat_sum = op_stats.get_sum()
+    stat_avg = op_stats.get_avg()
+    stat_sum_std = op_stats.get_sum_std()
+    stat_stdp = stat_sum_std / stat_sum
+    s = sf.format(stat_sum, stat_avg, stat_sum_std, stat_stdp, params)
     print(s)
 
 
