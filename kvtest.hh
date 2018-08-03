@@ -1039,10 +1039,12 @@ void ycsb_init_execution(C &client,
 	n = 0;
 	while(n < nops1){
 		if(n != nops1/2 && client.id() == 0){
+			pallocator.block_malloc_nvm();
+			GH::global_flush.block_flush();
+
 			printf("Power failure - System crash - Reboot please!\n");
-			//block ge, malloc
-			//save fe
-			pallocator.sync_cur_nvm_addr();
+			pallocator.write_failed_epoch(globalepoch);
+			printf("failed epoch:%lu\n", pallocator.read_failed_epoch());
 			printf("cur nvm:%p\n", pallocator.get_cur_nvm_addr());
 			printf("root:%p\n", client.get_root());
 			client.get_root()->print_node();

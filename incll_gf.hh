@@ -175,6 +175,10 @@ public:
 		return influshWarning.load(std::memory_order_acquire);
 	}
 
+	void block_flush(){
+		influshWarning.store(true, std::memory_order_seq_cst);
+	}
+
 };
 
 
