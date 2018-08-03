@@ -22,8 +22,16 @@
 #include "incll_extflush.hh"
 #include "incll_configs.hh"
 
+#ifdef USE_DEV_SHM
+#define PBUF_SIZE (4ull << 20)
+#define PLOG_FILENAME "/scratch/tmp/nvm.log"
+#else //USE_DEV_SHM
 #define PBUF_SIZE (1ull << 30)
-#define LOG_REGION_ADDR (1ull << 30)
+#define PLOG_FILENAME "/scratch/tmp/nvm.log"
+#endif //USE_DEV_SHM
+
+
+#define LOG_REGION_ADDR (1ull << 24)
 #define LOG_MAX_THREAD 16
 
 typedef uint64_t mrcu_epoch_type;
@@ -137,8 +145,10 @@ public:
 		size_t entry_size = get_entry_size(node_size);
 
 		if(unlikely(curr + entry_size > buf_size)){
-			printf("Warning in record: back to the beginning of log\n");
-			assert(0);
+#ifndef USE_DEV_SHM
+			//printf("Warning in record: back to the beginning of log\n");
+			//assert(0);
+#endif
 			curr = 0;
 			lr = reinterpret_cast<logrec_node *>(buf_);
 			entry_size = lr->size_;
@@ -175,8 +185,10 @@ public:
 			size_t entry_size = lr->size_;
 
 			if(!lr->check_validity() || last_flush + entry_size > buf_size){
+#ifndef USE_DEV_SHM
 				printf("Warning in undo next prev: back to the beginning of log\n");
 				assert(0);
+#endif
 				last_flush = 0;
 				entry = buf_;
 				lr = reinterpret_cast<logrec_node *>(entry);
@@ -231,8 +243,10 @@ public:
 			)
 
 			if(!lr->check_validity() || temp_flush + entry_size > buf_size){
+#ifndef USE_DEV_SHM
 				printf("Warning in undo next prev: back to the beginning of log\n");
 				assert(0);
+#endif
 				temp_flush = 0;
 				entry = buf_;
 				lr = reinterpret_cast<logrec_node *>(entry);
@@ -263,8 +277,7 @@ public:
 
 class PLogAllocator{
 private:
-	//static constexpr const char *plog_filename = "/scratch/tmp/nvm.log";
-	static constexpr const char *plog_filename = "/scratch/tmp/nvm.log2";
+	static constexpr const char *plog_filename = PLOG_FILENAME;
 	static constexpr const size_t logMappingLength = PBUF_SIZE * LOG_MAX_THREAD;
 	static constexpr const intptr_t logExpectedAddress = LOG_REGION_ADDR;
 	void *mmappedLog;

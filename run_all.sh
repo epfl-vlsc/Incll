@@ -13,18 +13,3 @@ echo "run threads"
 
 echo "run delaycount"
 ./run_ycsb_delaycount.sh
-
-cd /home/aksun/git/MasstreeOriginal
-
-echo "runnning baseline"
-make clean
-
-
-echo "run meta"
-./run_meta_opt.sh
-
-echo "run keys"
-./run_ycsb_keys.sh
-
-echo "run threads"
-./run_ycsb_threads.sh
