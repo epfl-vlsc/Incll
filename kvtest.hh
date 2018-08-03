@@ -1118,8 +1118,10 @@ void ycsb_re_execution(C &client,
 	}
 	//undo-----------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
-	double t0 = client.usec_now();
 	GH::node_logger->get_active_records();
+	GH::thread_barrier.wait_barrier(client.id());
+
+	double t0 = client.usec_now();
 	auto last_flush = GH::node_logger->get_last_flush();
 	GH::node_logger->undo(client.get_root());
 	GH::thread_barrier.wait_barrier(client.id());
