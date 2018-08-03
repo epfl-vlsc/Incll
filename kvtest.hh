@@ -1046,6 +1046,9 @@ void ycsb_init_execution(C &client,
 			pallocator.write_failed_epoch(globalepoch);
 			printf("failed epoch:%lu\n", pallocator.read_failed_epoch());
 			printf("cur nvm:%p\n", pallocator.get_cur_nvm_addr());
+			size_t tree_size = get_tree_size(client.get_root());
+			size_t tree_nodes = get_num_nodes(client.get_root());
+			printf("keys:%lu nodes:%lu\n", tree_size, tree_nodes);
 			printf("root:%p\n", client.get_root());
 			client.get_root()->print_node();
 
@@ -1104,6 +1107,10 @@ void ycsb_re_execution(C &client,
 		void* undo_root = GH::node_logger->get_tree_root();
 		client.set_root(undo_root);
 		DBGLOG("setting root to %p", undo_root);
+		size_t tree_size = get_tree_size(client.get_root());
+		size_t tree_nodes = get_num_nodes(client.get_root());
+		printf("keys:%lu nodes:%lu\n", tree_size, tree_nodes);
+		client.get_root()->print_node();
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 	double t0 = client.now();

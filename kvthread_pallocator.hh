@@ -26,7 +26,7 @@ class PDataAllocator{
 private:
 	static constexpr const char *pdata_filename = "/scratch/tmp/nvm.data";
 
-	static constexpr const size_t pm_size = (4ull<<26);
+	static constexpr const size_t pm_size = (4ull<<30);
 	static constexpr const size_t cl_size = 64;
 	static constexpr const size_t mapping_length = pm_size + cl_size;
 	static constexpr const intptr_t data_addr = DATA_REGION_ADDR;
@@ -47,6 +47,8 @@ private:
 		}else{
 			failedepoch = read_failed_epoch();
 			currexec = globalepoch = failedepoch + 1;
+			printf("fe:%lu ge:%lu, currexec:%lu\n",
+					failedepoch, globalepoch, currexec);
 		}
 	}
 
