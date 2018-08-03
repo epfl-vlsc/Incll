@@ -35,6 +35,8 @@
 #include "ycsb_helper.hh"
 #endif //ycsb
 
+extern PDataAllocator pallocator;
+
 using lcdf::Str;
 using lcdf::String;
 using lcdf::Json;
@@ -1038,10 +1040,14 @@ void ycsb_init_execution(C &client,
 	while(n < nops1){
 		if(n != nops1/2 && client.id() == 0){
 			printf("Power failure - System crash - Reboot please!\n");
-
+			//block ge, malloc
+			//save fe
+			pallocator.sync_cur_nvm_addr();
+			printf("cur nvm:%p\n", pallocator.get_cur_nvm_addr());
 			printf("root:%p\n", client.get_root());
 			client.get_root()->print_node();
-			assert(0);
+
+			exit(0);
 		}
 		n++;
 		pos = key_rand.next() % nkeys;

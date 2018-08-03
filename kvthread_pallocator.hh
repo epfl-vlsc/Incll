@@ -20,10 +20,13 @@
 class PDataAllocator{
 private:
 	static constexpr const char *pdata_filename = "/scratch/tmp/nvm.data";
-	static constexpr const size_t dataMappingLength = DATA_BUF_SIZE * DATA_MAX_THREAD;
-	static constexpr const intptr_t dataExpectedAddress = DATA_REGION_ADDR;
 
-	static constexpr const size_t skip_to_ti = 64;
+	static constexpr const size_t pm_size = (4ull<<26);
+	static constexpr const size_t cl_size = 64;
+	static constexpr const size_t mapping_length = pm_size + cl_size;
+	static constexpr const intptr_t data_addr = DATA_REGION_ADDR;
+
+	static constexpr const size_t skip_to_ti = cl_size;
 	static constexpr const size_t ti_size = 8192;
 	static constexpr const size_t tis_size = ti_size * DATA_MAX_THREAD;
 	static constexpr const size_t skip_to_data = (2 << 20);
@@ -43,7 +46,8 @@ private:
 		const int page_size = 4096;
 		char* tmp = (char*)mmappedData;
 		void* acc_val = nullptr;
-		for(size_t i=0;i<dataMappingLength;i+=page_size){
+		for(size_t i=0;i<mapping_length;i+=page_size){
+			if(i + page_size >= mapping_length) break;
 			tmp += page_size;
 			acc_val = ((void**)tmp)[0];
 			(void)(acc_val);
@@ -61,29 +65,32 @@ public:
 
 		if(!exists){
 			int val = 0;
-			lseek(fd, dataMappingLength, SEEK_SET);
+			lseek(fd, mapping_length, SEEK_SET);
 			assert(write(fd, (void*)&val, sizeof(val))==sizeof(val));
 			lseek(fd, 0, SEEK_SET);
 		}
 
 		//Execute mmap
-		mmappedData = mmap((void*)dataExpectedAddress, dataMappingLength,
-				PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-		memset(mmappedData, 0, dataMappingLength);
+		mmappedData = mmap((void*)data_addr, mapping_length,
+				PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
 		assert(mmappedData!=MAP_FAILED);
 		assert(mmappedData == (void *)DATA_REGION_ADDR);
 
 		if(!exists){
-			memset(mmappedData, 0, dataMappingLength);
+			memset(mmappedData, 0, mapping_length);
 		}else{
 			access_pages();
 		}
 
-		mmappedDataEnd = (void*)((char*)mmappedData + dataMappingLength);
+		mmappedDataEnd = (void*)((char*)mmappedData + mapping_length);
 		init_curr_nvm_free();
 
-		printf("%s data region. Mapped to address %p\n",
-				(exists) ? "Found":"Created", mmappedData);
+		//todo load currexec, failedepoch,globalepoch
+
+
+		printf("%s data region. Mapped to:%p. Cur free addr:%p\n",
+				(exists) ? "Found":"Created", mmappedData, nvm_free_addr);
 	}
 
 	void destroy(){
@@ -113,8 +120,26 @@ public:
 
 	void unlink(){
 		pthread_mutex_destroy(&nvm_lock);
-		munmap(mmappedData, dataMappingLength);
+		munmap(mmappedData, mapping_length);
 		close(fd);
+	}
+
+	void *get_cur_nvm_addr(){
+		return nvm_free_addr;
+	}
+
+	void sync_cur_nvm_addr(){
+		char *beg = (char*)nvm_free_addr;
+		sync_range(beg, beg+sizeof(void*));
+	}
+
+	void block_malloc(){
+		pthread_mutex_lock(&nvm_lock);
+	}
+
+	void write_failed_epoch(uint64_t e){
+		void *epoch_addr = (void*)((char*)mmappedData + pm_size);
+		*(uint64_t*)epoch_addr = e;
 	}
 };
 
