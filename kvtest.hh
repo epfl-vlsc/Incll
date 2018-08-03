@@ -35,6 +35,8 @@
 #include "ycsb_helper.hh"
 #endif //ycsb
 
+extern PDataAllocator pallocator;
+
 using lcdf::Str;
 using lcdf::String;
 using lcdf::Json;
@@ -1037,11 +1039,20 @@ void ycsb_init_execution(C &client,
 	n = 0;
 	while(n < nops1){
 		if(n != nops1/2 && client.id() == 0){
-			printf("Power failure - System crash - Reboot please!\n");
+			pallocator.block_malloc_nvm();
+			GH::global_flush.block_flush();
 
+			printf("Power failure - System crash - Reboot please!\n");
+			pallocator.write_failed_epoch(globalepoch);
+			printf("failed epoch:%lu\n", pallocator.read_failed_epoch());
+			printf("cur nvm:%p\n", pallocator.get_cur_nvm_addr());
+			size_t tree_size = get_tree_size(client.get_root());
+			size_t tree_nodes = get_num_nodes(client.get_root());
+			printf("keys:%lu nodes:%lu\n", tree_size, tree_nodes);
 			printf("root:%p\n", client.get_root());
 			client.get_root()->print_node();
-			assert(0);
+
+			exit(0);
 		}
 		n++;
 		pos = key_rand.next() % nkeys;
@@ -1096,6 +1107,10 @@ void ycsb_re_execution(C &client,
 		void* undo_root = GH::node_logger->get_tree_root();
 		client.set_root(undo_root);
 		DBGLOG("setting root to %p", undo_root);
+		size_t tree_size = get_tree_size(client.get_root());
+		size_t tree_nodes = get_num_nodes(client.get_root());
+		printf("keys:%lu nodes:%lu\n", tree_size, tree_nodes);
+		client.get_root()->print_node();
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 	double t0 = client.now();
