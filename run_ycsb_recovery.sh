@@ -14,7 +14,7 @@ for WORKLOAD in ycsb_a_uni_recovery ycsb_a_zipf_recovery; do
     echo ${WORKLOAD}
 	rm -rf *.json
 	for i in $(eval echo {1..$repeat}); do 
-		echo ${i}
+		echo "recovery ${WORKLOAD} ${i}"
 		rm -rf /scratch/tmp/nvm.*
 		rm -rf /dev/shm/incll/nvm.*
 		./mttest ${WORKLOAD} --nops1=10000000 --ninitops=20000000 --nkeys=20000000 -j8
