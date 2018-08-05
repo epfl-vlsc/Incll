@@ -571,7 +571,7 @@ static pthread_cond_t subtest_cond;
 
 
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
-MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
+//MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
 //UniGen()
 //Zipfian(nkeys)
@@ -629,6 +629,7 @@ MAKE_TESTRUNNER(ycsb_e_zipf,
 		ScrambledZipGen()
 ));
 
+/*
 MAKE_TESTRUNNER(ycsb_a_uni_recovery,
 		kvtest_ycsb_recovery(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -640,6 +641,7 @@ MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
 		ycsbc::OpRatios(50, 50, 0, 0),
 		UniGen()
 ));
+*/
 
 /*
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
