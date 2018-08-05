@@ -2,6 +2,25 @@
 
 extern volatile void *global_masstree_root;
 
+#ifdef MTAN
+std::atomic<size_t> nflushes(0);
+std::atomic<size_t> nupdate_incll(0);
+std::atomic<size_t> ninsert_incll(0);
+std::atomic<size_t> ninserts(0);
+std::atomic<size_t> nrecords_lf(0);
+std::atomic<size_t> nrecords_in(0);
+
+void report_mtan(){
+	printf("Flushes:%lu\n", size_t(nflushes));
+	printf("Incll update:%lu\n", size_t(nupdate_incll));
+	printf("Incll insert:%lu\n", size_t(ninsert_incll));
+	printf("Insert:%lu\n", size_t(ninserts)-GH::n_initops);
+	printf("Lf records:%lu\n", size_t(nrecords_lf));
+	printf("In records:%lu\n", size_t(nrecords_in));
+}
+
+#endif //MTAN
+
 namespace GH{
 	ThreadBarrier thread_barrier;
 	Ifincll(BucketLocks bucket_locks)

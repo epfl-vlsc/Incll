@@ -73,6 +73,10 @@
 #include "incll_configs.hh"
 #include "incll_globals.hh"
 
+#ifdef MTAN
+extern std::atomic<size_t> nflushes;
+#endif
+
 static std::vector<int> cores;
 volatile bool timeout[2] = {false, false};
 double duration[2] = {10, 0};
@@ -145,6 +149,9 @@ void set_global_epoch(mrcu_epoch_type e, void *root) {
         active_epoch = threadinfo::min_active_epoch();
 
 #ifdef GLOBAL_FLUSH
+#ifdef MTAN
+        nflushes++;
+#endif //mtan
         shouldFlush = true && !GH::global_flush.is_in_flush();
 #endif //gf
     }

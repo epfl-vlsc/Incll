@@ -53,3 +53,5 @@
 #define EXTLOG_STATS
 
 #define USE_DEV_SHM
+
+#define MTAN

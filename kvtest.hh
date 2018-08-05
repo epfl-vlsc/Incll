@@ -1043,6 +1043,11 @@ void ycsb_init_execution(C &client,
 #ifdef EXTLOG_STATS
         	GH::node_logger->get_active_records();
 #endif
+
+#ifdef MTAN
+		report_mtan();
+		report_mtan_tree(client.get_root());
+#endif //mtan
 			exit(0);
 		}
 
