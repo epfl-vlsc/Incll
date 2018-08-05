@@ -1029,28 +1029,6 @@ void ycsb_init_execution(C &client,
 	n = 0;
 
 	while(n < nops1){
-		if(n == nops1/2 && client.id() == 0){
-			printf("Block!\n");
-			GH::global_flush.block_flush();
-			pallocator.block_malloc_nvm();
-
-			printf("Power failure - System crash - Reboot please!\n");
-			pallocator.write_failed_epoch(globalepoch);
-			void *undo_root = client.get_root();
-			printf("setting root to %p\n", undo_root);
-			printf("failed epoch:%lu\n", pallocator.read_failed_epoch());
-			printf("cur nvm:%p\n", pallocator.get_cur_nvm_addr());
-#ifdef EXTLOG_STATS
-        	GH::node_logger->get_active_records();
-#endif
-
-#ifdef MTAN
-		report_mtan();
-		report_mtan_tree(client.get_root());
-#endif //mtan
-			exit(0);
-		}
-
 		n++;
 		pos = key_rand.next() % nkeys;
 

@@ -593,6 +593,11 @@ class leaf : public node_base<P> {
     } next_;
     leaf<P>* prev_;
     node_base<P>* parent_;
+
+#ifdef MTAN
+	bool is_recorded;
+#endif //mtan
+
     phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
     kvtimestamp_t created_at_[P::debug_level > 0];
     internal_ksuf_type iksuf_[0];
@@ -619,15 +624,15 @@ class leaf : public node_base<P> {
         this->not_logged = false;
         this->cl0_idx = invalid_idx;
 
-#ifdef MTAN
-        is_recorded = false;
-#endif //mtan
-
         static_assert(
         		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,
         		"incll for lv_ is not cache aligned properly");
 
 #endif //incll
+
+#ifdef MTAN
+        is_recorded = false;
+#endif //mtan
         /*
         printf("es:%ld ms:%ld kl:%ld nl:%ld p:%ld pm:%ld pmc:%ld ks:%ld ik:%ld next:%ld prev:%ld par:%ld pad:%ld lvcl:%ld\n",
         (uintptr_t)(&((leaf<P>*)0)->extrasize64_),
@@ -842,8 +847,11 @@ class leaf : public node_base<P> {
 				GH::node_logger->record(this);
 #endif //extlog
 				this->loggedepoch = globalepoch;
+#ifdef MTAN
+				is_recorded = true;
+				++nrecords_lf;
+#endif //mtan
 			}
-
 		}
 #endif //incll
 

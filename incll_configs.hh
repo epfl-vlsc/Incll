@@ -47,11 +47,11 @@
 #endif //extlog
 
 #define YCSB
-#define YCSB_RECOVERY
 
 //useful for checking recovery
-#define EXTLOG_STATS
-
 #define USE_DEV_SHM
 
+//stats and recovery
 #define MTAN
+#define YCSB_RECOVERY
+#define EXTLOG_STATS
