@@ -139,8 +139,13 @@ void test_timeout(int) {
     }
 }
 
+#ifdef YCSB_RECOVERY
 template <typename N>
 void set_global_epoch(mrcu_epoch_type e, N *root) {
+#else
+void set_global_epoch(mrcu_epoch_type e, void *root) {
+#endif //ycsb recovery
+
 #ifdef GLOBAL_FLUSH
 	bool shouldFlush = false;
 #endif
