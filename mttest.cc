@@ -606,7 +606,7 @@ MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 //Zipfian(nkeys)
 //ScrambledZipGen()
 
-/*
+
 MAKE_TESTRUNNER(ycsb_a_uni,
 kvtest_ycsb(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -658,9 +658,9 @@ MAKE_TESTRUNNER(ycsb_e_zipf,
 		ycsbc::OpRatios(0, 5, 0, 95),
 		ScrambledZipGen()
 ));
-*/
 
 
+#ifdef YCSB_RECOVERY
 MAKE_TESTRUNNER(ycsb_a_uni_recovery,
 		kvtest_ycsb_recovery(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -672,7 +672,7 @@ MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
 		ycsbc::OpRatios(50, 50, 0, 0),
 		UniGen()
 ));
-
+#endif //ycsb recovery
 
 /*
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));

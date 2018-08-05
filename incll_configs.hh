@@ -52,6 +52,6 @@
 #define USE_DEV_SHM
 
 //stats and recovery
-#define MTAN
-#define YCSB_RECOVERY
-#define EXTLOG_STATS
+//#define MTAN
+//#define YCSB_RECOVERY
+//#define EXTLOG_STATS
