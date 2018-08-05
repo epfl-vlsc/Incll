@@ -139,12 +139,8 @@ void test_timeout(int) {
     }
 }
 
-#ifdef YCSB_RECOVERY
 template <typename N>
 void set_global_epoch(mrcu_epoch_type e, N *root) {
-#else
-void set_global_epoch(mrcu_epoch_type e, void *root) {
-#endif //ycsb recovery
 
 #ifdef GLOBAL_FLUSH
 	bool shouldFlush = false;
@@ -159,9 +155,6 @@ void set_global_epoch(mrcu_epoch_type e, void *root) {
         active_epoch = threadinfo::min_active_epoch();
 
 #ifdef GLOBAL_FLUSH
-#ifdef MTAN
-        nflushes++;
-#endif //mtan
         shouldFlush = true && !GH::global_flush.is_in_flush();
 #endif //gf
     }
@@ -169,6 +162,9 @@ void set_global_epoch(mrcu_epoch_type e, void *root) {
 
 #ifdef GLOBAL_FLUSH
     if(shouldFlush){
+#ifdef MTAN
+        nflushes++;
+#endif //mtan
 
 #ifdef YCSB_RECOVERY
     	if(unlikely(nflushes==5)){
