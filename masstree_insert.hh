@@ -18,7 +18,9 @@
 #include "masstree_get.hh"
 #include "masstree_split.hh"
 
+#ifdef MTAN
 extern std::atomic<size_t> ninserts;
+#endif //mtan
 
 namespace Masstree {
 

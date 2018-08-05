@@ -28,10 +28,12 @@ typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
 extern volatile mrcu_epoch_type failedepoch;
 
+#ifdef MTAN
 extern std::atomic<size_t> nrecords_lf;
 extern std::atomic<size_t> nrecords_in;
 extern std::atomic<size_t> ninsert_incll;
 extern std::atomic<size_t> nupdate_incll;
+#endif //mtan
 
 namespace Masstree {
 
