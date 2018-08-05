@@ -102,10 +102,6 @@ volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
 volatile void *global_masstree_root = nullptr;
 
-#ifdef COLLECT_STATS
-size_t n_ge_changes;
-#endif
-
 kvepoch_t global_log_epoch = 0;
 static int port = 2117;
 static int rscale_ncores = 0;
@@ -147,10 +143,6 @@ void set_global_epoch(mrcu_epoch_type e, void *root) {
     	globalepoch = e;
 
         active_epoch = threadinfo::min_active_epoch();
-
-#ifdef COLLECT_STATS
-        n_ge_changes++;
-#endif //collect stats
 
 #ifdef GLOBAL_FLUSH
         shouldFlush = true && !GH::global_flush.is_in_flush();
@@ -577,6 +569,7 @@ MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 //Zipfian(nkeys)
 //ScrambledZipGen()
 
+/*
 MAKE_TESTRUNNER(ycsb_a_uni,
 kvtest_ycsb(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -628,8 +621,9 @@ MAKE_TESTRUNNER(ycsb_e_zipf,
 		ycsbc::OpRatios(0, 5, 0, 95),
 		ScrambledZipGen()
 ));
+*/
 
-/*
+
 MAKE_TESTRUNNER(ycsb_a_uni_recovery,
 		kvtest_ycsb_recovery(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -641,7 +635,7 @@ MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
 		ycsbc::OpRatios(50, 50, 0, 0),
 		UniGen()
 ));
-*/
+
 
 /*
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));

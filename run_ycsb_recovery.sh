@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 use_gdb=$1
-repeat=10
+repeat=1
 
 make mttest
 
