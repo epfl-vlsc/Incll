@@ -25,3 +25,6 @@ for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
 		python get_average.py "${WORKLOAD},${NKEYS}" >> ${Oname}
 	done
 done
+
+rm -rf /scratch/tmp/nvm.*
+rm -rf /dev/shm/incll/nvm.*

@@ -177,6 +177,7 @@ public:
 
 	void block_flush(){
 		influshWarning.store(true, std::memory_order_seq_cst);
+		waitingFlush.store(true, std::memory_order_seq_cst);
 	}
 
 };

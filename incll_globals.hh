@@ -13,6 +13,10 @@
 #include "incll_pextlog.hh"
 #include "incll_bl.hh"
 
+#ifdef MTAN
+void report_mtan();
+#endif
+
 namespace GH{
 	extern ThreadBarrier thread_barrier;
 	Ifincll(extern BucketLocks bucket_locks)

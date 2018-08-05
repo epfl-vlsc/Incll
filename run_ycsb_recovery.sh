@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 use_gdb=$1
-repeat=10
+repeat=1
 
 make mttest
 
@@ -17,9 +17,9 @@ for WORKLOAD in ycsb_a_uni_recovery ycsb_a_zipf_recovery; do
 		echo "recovery ${WORKLOAD} ${i}"
 		rm -rf /scratch/tmp/nvm.*
 		rm -rf /dev/shm/incll/nvm.*
-		./mttest ${WORKLOAD} --nops1=10000000 --ninitops=20000000 --nkeys=20000000 -j8
+		./mttest ${WORKLOAD} --nops1=1000000 --ninitops=3000000 --nkeys=3000000 -j8
 		echo -e "\n\n\n\n"
-		${use_gdb} ./mttest ${WORKLOAD} --nops1=10000000 --ninitops=20000000 --nkeys=20000000 -j8
+		${use_gdb} ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=3000000 --nkeys=3000000 -j8
 		sleep 1
 	done
 	python get_recovery.py "${WORKLOAD}" >> ${Oname}

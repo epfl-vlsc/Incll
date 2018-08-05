@@ -73,6 +73,14 @@
 #include "incll_configs.hh"
 #include "incll_globals.hh"
 
+#ifdef MTAN
+extern std::atomic<size_t> nflushes;
+#endif
+
+#ifdef YCSB_RECOVERY
+extern PDataAllocator pallocator;
+#endif
+
 static std::vector<int> cores;
 volatile bool timeout[2] = {false, false};
 double duration[2] = {10, 0};
@@ -101,10 +109,6 @@ volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
 volatile void *global_masstree_root = nullptr;
-
-#ifdef COLLECT_STATS
-size_t n_ge_changes;
-#endif
 
 kvepoch_t global_log_epoch = 0;
 static int port = 2117;
@@ -135,7 +139,9 @@ void test_timeout(int) {
     }
 }
 
-void set_global_epoch(mrcu_epoch_type e, void *root) {
+template <typename N>
+void set_global_epoch(mrcu_epoch_type e, N *root) {
+
 #ifdef GLOBAL_FLUSH
 	bool shouldFlush = false;
 #endif
@@ -148,10 +154,6 @@ void set_global_epoch(mrcu_epoch_type e, void *root) {
 
         active_epoch = threadinfo::min_active_epoch();
 
-#ifdef COLLECT_STATS
-        n_ge_changes++;
-#endif //collect stats
-
 #ifdef GLOBAL_FLUSH
         shouldFlush = true && !GH::global_flush.is_in_flush();
 #endif //gf
@@ -160,10 +162,38 @@ void set_global_epoch(mrcu_epoch_type e, void *root) {
 
 #ifdef GLOBAL_FLUSH
     if(shouldFlush){
+#ifdef MTAN
+        nflushes++;
+#endif //mtan
+
+#ifdef YCSB_RECOVERY
+    	if(unlikely(nflushes==5)){
+			printf("Block!\n");
+			GH::global_flush.block_flush();
+			pallocator.block_malloc_nvm();
+
+			printf("Power failure - System crash - Reboot please!\n");
+			pallocator.write_failed_epoch(globalepoch);
+			void *undo_root = root;
+			printf("setting root to %p\n", undo_root);
+			printf("failed epoch:%lu\n", pallocator.read_failed_epoch());
+			printf("cur nvm:%p\n", pallocator.get_cur_nvm_addr());
+	#ifdef EXTLOG_STATS
+			GH::node_logger->get_active_records();
+	#endif
+
+	#ifdef MTAN
+			report_mtan();
+			report_mtan_tree(root);
+	#endif //mtan
+			exit(0);
+    	}
+#endif //ycsb recovery
+
     	global_masstree_root = root;
     	GH::global_flush.flush(e);
     }
-#endif
+#endif //gf
 }
 
 template <typename T>
@@ -571,11 +601,12 @@ static pthread_cond_t subtest_cond;
 
 
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
-MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
+//MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
 //UniGen()
 //Zipfian(nkeys)
 //ScrambledZipGen()
+
 
 MAKE_TESTRUNNER(ycsb_a_uni,
 kvtest_ycsb(client,
@@ -629,6 +660,8 @@ MAKE_TESTRUNNER(ycsb_e_zipf,
 		ScrambledZipGen()
 ));
 
+
+#ifdef YCSB_RECOVERY
 MAKE_TESTRUNNER(ycsb_a_uni_recovery,
 		kvtest_ycsb_recovery(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -640,6 +673,7 @@ MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
 		ycsbc::OpRatios(50, 50, 0, 0),
 		UniGen()
 ));
+#endif //ycsb recovery
 
 /*
 MAKE_TESTRUNNER(rw1, kvtest_rw1(client));

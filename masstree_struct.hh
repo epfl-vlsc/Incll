@@ -28,6 +28,13 @@ typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
 extern volatile mrcu_epoch_type failedepoch;
 
+#ifdef MTAN
+extern std::atomic<size_t> nrecords_lf;
+extern std::atomic<size_t> nrecords_in;
+extern std::atomic<size_t> ninsert_incll;
+extern std::atomic<size_t> nupdate_incll;
+#endif //mtan
+
 namespace Masstree {
 
 template <typename P>
@@ -224,19 +231,17 @@ class internode : public node_base<P> {
     node_base<P>* child_[width + 1];
     node_base<P>* parent_;
 
-
-#ifdef COLLECT_STATS
-	size_t n_records;
-#endif
+#ifdef MTAN
+	bool is_recorded;
+#endif //mtan
 
     kvtimestamp_t created_at_[P::debug_level > 0];
 
     internode(uint32_t height)
         : node_base<P>(false), nkeys_(0), height_(height), parent_() {
-
-#ifdef COLLECT_STATS
-		n_records = 0;
-#endif
+#ifdef MTAN
+        is_recorded=false;
+#endif //mtan
     }
 
     static internode<P>* make(uint32_t height, threadinfo& ti) {
@@ -256,10 +261,10 @@ class internode : public node_base<P> {
 			GH::node_logger->record(this);
 #endif //in extlog
 			this->loggedepoch = globalepoch;
-
-			#ifdef COLLECT_STATS
-				n_records++;
-			#endif
+#ifdef MTAN
+			is_recorded = true;
+			++nrecords_in;
+#endif //mtan
 		}
 	}
 
@@ -569,14 +574,9 @@ class leaf : public node_base<P> {
 	//Without this it deadlock on rand, but improve perf by 2%, by having 5cl
 	//instead of 6
 
-#ifdef COLLECT_STATS
-	size_t n_inserts;
-	size_t n_records;
-	size_t n_incll_inserts;
-	size_t n_incll_updates;
-	size_t n_incll_logs;
-	size_t n_extlog_logs;
-#endif //collect stats
+#ifdef MTAN
+	bool is_recorded;
+#endif //mtan
 
 	phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
 	kvtimestamp_t created_at_[P::debug_level > 0];
@@ -595,6 +595,11 @@ class leaf : public node_base<P> {
     } next_;
     leaf<P>* prev_;
     node_base<P>* parent_;
+
+#ifdef MTAN
+	bool is_recorded;
+#endif //mtan
+
     phantom_epoch_type phantom_epoch_[P::need_phantom_epoch];
     kvtimestamp_t created_at_[P::debug_level > 0];
     internal_ksuf_type iksuf_[0];
@@ -621,20 +626,15 @@ class leaf : public node_base<P> {
         this->not_logged = false;
         this->cl0_idx = invalid_idx;
 
-#ifdef COLLECT_STATS
-        n_inserts = 0;
-        n_records = 0;
-        n_incll_inserts = 0;
-		n_incll_updates = 0;
-		n_incll_logs = 0;
-		n_extlog_logs = 0;
-#endif
-
         static_assert(
         		(uintptr_t)(&((leaf<P>*)0)->lv_cl1) % 64 == 0,
         		"incll for lv_ is not cache aligned properly");
 
 #endif //incll
+
+#ifdef MTAN
+        is_recorded = false;
+#endif //mtan
         /*
         printf("es:%ld ms:%ld kl:%ld nl:%ld p:%ld pm:%ld pmc:%ld ks:%ld ik:%ld next:%ld prev:%ld par:%ld pad:%ld lvcl:%ld\n",
         (uintptr_t)(&((leaf<P>*)0)->extrasize64_),
@@ -670,10 +670,10 @@ class leaf : public node_base<P> {
 				this->loggedepoch = globalepoch;
 				this->invalidate_cls();
 
-				#ifdef COLLECT_STATS
-				n_records++;
-				n_extlog_logs++;
-				#endif
+#ifdef MTAN
+				is_recorded = true;
+				++nrecords_lf;
+#endif //mtan
 			}
 
 		}
@@ -699,8 +699,8 @@ class leaf : public node_base<P> {
 				this->update_epochs(globalepoch);
 				this->not_logged = true;
 
-#ifdef COLLECT_STATS
-				n_incll_inserts++;
+#ifdef MTAN
+				++ninsert_incll;
 #endif
 			}else if(this->not_logged){
 				DBGLOG("log node insert to %p ge:%lu le:%lu",
@@ -711,11 +711,10 @@ class leaf : public node_base<P> {
 #endif //ln extlog incll
 				this->invalidate_cls();
 
-
-				#ifdef COLLECT_STATS
-				n_records++;
-				n_incll_logs++;
-				#endif
+#ifdef MTAN
+				is_recorded = true;
+				++nrecords_lf;
+#endif //mtan
 			}
 		}
 
@@ -733,8 +732,8 @@ class leaf : public node_base<P> {
 				this->update_epochs(globalepoch);
 				this->not_logged = true;
 
-#ifdef COLLECT_STATS
-				n_incll_updates++;
+#ifdef MTAN
+				++nupdate_incll;
 #endif
 			}else if(this->not_logged){
 				DBGLOG("log node update to %p ge:%lu le:%lu",
@@ -744,10 +743,11 @@ class leaf : public node_base<P> {
 				GH::node_logger->record(this);
 #endif //ln extlog incll
 				this->invalidate_cls();
-				#ifdef COLLECT_STATS
-				n_records++;
-				n_incll_logs++;
-				#endif // collect stats
+
+#ifdef MTAN
+				is_recorded = true;
+				++nrecords_lf;
+#endif //mtan
 			}
 		}
 
@@ -849,13 +849,11 @@ class leaf : public node_base<P> {
 				GH::node_logger->record(this);
 #endif //extlog
 				this->loggedepoch = globalepoch;
-
-				#ifdef COLLECT_STATS
-				n_records++;
-				n_extlog_logs++;
-				#endif
+#ifdef MTAN
+				is_recorded = true;
+				++nrecords_lf;
+#endif //mtan
 			}
-
 		}
 #endif //incll
 

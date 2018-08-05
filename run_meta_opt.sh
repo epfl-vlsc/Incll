@@ -24,3 +24,6 @@ for WORKLOAD in rand\
 	done
 	python get_average.py ${WORKLOAD} >> ${Oname}
 done
+
+rm -rf /scratch/tmp/nvm.*
+rm -rf /dev/shm/incll/nvm.*
