@@ -19,7 +19,7 @@ for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
 			rm -rf /scratch/tmp/nvm.*
 			rm -rf /dev/shm/incll/nvm.*
 			echo "threads ${THREADS} ${WORKLOAD} ${i}"
-			timeout 100 ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --threads=${THREADS}
+			./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --threads=${THREADS} --pin
 			sleep 1
 		done
 		python get_average.py "${WORKLOAD},${THREADS}" >> ${Oname}

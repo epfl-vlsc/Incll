@@ -10,8 +10,7 @@ rm -rf ${Oname}
 
 echo "TotalOps,AvgOps,StdOps,StdP,Workload" >> ${Oname}
 
-for WORKLOAD in rand\
-	ycsb_a_uni ycsb_b_uni ycsb_c_uni ycsb_e_uni \
+for WORKLOAD in ycsb_a_uni ycsb_b_uni ycsb_c_uni ycsb_e_uni \
 	ycsb_a_zipf ycsb_b_zipf ycsb_c_zipf ycsb_e_zipf; do
     echo "meta ${WORKLOAD}"
 	rm -rf *.json
@@ -19,7 +18,7 @@ for WORKLOAD in rand\
 		rm -rf /scratch/tmp/nvm.*
 		rm -rf /dev/shm/incll/nvm.*
 		echo "meta ${WORKLOAD} ${i}"
-		timeout 100 ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000
+		./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8 --pin
 		sleep 1
 	done
 	python get_average.py ${WORKLOAD} >> ${Oname}
