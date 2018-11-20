@@ -33,11 +33,6 @@
 
 // in-cacheline log features
 #define INCLL
-#ifdef INCLL
-#define Ifincll(statement) statement;
-#else //incll
-#define Ifincll(statement)
-#endif //incll
 
 #define EXTLOG
 #ifdef EXTLOG

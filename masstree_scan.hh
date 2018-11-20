@@ -360,7 +360,9 @@ int basic_table<P>::scan(H helper,
                 if (stack.node_stack_.empty())
                     goto done;
                 stack.n_ = static_cast<leaf<P>*>(stack.node_stack_.back());
-                Ifincll(stack.n_->lazy_recovery(failedepoch))
+#ifdef INCLL
+                stack.n_->lazy_recovery(failedepoch);
+#endif
                 stack.node_stack_.pop_back();
                 stack.root_ = stack.node_stack_.back();
                 stack.node_stack_.pop_back();

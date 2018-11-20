@@ -28,8 +28,9 @@ bool unlocked_tcursor<P>::find_unlocked(threadinfo& ti)
 
  retry:
     n_ = root->reach_leaf(ka_, v_, ti);
-    Ifincll(n_->lazy_recovery(failedepoch))
-
+#ifdef INCLL
+    n_->lazy_recovery(failedepoch);
+#endif
 
  forward:
     if (v_.deleted())
@@ -79,7 +80,9 @@ bool tcursor<P>::find_locked(threadinfo& ti)
 
  retry:
     n_ = root->reach_leaf(ka_, v, ti);
-    Ifincll(n_->lazy_recovery(failedepoch))
+#ifdef INCLL
+    n_->lazy_recovery(failedepoch);
+#endif
 
 
  forward:

@@ -23,7 +23,9 @@ void report_mtan(){
 
 namespace GH{
 	ThreadBarrier thread_barrier;
-	Ifincll(BucketLocks bucket_locks)
+#ifdef INCLL
+	BucketLocks bucket_locks;
+#endif
 
 	std::string exp_name;
 	uint64_t n_keys = 50;

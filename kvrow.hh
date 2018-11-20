@@ -244,7 +244,9 @@ bool query<R>::run_remove(T& table, Str key, threadinfo& ti) {
     bool found = lp.find_locked(ti);
     if (found){
     	DBGLOG("-------remove found %p", (void*)lp.node())
-    	Ifincll(lp.log_persistent())
+#ifdef INCLL
+    	lp.log_persistent();
+#endif
         apply_remove(lp.value(), lp.node()->phantom_epoch_[0], ti);
     }
     lp.finish(-1, ti);

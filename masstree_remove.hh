@@ -25,7 +25,9 @@ template <typename P>
 bool tcursor<P>::gc_layer(threadinfo& ti)
 {
     find_locked(ti);
-    Ifincll(n_->log_persistent())
+#ifdef INCLL
+    n_->log_persistent();
+#endif
 
     masstree_precondition(!n_->deleted() && !n_->deleted_layer());
 
