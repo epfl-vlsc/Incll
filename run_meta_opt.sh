@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-repeat=10
+repeat=$1
+#argument processing
+if [ -z "$1" ]
+  then
+	repeat=10
+fi
 
 make mttest
 
