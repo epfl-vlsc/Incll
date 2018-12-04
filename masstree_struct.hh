@@ -146,6 +146,12 @@ class node_base : public make_nodeversion<P>::type {
 		return res;
 	}
 
+#if defined(EXTLOG) && !defined(INCLL)
+	void log_persistent(){
+		this->record_node();
+	}
+#endif
+
 #ifdef INCLL
 	void log_persistent(){
 		this->record_node();

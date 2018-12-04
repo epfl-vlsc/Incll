@@ -30,6 +30,11 @@ bool tcursor<P>::find_insert(threadinfo& ti)
     find_locked(ti);
     DBGLOG("insert %p %d", (void*)n_, n_->isleaf())
 
+
+#if defined(EXTLOG) && !defined(INCLL)
+    n_->log_persistent();
+#endif
+
 #ifdef MTAN
     ++ninserts;
 #endif

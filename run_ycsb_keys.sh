@@ -19,7 +19,7 @@ for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
 		    rm -rf /scratch/tmp/nvm.*
 		    rm -rf /dev/shm/incll/nvm.*
 		    echo "tree size ${NKEYS} ${WORKLOAD} ${i}"
-			./mttest ${WORKLOAD} --nops1=1000000 --ninitops=${NKEYS} --nkeys=${NKEYS} -j8 --pin
+			./mttest ${WORKLOAD} --nops1=1000000 --ninitops=${NKEYS} --nkeys=${NKEYS} -j8
 			sleep 1
 		done
 		python get_average.py "${WORKLOAD},${NKEYS}" >> ${Oname}

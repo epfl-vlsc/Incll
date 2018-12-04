@@ -19,7 +19,7 @@ for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
 			rm -rf /scratch/tmp/nvm.*
 			rm -rf /dev/shm/incll/nvm.*
 			echo "delaycount ${DELAYCOUNT} ${WORKLOAD} ${i}"
-			./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --delaycount=${DELAYCOUNT} -j8 --pin
+			./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --delaycount=${DELAYCOUNT} -j8
 			sleep 1
 		done
 		python get_average.py "${WORKLOAD},${DELAYCOUNT}" >> ${Oname}
