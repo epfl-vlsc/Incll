@@ -10,7 +10,7 @@
 
 
 #ifdef USE_DEV_SHM
-#define DATA_BUF_SIZE (1ull << 30)
+#define DATA_BUF_SIZE (4ull<<30)
 #define PDATA_FILENAME "/dev/shm/incll/nvm.data"
 #else //USE_DEV_SHM
 #define DATA_BUF_SIZE (8ull << 30)
@@ -35,7 +35,7 @@ class PDataAllocator{
 private:
 	static constexpr const char *pdata_filename = PDATA_FILENAME;
 
-	static constexpr const size_t pm_size = (4ull<<30);
+	static constexpr const size_t pm_size = DATA_BUF_SIZE;
 	static constexpr const size_t cl_size = 64;
 	static constexpr const size_t mapping_length = pm_size + cl_size;
 	static constexpr const intptr_t data_addr = DATA_REGION_ADDR;

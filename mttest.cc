@@ -1269,6 +1269,10 @@ Try 'mttest --help' for options.\n");
 
     fclose(test_output_file);
     pthread_join(collector, 0);
+#ifdef REMOVE_HEAP
+    pallocator.destroy();
+    GH::plog_allocator.destroy();
+#endif
 
     // update lab notebook
     if (notebook)

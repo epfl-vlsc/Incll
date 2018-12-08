@@ -46,6 +46,9 @@
 //useful for checking recovery
 #define USE_DEV_SHM
 
+#define PERF_CRITICAL_SECTION
+#define REMOVE_HEAP
+
 //stats and recovery
 //#define MTAN
 //#define YCSB_RECOVERY

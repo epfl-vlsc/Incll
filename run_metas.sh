@@ -4,7 +4,7 @@ make clean
 rm -rf output
 
 echo "run meta"
-./run_meta_opt.sh 2
+./run_ycsb_keys.sh
 
 cd ./../MasstreeOriginal
 echo "runnning Baseline"
@@ -12,4 +12,4 @@ make clean
 rm -rf output
 
 echo "run meta"
-./run_meta_opt.sh 2
+./run_ycsb_keys.sh

@@ -854,6 +854,7 @@ template <typename C, typename RandGen>
 void kvtest_ycsb(C &client,
 		ycsbc::OpRatios op_ratios,
 		RandGen key_rand){
+
 	uint64_t pos = 0, val = 0;
 	size_t init = GH::n_initops;
 	size_t nops1 = GH::n_ops1;
@@ -891,10 +892,11 @@ void kvtest_ycsb(C &client,
 	client.rcu_quiesce();
 #ifdef GLOBAL_FLUSH
 		GH::global_flush.ack_flush();
-#endif
+#endif //gf
 
 	n = 0;
 
+#ifndef SKIP_CRITICAL_SECTION
 	double t0 = client.now();
 	while(n < nops1){
 		n++;
@@ -930,9 +932,12 @@ void kvtest_ycsb(C &client,
 		}
 #ifdef GLOBAL_FLUSH
 			GH::global_flush.ack_flush();
-#endif
+#endif //gf
 	}
 	double t1 = client.now();
+#else
+	double t0 = 0, t1 = 0;
+#endif//skip cs
 	result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
 	result.set("get_ops", (long)(get_ops/(t1-t0)));

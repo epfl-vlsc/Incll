@@ -23,10 +23,10 @@ LDFLAGS = @LDFLAGS@
 all: test_atomics mtd mtclient mttest
 
 %.o: %.c config.h $(DEPSDIR)/stamp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPCFLAGS) -include config.h -c -o $@ $<
+	$(CXX) $(CPPFLAGS) ${EXTFLAGS} $(CXXFLAGS) $(DEPCFLAGS) -include config.h -c -o $@ $<
 
 %.o: %.cc config.h $(DEPSDIR)/stamp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPCFLAGS) -include config.h -c -o $@ $<
+	$(CXX) $(CPPFLAGS) ${EXTFLAGS} $(CXXFLAGS) $(DEPCFLAGS) -include config.h -c -o $@ $<
 
 %.S: %.o
 	objdump -S $< > $@
@@ -50,7 +50,7 @@ mtclient: mtclient.o misc.o testrunner.o kvio.o libjson.a
 # main benchmarks
 mttest: mttest.o misc.o checkpoint.o $(KVTREES) testrunner.o \
 	kvio.o libjson.a incll_globals.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
+	$(CXX) $(CXXFLAGS) ${EXTFLAGS} -o $@ $^ $(MEMMGR) $(LDFLAGS) $(LIBS)
 
 recovery: mttest
 	./mttest recovery
