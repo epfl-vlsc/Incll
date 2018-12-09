@@ -9,7 +9,7 @@ remove_stuff(){
 
 make mttest
 remove_stuff
-perf stat -d -e instructions:u,task-clock ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8
+perf stat -d -e instructions:u,task-clock ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8 --pin
 python get_average.py
 remove_stuff
 sleep 1

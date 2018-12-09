@@ -23,7 +23,7 @@ for WORKLOAD in ycsb_a_uni ycsb_b_uni ycsb_c_uni ycsb_e_uni \
 		rm -rf /scratch/tmp/nvm.*
 		rm -rf /dev/shm/incll/nvm.*
 		echo "meta ${WORKLOAD} ${i}"
-		./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8
+		./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8 --pin
 		sleep 1
 	done
 	python get_average.py ${WORKLOAD} >> ${Oname}

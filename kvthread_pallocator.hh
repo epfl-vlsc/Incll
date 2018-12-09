@@ -10,7 +10,7 @@
 
 
 #ifdef USE_DEV_SHM
-#define DATA_BUF_SIZE (4ull<<30)
+#define DATA_BUF_SIZE (1ull<<34)
 #define PDATA_FILENAME "/dev/shm/incll/nvm.data"
 #else //USE_DEV_SHM
 #define DATA_BUF_SIZE (8ull << 30)
@@ -19,7 +19,7 @@
 
 
 #define DATA_REGION_ADDR (1ull<<45)
-#define DATA_MAX_THREAD 18
+#define DATA_MAX_THREAD 60
 
 #define nvm_free_addr ((void**)mmappedData)[0]
 

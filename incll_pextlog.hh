@@ -32,7 +32,7 @@
 
 
 #define LOG_REGION_ADDR (1ull << 24)
-#define LOG_MAX_THREAD 16
+#define LOG_MAX_THREAD 60
 
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
