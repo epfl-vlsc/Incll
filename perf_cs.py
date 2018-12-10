@@ -7,7 +7,7 @@ def read_csv(fname):
 	except Exception as e:
 		print("File not found")
 		exit(1)
-
+pd.options.mode.chained_assignment = None
 perfdir = "perf_output/"
 
 workloads = ["ycsb_a_uni", "ycsb_b_uni", "ycsb_c_uni", "ycsb_e_uni", 
@@ -20,7 +20,13 @@ for workload in workloads:
 		
 	wperf = read_csv(wfile)
 	wperf_skip = read_csv(wfile_skip)
-	wperf_cs = pd.DataFrame({workload:wperf[0] - wperf_skip[0], "PMU":wperf[2]})
-
 	
+	#assume last line is elapsed time for 10 runs
+	wperf_cs_results = wperf[0] - wperf_skip[0]
+	wperf_cs_results.iloc[-1] = wperf_cs_results.iloc[-1] / 10
+	wperf_cs_labels = wperf[2]	
+	wperf_cs_labels.iloc[-1] = "real-elapsed-time-avg(secs)"
+							   
+	
+	wperf_cs = pd.DataFrame({workload:wperf_cs_results, "PMU":wperf_cs_labels})
 	wperf_cs.to_csv(wfile_cs, index=False)
