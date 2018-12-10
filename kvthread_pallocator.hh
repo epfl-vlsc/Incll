@@ -162,5 +162,12 @@ public:
 		void *epoch_addr = (void*)((char*)mmappedData + pm_size);
 		return *(mrcu_epoch_type*)epoch_addr;
 	}
+
+	size_t get_mem_usage(){
+		char* nvm_current = (char*)nvm_free_addr;
+		char* nvm_begin = (char*)mmappedData + skip_to_data;
+		size_t mem_usage = (size_t)(nvm_current - nvm_begin);
+		return mem_usage;
+	}
 };
 

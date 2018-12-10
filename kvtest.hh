@@ -884,7 +884,8 @@ void kvtest_ycsb(C &client,
 			local_size += client.put(pos, val);
 			++n;
 		}
-		printf("Created tree--------------------\n");
+		size_t mem_usage = pallocator.get_mem_usage();
+		printf("Created tree of size %lu----------------\n", mem_usage/1000000);
 	}
 
 	//Barrier-------------------------------------------------------------
