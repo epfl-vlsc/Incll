@@ -24,7 +24,7 @@ class Trial:
         return sum(self.values)
 
 
-class OpStats:
+class Stats:
     def __init__(self):
         self.trials = []
 
@@ -43,29 +43,42 @@ class OpStats:
         return np.mean([t.get_avg() for t in self.trials])
 
 
-def get_ops_stats(data):
-    op_stats = OpStats()
+def get_stats(data):
+    op_stats = Stats()
+    time_stats = Stats()
 
     for i, run in enumerate(data):
         for thread_run in data[run]:
             ops = thread_run["ops"]
+            times = thread_run["time"]
+            
             op_stats.add(i, ops)
+            time_stats.add(i, times)
 
-    return op_stats
+    return op_stats, time_stats
 
 
 def analyze_ops_stats():
     params = sys.argv[1] if len(sys.argv) > 1 else None
-    sf = "{},{},{},{},{}" if params else "{},{},{},{}"
+    sf = "{},{},{},{},{},{},{},{},{}" if params else "{},{},{},{},{},{},{},{}"
 
     data = get_notebook()
-    op_stats = get_ops_stats(data)
+    all_stats = get_stats(data)
+    op_stats, time_stats = all_stats
 
-    stat_sum = op_stats.get_sum()
-    stat_avg = op_stats.get_avg()
-    stat_sum_std = op_stats.get_sum_std()
-    stat_stdp = stat_sum_std / stat_sum
-    s = sf.format(stat_sum, stat_avg, stat_sum_std, stat_stdp, params)
+    op_stat_sum = op_stats.get_sum()
+    op_stat_avg = op_stats.get_avg()
+    op_stat_sum_std = op_stats.get_sum_std()
+    op_stat_stdp = op_stat_sum_std / op_stat_sum
+	
+    time_stat_sum = time_stats.get_sum()
+    time_stat_avg = time_stats.get_avg()
+    time_stat_sum_std = time_stats.get_sum_std()
+    time_stat_stdp = time_stat_sum_std / time_stat_sum	
+
+    s = sf.format(op_stat_sum, op_stat_avg, op_stat_sum_std, op_stat_stdp, 
+        time_stat_sum, time_stat_avg, time_stat_sum_std, time_stat_stdp,
+        params)
     print(s)
 
 

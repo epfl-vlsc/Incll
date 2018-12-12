@@ -15,7 +15,7 @@ for WORKLOAD in ycsb_a_uni; do
 
 	remove_stuff
 	
-	/usr/bin/time -f "%e,,real-elapsed-time(10runs),,," perf stat -o ${Oname} -r 10 -e instructions:u,task-clock,r412e,r4f2e,r3f24,ref24 -x, ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8 --pin &> ${Odump}        
+	/usr/bin/time -f "%e,,real-elapsed-time(10runs),,,,," perf stat -d -o ${Oname} -r 10 -e instructions:u,task-clock -x, ./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 -j8 --pin &> ${Odump}        
 	echo "read elapsed time"
 	tail -1 ${Odump} >> ${Oname}
 	
@@ -23,4 +23,3 @@ for WORKLOAD in ycsb_a_uni; do
 	remove_stuff
 	sleep 1
 done
-
