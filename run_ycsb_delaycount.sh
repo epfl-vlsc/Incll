@@ -1,31 +1,17 @@
 #!/usr/bin/env bash
 
-repeat=10
+source commons.sh
 
-make mttest
+set_repeat $1
+quick_make
+create_output delay
+write_csv_header_args Delay
 
-mkdir -p output
-Oname=output/ycsb_delaycount.txt
-rm -rf ${Oname}
+use_default_params
+use_all_workloads
 
-echo "TotalOps,AvgOps,StdOps,StdP,Workload,Delaycount" >> ${Oname}
-
-for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
-    echo "delaycount ${WORKLOAD}"
-	for DELAYCOUNT in 0 340 680 1020 1360 1700 2040 2380 2720 3060 3400; do
-	    echo "delaycount ${DELAYCOUNT} ${WORKLOAD}"
-		rm -rf *.json
-		for i in $(eval echo {1..$repeat}); do
-			rm -rf /scratch/tmp/nvm.*
-			rm -rf /dev/shm/incll/nvm.*
-			echo "delaycount ${DELAYCOUNT} ${WORKLOAD} ${i}"
-			./mttest ${WORKLOAD} --nops1=1000000 --ninitops=20000000 --nkeys=20000000 --delaycount=${DELAYCOUNT} -j8 --pin
-			sleep 1
-		done
-		python get_average.py "${WORKLOAD},${DELAYCOUNT}" >> ${Oname}
-	done
+DELAYS_COUNTS=(0 340 680 1020 1360 1700 2040 2380 2720 3060 3400)
+for DELAYS in ${DELAYS_COUNTS[@]}; do
+	echo "Delays ${DELAYS}"
+	run_different_workloads_args ${DELAYS}
 done
-
-
-rm -rf /scratch/tmp/nvm.*
-rm -rf /dev/shm/incll/nvm.*

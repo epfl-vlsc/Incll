@@ -1,30 +1,19 @@
 #!/usr/bin/env bash
 
-repeat=10
+source commons.sh
 
-make mttest
+set_repeat $1
+quick_make
+create_output nops
+write_csv_header_args Nops
 
-mkdir -p output
-Oname=output/ycsb_nops.txt
-rm -rf ${Oname}
+use_default_params
+use_all_workloads
 
-echo "TotalOps,AvgOps,StdOps,StdP,Workload,Nops" >> ${Oname}
-
-for WORKLOAD in ycsb_a_uni ycsb_a_zipf; do
-    echo "nops ${WORKLOAD}"
-	for NOPS in 1000000 2000000 5000000 10000000 20000000; do
-	    echo "nops ${NOPS} ${WORKLOAD}"
-		rm -rf *.json
-		for i in $(eval echo {1..$repeat}); do 
-			rm -rf /scratch/tmp/nvm.*
-			rm -rf /dev/shm/incll/nvm.*
-			echo "nops ${NOPS} ${WORKLOAD} ${i}"
-			./mttest ${WORKLOAD} --nops1=${NOPS} --ninitops=20000000 --nkeys=20000000 -j8 --pin
-			sleep 1
-		done
-		python get_average.py "${WORKLOAD},${NOPS}" >> ${Oname}
-	done
+#todo decide the range
+NOPS_COUNTS=(1000000 2000000 5000000 10000000 20000000)
+for NOPS in ${NOPS_COUNTS[@]}; do
+	echo "Nops ${NOPS}"
+	run_different_workloads_args ${NOPS}
 done
 
-rm -rf /scratch/tmp/nvm.*
-rm -rf /dev/shm/incll/nvm.*

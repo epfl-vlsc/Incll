@@ -1,25 +1,17 @@
 #!/usr/bin/env bash
-workload=$1
-repeat=1
+source commons.sh
 
-#NKEYS=20000000
-NKEYS=$2
+#ex:$1=ycsb_a_uni
 
+WORKLOADS=($1)
 
-if [ -z "$NKEYS" ]; then 
-	NKEYS=20 
-fi
+set_repeat=1
+quick_make
+create_output workload
+write_csv_header
 
-echo "nkeys:"
-echo "$((NKEYS*=1000000))"
-echo "repeat ${repeat}"
+use_default_params
 
-make mttest
-rm -rf *.json
-for i in $(eval echo {1..$repeat}); do 
-	rm -rf /scratch/tmp/nvm.*
-	rm -rf /dev/shm/incll/nvm.*
-	./mttest ${workload} --nops1=1000000 --ninitops=${NKEYS} --nkeys=${NKEYS} -j8 --pin
-	python get_average.py
-	sleep 1
-done
+run_different_workloads
+read_out
+remove_out

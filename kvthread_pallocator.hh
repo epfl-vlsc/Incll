@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 
+#include "incll_configs.hh"
 #include "incll_extflush.hh"
 
 

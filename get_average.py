@@ -23,6 +23,9 @@ class Trial:
     def get_sum(self):
         return sum(self.values)
 
+    def get_max(self):
+        return max(self.values)
+
 
 class Stats:
     def __init__(self):
@@ -41,6 +44,9 @@ class Stats:
 
     def get_avg(self):
         return np.mean([t.get_avg() for t in self.trials])
+
+    def get_max(self):
+        return np.mean([t.get_max() for t in self.trials])
 
 
 def get_stats(data):
@@ -72,7 +78,7 @@ def analyze_ops_stats():
     op_stat_stdp = op_stat_sum_std / op_stat_sum
 	
     time_stat_sum = time_stats.get_sum()
-    time_stat_avg = time_stats.get_avg()
+    time_stat_avg = time_stats.get_max()
     time_stat_sum_std = time_stats.get_sum_std()
     time_stat_stdp = time_stat_sum_std / time_stat_sum	
 

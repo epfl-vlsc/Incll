@@ -2,10 +2,10 @@
 echo "runnning PMasstree"
 
 echo "run perf"
-./run_wperf_all.sh
+./run_perf_fullskip.sh
 
 cd ./../MasstreeOriginal
 echo "runnning Baseline"
 
 echo "run perf"
-./run_wperf_all.sh
+./run_perf_fullskip.sh
