@@ -14,7 +14,7 @@ use_default_params(){
 	NKEYS=20000000
 	THREADS=8
 	NOPS=1000000
-	DELAYCOUNT=0
+	DELAYS=0
 }
 
 create_output(){
