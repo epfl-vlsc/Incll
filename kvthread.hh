@@ -42,6 +42,8 @@ typedef int64_t mrcu_signed_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;  // global epoch, updated regularly
 extern volatile mrcu_epoch_type active_epoch;
 
+
+#ifdef PALLOCATOR
 struct limbo_group {
     typedef mrcu_epoch_type epoch_type;
     typedef mrcu_signed_epoch_type signed_epoch_type;
@@ -81,6 +83,48 @@ struct limbo_group {
     }
     inline unsigned clean_until(threadinfo& ti, mrcu_epoch_type epoch_bound, unsigned count);
 };
+#else //pallocator
+struct limbo_group {
+    typedef mrcu_epoch_type epoch_type;
+    typedef mrcu_signed_epoch_type signed_epoch_type;
+
+    struct limbo_element {
+        void* ptr_;
+        union {
+            memtag tag;
+            epoch_type epoch;
+        } u_;
+    };
+
+    enum { capacity = (4076 - sizeof(epoch_type) - sizeof(limbo_group*)) / sizeof(limbo_element) };
+    unsigned head_;
+    unsigned tail_;
+    epoch_type epoch_;
+    limbo_group* next_;
+    limbo_element e_[capacity];
+    limbo_group()
+        : head_(0), tail_(0), next_() {
+    }
+    epoch_type first_epoch() const {
+        assert(head_ != tail_);
+        return e_[head_].u_.epoch;
+    }
+    void push_back(void* ptr, memtag tag, mrcu_epoch_type epoch) {
+        assert(tail_ + 2 <= capacity);
+        if (head_ == tail_ || epoch_ != epoch) {
+            e_[tail_].ptr_ = nullptr;
+            e_[tail_].u_.epoch = epoch;
+            epoch_ = epoch;
+            ++tail_;
+        }
+        e_[tail_].ptr_ = ptr;
+        e_[tail_].u_.tag = tag;
+        ++tail_;
+    }
+    inline unsigned clean_until(threadinfo& ti, mrcu_epoch_type epoch_bound, unsigned count);
+};
+#endif //pallocator
+
 
 template <int N> struct has_threadcounter {
     static bool test(threadcounter ci) {
@@ -209,28 +253,14 @@ class threadinfo {
         return accounting_relax_fence_function(this, ci);
     }
 
+#ifdef PALLOCATOR
     // memory allocation
     void* allocate(size_t sz, memtag tag) {
     	//use pool instead of malloc
     	return pool_allocate(sz, tag);
-    	/*
-        void* p = malloc(sz + memdebug_size);
-        p = memdebug::make(p, sz, tag);
-        if (p)
-            mark(threadcounter(tc_alloc + (tag > memtag_value)), sz);
-        return p;
-        */
     }
     void deallocate(void* p, size_t sz, memtag tag) {
     	pool_deallocate(p, sz, tag);
-
-    	/*
-        // in C++ allocators, 'p' must be nonnull
-        assert(p);
-        p = memdebug::check_free(p, sz, tag);
-        free(p);
-        mark(threadcounter(tc_alloc + (tag > memtag_value)), -sz);
-        */
     }
     void deallocate_rcu(void* p, size_t sz, memtag tag) {
     	int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
@@ -240,7 +270,6 @@ class threadinfo {
         record_rcu(p, memtag(tag + nl));
         mark(threadcounter(tc_alloc + (tag > memtag_value)), -sz);
     }
-
     void* pool_allocate(size_t sz, memtag tag) {
         int nl = (PPP_HEADER_SIZE + sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
         assert(nl <= pool_max_nlines);
@@ -277,6 +306,56 @@ class threadinfo {
         mark(threadcounter(tc_alloc + (tag > memtag_value)),
              -nl * CACHE_LINE_SIZE);
     }
+#else //pallocator
+    // memory allocation
+	void* allocate(size_t sz, memtag tag) {
+		return pool_allocate(sz, tag);
+	}
+	void deallocate(void* p, size_t sz, memtag tag) {
+		pool_deallocate(p, sz, tag);
+	}
+	void deallocate_rcu(void* p, size_t sz, memtag tag) {
+		assert(p);
+		memdebug::check_rcu(p, sz, tag);
+		record_rcu(p, tag);
+		mark(threadcounter(tc_alloc + (tag > memtag_value)), -sz);
+	}
+
+	void* pool_allocate(size_t sz, memtag tag) {
+		int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+		assert(nl <= pool_max_nlines);
+		if (unlikely(!pool_[nl - 1]))
+			refill_pool(nl);
+		void* p = pool_[nl - 1];
+		if (p) {
+			pool_[nl - 1] = *reinterpret_cast<void **>(p);
+			p = memdebug::make(p, sz, memtag(tag + nl));
+			mark(threadcounter(tc_alloc + (tag > memtag_value)),
+				 nl * CACHE_LINE_SIZE);
+		}
+		return p;
+	}
+	void pool_deallocate(void* p, size_t sz, memtag tag) {
+		int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+		assert(p && nl <= pool_max_nlines);
+		p = memdebug::check_free(p, sz, memtag(tag + nl));
+		if (use_pool()) {
+			*reinterpret_cast<void **>(p) = pool_[nl - 1];
+			pool_[nl - 1] = p;
+		} else
+			free(p);
+		mark(threadcounter(tc_alloc + (tag > memtag_value)),
+			 -nl * CACHE_LINE_SIZE);
+	}
+	void pool_deallocate_rcu(void* p, size_t sz, memtag tag) {
+		int nl = (sz + memdebug_size + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE;
+		assert(p && nl <= pool_max_nlines);
+		memdebug::check_rcu(p, sz, memtag(tag + nl));
+		record_rcu(p, memtag(tag + nl));
+		mark(threadcounter(tc_alloc + (tag > memtag_value)),
+			 -nl * CACHE_LINE_SIZE);
+	}
+#endif //pallocator
 
     // RCU
     enum { rcu_free_count = 128 }; // max # of entries to free per rcu_quiesce() call
@@ -328,8 +407,13 @@ class threadinfo {
         char padding1[CACHE_LINE_SIZE];
     };
 
+#ifdef PALLOCATOR
     enum { pool_max_nlines = 70 };
     PPP pool_[pool_max_nlines];
+#else //pallocator
+    enum { pool_max_nlines = 70 };
+    void* pool_[pool_max_nlines];
+#endif
 
     limbo_group* limbo_head_;
     limbo_group* limbo_tail_;
@@ -342,6 +426,7 @@ class threadinfo {
     void refill_pool(int nl);
     void refill_rcu();
 
+#ifdef PALLOCATOR
     void free_rcu(void *p, memtag tag) {
     	if (tag == memtag(-1)){
 			(*static_cast<mrcu_callback*>(p))(*this);
@@ -352,6 +437,18 @@ class threadinfo {
 			pool_[nl - 1] = p;
 		}
     }
+#else //pallocator
+    void free_rcu(void *p, memtag tag) {
+		if (tag == memtag(-1))
+			(*static_cast<mrcu_callback*>(p))(*this);
+		else {
+			p = memdebug::check_free_after_rcu(p, tag);
+			int nl = tag & memtag_pool_mask;
+			*reinterpret_cast<void**>(p) = pool_[nl - 1];
+			pool_[nl - 1] = p;
+		}
+	}
+#endif //pallocator
 
     void record_rcu(void* ptr, memtag tag) {
         if (limbo_tail_->tail_ + 2 > limbo_tail_->capacity)

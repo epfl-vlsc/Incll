@@ -30,6 +30,7 @@ threadinfo *threadinfo::allthreads;
 int threadinfo::no_pool_value;
 #endif
 
+#ifdef PALLOCATOR
 //definitions for persistent pool
 PDataAllocator pallocator;
 volatile mrcu_epoch_type currexec;
@@ -37,6 +38,7 @@ volatile mrcu_epoch_type currexec;
 bool epoch_is_valid(unsigned long e){
     return e != failedepoch;
 }
+#endif //pallocator
 
 inline threadinfo::threadinfo(int purpose, int index) {
     memset(this, 0, sizeof(*this));
@@ -49,6 +51,7 @@ inline threadinfo::threadinfo(int purpose, int index) {
     ts_ = 2;
 }
 
+#ifdef PALLOCATOR
 threadinfo *threadinfo::make(int purpose, int index) {
     static int threads_initialized;
 
@@ -76,6 +79,25 @@ threadinfo *threadinfo::make(int purpose, int index) {
 
     return ti;
 }
+#else //pallocator
+threadinfo *threadinfo::make(int purpose, int index) {
+    static int threads_initialized;
+
+    threadinfo* ti = new(malloc(8192)) threadinfo(purpose, index);
+    ti->next_ = allthreads;
+    allthreads = ti;
+
+    if (!threads_initialized) {
+#if ENABLE_ASSERTIONS
+        const char* s = getenv("_");
+        no_pool_value = s && strstr(s, "valgrind") != 0;
+#endif
+        threads_initialized = 1;
+    }
+
+    return ti;
+}
+#endif
 
 void threadinfo::refill_rcu() {
     if (!limbo_tail_->next_) {
@@ -198,6 +220,8 @@ static size_t read_superpage_size() {
 static size_t superpage_size = 0;
 #endif
 
+
+#ifdef PALLOCATOR
 static void initialize_pool(void* pool, size_t sz, size_t unit) {
     char* p = reinterpret_cast<char*>(pool);
     PPP* nextptr = reinterpret_cast<PPP*>(p);
@@ -227,3 +251,34 @@ void threadinfo::refill_pool(int nl) {
     initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
     pool_[nl - 1] = pool;
 }
+#else //pallocator
+static void initialize_pool(void* pool, size_t sz, size_t unit) {
+    char* p = reinterpret_cast<char*>(pool);
+    void** nextptr = reinterpret_cast<void**>(p);
+    for (size_t off = unit; off + unit <= sz; off += unit) {
+        *nextptr = p + off;
+        nextptr = reinterpret_cast<void**>(p + off);
+    }
+    *nextptr = 0;
+}
+
+void threadinfo::refill_pool(int nl) {
+    assert(!pool_[nl - 1]);
+
+    void* pool = 0;
+    size_t pool_size = 0;
+
+	if (!superpage_size){
+		superpage_size = read_superpage_size();
+	}
+
+	if (superpage_size != (size_t) -1) {
+		pool_size = superpage_size;
+		//pool = pallocator.malloc_nvm(pool_size);
+		assert(posix_memalign(&pool, pool_size, pool_size) == 0);
+		//assert(madvise(pool, pool_size, MADV_HUGEPAGE) == 0);
+	}
+    initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
+    pool_[nl - 1] = pool;
+}
+#endif //pallocator
