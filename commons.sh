@@ -40,7 +40,7 @@ create_perf_output(){
 }
 
 full_make(){
-	#ex:$1=EXTFLAGS=-DSKIP_CRITICAL_SECTION
+	#ex:$1=EXTFLAGS=-DSKIP_CRITICAL_SECTION or EXTFLAGS=-DDISABLE_ALL
 	echo "clean then make mttest"
 	make clean
 	make mttest $1

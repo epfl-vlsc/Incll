@@ -24,14 +24,21 @@
 
 
 //all defines
-#define GLOBAL_FLUSH
+//#define DISABLE_ALL
+
+#ifdef DISABLE_ALL
+#define KEY_LW 15
+#define KEY_MID KEY_LW/2
+#else //disable all
+
 #define KEY_LW 14
 #define KEY_MID KEY_LW/2
+#define GLOBAL_FLUSH
 #define INCLL
 #define EXTLOG
 #define USE_DEV_SHM
 #define PALLOCATOR
-
+#endif //disable all
 
 
 #ifdef EXTLOG

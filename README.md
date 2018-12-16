@@ -1,3 +1,17 @@
+    $ ./bootstrap.sh
+    $ ./configure
+    $ make mttest
+    $ make flush_all
+    $ make flush_load
+    $ chmod +x *.sh
+    $ ./run_workload.sh ycsb_a_uni
+    $ ./run_workloads.sh
+    $ ./run_workloads_disabled.sh
+    $ ./run_workloads_perf.sh
+	
+
+
+
 # Masstree #
 
 This is the source release for Masstree, a fast, multi-core key-value
