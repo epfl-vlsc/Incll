@@ -46,8 +46,9 @@
 //useful for checking recovery
 #define USE_DEV_SHM
 
-#define PERF_CRITICAL_SECTION
+#define PERF_WORKLOAD
 #define REMOVE_HEAP
+
 
 //stats and recovery
 //#define MTAN

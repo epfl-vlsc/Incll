@@ -35,6 +35,16 @@
 #include "ycsb_helper.hh"
 #endif //ycsb
 
+#ifdef PERF_WORKLOAD
+#include "perf_utils.hh"
+thread_local int instructions_fd;
+thread_local int cycles_fd;
+thread_local int l1dc_loadreferences_fd;
+thread_local int l1dc_loadmisses_fd;
+thread_local int llc_loadreferences_fd;
+thread_local int llc_loadmisses_fd;
+#endif
+
 extern PDataAllocator pallocator;
 
 using lcdf::Str;
@@ -897,6 +907,12 @@ void kvtest_ycsb(C &client,
 
 	n = 0;
 
+#ifdef PERF_WORKLOAD
+	//begin perf measurements
+	setup_counters();
+	start_counters();
+#endif //perf workload begin
+
 #ifndef SKIP_CRITICAL_SECTION
 	double t0 = client.now();
 	while(n < nops1){
@@ -939,6 +955,12 @@ void kvtest_ycsb(C &client,
 #else
 	double t0 = 0, t1 = 0;
 #endif//skip cs
+
+#ifdef PERF_WORKLOAD
+	stop_counters();
+	read_counters(result);
+#endif
+
 	result.set("time", t1-t0);
 	result.set("ops", (long)(n/(t1-t0)));
 	result.set("get_ops", (long)(get_ops/(t1-t0)));
