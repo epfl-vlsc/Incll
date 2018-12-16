@@ -45,7 +45,9 @@ thread_local int llc_loadreferences_fd;
 thread_local int llc_loadmisses_fd;
 #endif
 
+#ifdef PALLOCATOR
 extern PDataAllocator pallocator;
+#endif //pallocator
 
 using lcdf::Str;
 using lcdf::String;
@@ -898,8 +900,10 @@ void kvtest_ycsb(C &client,
 			local_size += client.put(pos, val);
 			++n;
 		}
+		#ifdef PALLOCATOR
 		size_t mem_usage = pallocator.get_mem_usage();
 		printf("Created tree of size %lu----------------\n", mem_usage/1000000);
+		#endif //pallocator
 	}
 
 	//Barrier-------------------------------------------------------------
