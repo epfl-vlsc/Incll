@@ -17,38 +17,34 @@
 #endif
 
 //------------------------------------------------------------------------------------
-
 //default epoch 16
 #define GL_FREQ 16
+#define YCSB
 
-//periodic flush
+
+
+//all defines
 #define GLOBAL_FLUSH
-
-//default 15
 #define KEY_LW 14
 #define KEY_MID KEY_LW/2
-
-//disable dealloc for remove
-//#define DISABLE_DEALLOC
-
-// in-cacheline log features
 #define INCLL
-
 #define EXTLOG
+#define USE_DEV_SHM
+#define PALLOCATOR
+
+
+
 #ifdef EXTLOG
 #define LN_EXTLOG
 #define LN_EXTLOG_INCLL
 #define IN_EXTLOG
 #endif //extlog
 
-#define YCSB
-
-//useful for checking recovery
-#define USE_DEV_SHM
-
-#define PERF_WORKLOAD
+//#define PERF_WORKLOAD
 #define REMOVE_HEAP
 
+//disable dealloc for remove
+//#define DISABLE_DEALLOC
 
 //stats and recovery
 //#define MTAN

@@ -26,8 +26,12 @@
 #include <stdlib.h>
 
 #include "incll_configs.hh"
+
+#ifdef PALLOCATOR
 #include "kvthread_persistent.hh"
 #include "kvthread_pallocator.hh"
+#endif //pallocator
+
 
 class threadinfo;
 class loginfo;

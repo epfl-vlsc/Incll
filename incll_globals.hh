@@ -40,14 +40,15 @@ namespace GH{
 	extern GlobalFlush global_flush;
 #endif
 
+#ifdef EXTLOG
 	extern thread_local PExtNodeLogger *node_logger;
 	extern PLogAllocator plog_allocator;
+	bool is_recovery();
+#endif //extlog
 
 	void print_exp_params();
 	void init_all(int nthreads, const char *testname);
 	void init_thread_all(int tid);
-	bool is_recovery();
-
 
 	void advance_epoch(int tid, void *root);
 

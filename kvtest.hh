@@ -754,17 +754,21 @@ void kvtest_recovery(C &client){
 
 	//Begin Undo epoch 3 ------------------------------------------------
 	if(client.id() == 0){
+		#ifdef EXTLOG
 		void* undo_root = GH::node_logger->get_tree_root();
 		client.set_root(undo_root);
+		#endif //extlog
 	}
 	GH::thread_barrier.wait_barrier(client.id());
 
+	#ifdef EXTLOG
 	auto last_flush = GH::node_logger->get_last_flush();
 	GH::node_logger->undo(client.get_root());
 	GH::thread_barrier.wait_barrier(client.id());
 
 	GH::node_logger->undo_next_prev(client.get_root(), last_flush);
 	GH::thread_barrier.wait_barrier(client.id());
+	#endif//extlog
 	//End Undo epoch 3 ------------------------------------------------
 
 

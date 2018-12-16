@@ -22,7 +22,9 @@ extern volatile mrcu_epoch_type globalepoch;
 extern volatile mrcu_epoch_type active_epoch;
 
 namespace GH{
+	#ifdef EXTLOG
 	extern thread_local PExtNodeLogger *node_logger;
+	#endif
 }
 
 class GlobalFlush{
@@ -107,7 +109,9 @@ public:
 			// wait for flush to complete
 			sem_wait(&flush_ack_sem);
 
+			#ifdef EXTLOG
 			GH::node_logger->checkpoint();
+			#endif
 		}
 		return false;
 	}
@@ -166,7 +170,9 @@ public:
 			sem_post(&flush_ack_sem);
 		}
 
+		#ifdef EXTLOG
 		GH::node_logger->checkpoint();
+		#endif
 
 		influshWarning.store(false, std::memory_order_release);
 	}
