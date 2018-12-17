@@ -39,10 +39,11 @@
 #include "perf_utils.hh"
 thread_local int instructions_fd;
 thread_local int cycles_fd;
-thread_local int l1dc_loadreferences_fd;
-thread_local int l1dc_loadmisses_fd;
-thread_local int llc_loadreferences_fd;
-thread_local int llc_loadmisses_fd;
+
+thread_local int l1dc_references_fd;
+thread_local int l1dc_misses_fd;
+thread_local int llc_references_fd;
+thread_local int llc_misses_fd;
 #endif
 
 #ifdef PALLOCATOR

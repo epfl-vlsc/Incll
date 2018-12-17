@@ -25,10 +25,11 @@ read_counters();
 //when adding a new variable, change here, setup, read
 extern thread_local int instructions_fd;
 extern thread_local int cycles_fd;
-extern thread_local int l1dc_loadreferences_fd;
-extern thread_local int l1dc_loadmisses_fd;
-extern thread_local int llc_loadreferences_fd;
-extern thread_local int llc_loadmisses_fd;
+
+extern thread_local int l1dc_references_fd;
+extern thread_local int l1dc_misses_fd;
+extern thread_local int llc_references_fd;
+extern thread_local int llc_misses_fd;
 
 static inline int sys_perf_event_open(struct perf_event_attr *attr, pid_t pid,
 				      int cpu, int group_fd,
@@ -67,50 +68,69 @@ static void setup_counters(void){
 		exit(1);
 	}
 
-	//l1 data cache load references
+	//l1 data cache load/store references
 	attr.disabled = 0;
 	attr.type = PERF_TYPE_HW_CACHE;
+#ifndef PERF_STORES //loads
 	attr.config = (PERF_COUNT_HW_CACHE_L1D)
 		| (PERF_COUNT_HW_CACHE_OP_READ << 8)
 		| (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16);
-	l1dc_loadreferences_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
-	if (l1dc_loadreferences_fd < 0) {
+#else // stores
+	attr.config = (PERF_COUNT_HW_CACHE_L1D)
+		| (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
+		| (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16);
+#endif // load/stores
+	l1dc_references_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
+	if (l1dc_references_fd < 0) {
 		perror("sys_perf_event_open");
 		exit(1);
 	}
 
+	//l1dc store misses not supported
 	//l1 data cache load misses
 	attr.disabled = 0;
 	attr.type = PERF_TYPE_HW_CACHE;
 	attr.config = (PERF_COUNT_HW_CACHE_L1D)
 		| (PERF_COUNT_HW_CACHE_OP_READ << 8)
 		| (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
-	l1dc_loadmisses_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
-	if (l1dc_loadmisses_fd < 0) {
+	l1dc_misses_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
+	if (l1dc_misses_fd < 0) {
 		perror("sys_perf_event_open");
 		exit(1);
 	}
 
-	//ll cache load references
+	//ll cache load/store references
 	attr.disabled = 0;
 	attr.type = PERF_TYPE_HW_CACHE;
+#ifndef PERF_STORES //loads
 	attr.config = (PERF_COUNT_HW_CACHE_LL)
 		| (PERF_COUNT_HW_CACHE_OP_READ << 8)
 		| (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16);
-	llc_loadreferences_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
-	if (llc_loadreferences_fd < 0) {
+#else // stores
+	attr.config = (PERF_COUNT_HW_CACHE_LL)
+		| (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
+		| (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16);
+#endif // load/stores
+	llc_references_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
+	if (llc_references_fd < 0) {
 		perror("sys_perf_event_open");
 		exit(1);
 	}
 
-	//ll cache load misses
+	//ll cache load/store misses
 	attr.disabled = 0;
 	attr.type = PERF_TYPE_HW_CACHE;
+#ifndef PERF_STORES //loads
 	attr.config = (PERF_COUNT_HW_CACHE_LL)
 		| (PERF_COUNT_HW_CACHE_OP_READ << 8)
 		| (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
-	llc_loadmisses_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
-	if (llc_loadmisses_fd < 0) {
+#else // stores
+	attr.config = (PERF_COUNT_HW_CACHE_LL)
+		| (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
+		| (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
+#endif // load/stores
+	llc_misses_fd = sys_perf_event_open(&attr, 0, -1, instructions_fd, 0);
+	if (llc_misses_fd < 0) {
 		perror("sys_perf_event_open");
 		exit(1);
 	}
@@ -121,10 +141,11 @@ static void read_counters(R& result){
 	size_t res;
 	unsigned long long instructions;
 	unsigned long long cycles;
-	unsigned long long l1dc_loadreferences;
-	unsigned long long l1dc_loadmisses;
-	unsigned long long llc_loadreferences;
-	unsigned long long llc_loadmisses;
+
+	unsigned long long l1dc_references;
+	unsigned long long l1dc_misses;
+	unsigned long long llc_references;
+	unsigned long long llc_misses;
 
 	res = read(instructions_fd, &instructions, sizeof(unsigned long long));
 	assert(res == sizeof(unsigned long long));
@@ -132,16 +153,16 @@ static void read_counters(R& result){
 	res = read(cycles_fd, &cycles, sizeof(unsigned long long));
 	assert(res == sizeof(unsigned long long));
 
-	res = read(l1dc_loadreferences_fd, &l1dc_loadreferences, sizeof(unsigned long long));
+	res = read(l1dc_references_fd, &l1dc_references, sizeof(unsigned long long));
 	assert(res == sizeof(unsigned long long));
 
-	res = read(l1dc_loadmisses_fd, &l1dc_loadmisses, sizeof(unsigned long long));
+	res = read(l1dc_misses_fd, &l1dc_misses, sizeof(unsigned long long));
 	assert(res == sizeof(unsigned long long));
 
-	res = read(llc_loadreferences_fd, &llc_loadreferences, sizeof(unsigned long long));
+	res = read(llc_references_fd, &llc_references, sizeof(unsigned long long));
 	assert(res == sizeof(unsigned long long));
 
-	res = read(llc_loadmisses_fd, &llc_loadmisses, sizeof(unsigned long long));
+	res = read(llc_misses_fd, &llc_misses, sizeof(unsigned long long));
 	assert(res == sizeof(unsigned long long));
 
 	/*
@@ -155,10 +176,17 @@ static void read_counters(R& result){
 
 	result.set("instructions", instructions);
 	result.set("cycles", cycles);
-	result.set("l1dc_loadreferences", l1dc_loadreferences);
-	result.set("l1dc_loadmisses", l1dc_loadmisses);
-	result.set("llc_loadreferences", llc_loadreferences);
-	result.set("llc_loadmisses", llc_loadmisses);
+#ifndef PERF_STORES //loads
+	result.set("l1dc_loadreferences", l1dc_references);
+	result.set("l1dc_loadmisses", l1dc_misses);
+	result.set("llc_loadreferences", llc_references);
+	result.set("llc_loadmisses", llc_misses);
+#else //stores
+	result.set("l1dc_storesreferences", l1dc_references);
+	result.set("l1dc_loadmisses", l1dc_misses);
+	result.set("llc_storesreferences", llc_references);
+	result.set("llc_storesmisses", llc_misses);
+#endif //loads/stores
 }
 
 static void start_counters(void){
