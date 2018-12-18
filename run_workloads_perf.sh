@@ -3,23 +3,25 @@
 source commons.sh
 
 set_repeat $1
-quick_make
-create_output workloads
-write_csv_header
+
+NB_SRC=notebook-mttest.json
+NB_DST=/scratch/results/incll.json
+
+remove_files
 
 use_default_params
 use_all_workloads
 
-
-OUTPERF=output/workload_perf.txt
-python get_perf_average.py ${OUTPERF} > ${OUTPERF} 
-echo "Perf Results in ${OUTPERF}"
- 
-
+make clean
+make mttest "EXTFLAGS=-DPERF_WORKLOAD"
 for WORKLOAD in ${WORKLOADS[@]}; do
-	remove_json_out
 	run_multi_experiment
-	get_average_results
-	python get_perf_average.py ${WORKLOAD} >> ${OUTPERF}
 done
 
+make clean
+make mttest "EXTFLAGS=-DPERF_WORKLOAD -DPERF_STORES"
+for WORKLOAD in ${WORKLOADS[@]}; do
+	run_multi_experiment
+done
+
+cp ${NB_SRC} ${NB_DST}
