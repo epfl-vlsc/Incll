@@ -48,6 +48,7 @@ thread_local int llc_misses_fd;
 
 #ifdef PALLOCATOR
 extern PDataAllocator pallocator;
+extern int delaycount;
 #endif //pallocator
 
 using lcdf::Str;
@@ -872,6 +873,8 @@ void kvtest_ycsb(C &client,
 		ycsbc::OpRatios op_ratios,
 		RandGen key_rand){
 
+	double t_beg = client.now();
+
 	uint64_t pos = 0, val = 0;
 	size_t init = GH::n_initops;
 	size_t nops1 = GH::n_ops1;
@@ -970,7 +973,8 @@ void kvtest_ycsb(C &client,
 	read_counters(result);
 #endif
 
-	result.set("time", t1-t0);
+	result.set("workload_time", t1-t0);
+	result.set("num_operations", n);
 	result.set("ops", (long)(n/(t1-t0)));
 	result.set("get_ops", (long)(get_ops/(t1-t0)));
 	result.set("put_ops", (long)(put_ops/(t1-t0)));
@@ -982,8 +986,6 @@ void kvtest_ycsb(C &client,
 	while(!GH::global_flush.ack_flush());
 #endif
 
-	client.report(result);
-
 	global_size += local_size;
 	//Barrier-------------------------------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
@@ -992,6 +994,16 @@ void kvtest_ycsb(C &client,
 	if(client.id() == 0){
 		assert(global_size == get_tree_size(client.get_root()));
 	}
+
+	double t_end = client.now();
+	result.set("thread_time", t_end - t_beg);
+	result.set("keys", GH::n_keys);
+	result.set("threads", client.ncores());
+#ifdef PALLOCATOR
+	result.set("delay_count", delaycount);
+#endif //pallocator
+	client.report(result);
+
 }
 #endif //ycsb
 

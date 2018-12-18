@@ -73,7 +73,7 @@ write_csv_header_args(){
 
 write_csv_header(){
 	#requires OUTFILE
-	echo "TotalOps,AvgOps,StdOps,StdPOps,TotalTime,AvgOfMaxTime,StdTime,StdPTime,Workload" >> ${OUTFILE}
+	echo "TotalOps,AvgOps,StdOps,StdPOps,Workload" >> ${OUTFILE}
 }
 
 run_single_experiment(){
