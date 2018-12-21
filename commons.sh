@@ -79,6 +79,7 @@ write_csv_header(){
 run_single_experiment(){
 	echo "Workload:${WORKLOAD} keys and initops:${NKEYS} NOPS:${NOPS} threads:${THREADS} delay:${DELAYS} pinned"
 	./mttest ${WORKLOAD} --nops1=${NOPS} --ninitops=${NKEYS} --nkeys=${NKEYS} --threads=${THREADS} --delaycount=${DELAYS} --pin
+	sleep 1
 }
 
 run_perfed_experiment(){
