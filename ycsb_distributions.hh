@@ -10,8 +10,6 @@
 #include <cmath>
 #include <random>
 
-#include "incll_globals.hh"
-
 namespace ycsbc{
 enum ycsb_op{
 	get_op,
@@ -57,13 +55,15 @@ public:
         }
     }
 
-    void set_keys(){
-		n = GH::n_keys;
+    void set_keys(uint64_t n_keys){
+		n = n_keys;
+		H_n = H(n + 0.5);
+		dist = std::uniform_real_distribution<RealType>(H_x1, H_n);
 	}
 
-    void init(int tid){
-		this->reset(tid);
-		this->set_keys();
+    void init(int seed, uint64_t n_keys){
+		this->reset(seed);
+		this->set_keys(n_keys);
 	}
 
 protected:
@@ -158,13 +158,14 @@ public:
 		return FNVHash64(rand_num) % ZipfianDist<IntType, RealType>::n;
 	}
 
-	void set_keys(){
-		ZipfianDist<IntType, RealType>::n = GH::n_keys + 2 * GH::n_ops1 * GH::put_rate;
+	void set_keys(uint64_t n_keys){
+		ZipfianDist<IntType, RealType>::n = n_keys;
 	}
 
-	void init(int tid){
-		this->reset(tid);
-		this->set_keys();
+	void init(int seed, uint64_t n_keys){
+		this->reset(seed);
+		this->set_keys(n_keys);
+		ZipfianDist<IntType, RealType>::init(seed, n_keys);
 	}
 };
 
@@ -173,16 +174,16 @@ private:
 	uint32_t n;
 public:
 	uint32_t next() {
-		return kvrandom_lcg_nr::next() % GH::n_keys;
+		return kvrandom_lcg_nr::next() % n;
 	}
 
-	void set_keys(){
-		n = GH::n_keys;
+	void set_keys(uint64_t n_keys){
+		n = n_keys;
 	}
 
-	void init(int tid){
-		this->reset(tid);
-		this->set_keys();
+	void init(int seed, uint64_t n_keys){
+		this->reset(seed);
+		this->set_keys(n_keys);
 	}
 };
 

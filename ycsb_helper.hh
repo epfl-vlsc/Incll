@@ -2,7 +2,7 @@
 
 #include "kvrandom.hh"
 #include "ycsb_distributions.hh"
-
+#include <cassert>
 namespace ycsbc{
 
 struct OpRatios{
@@ -55,11 +55,10 @@ struct OpHelper{
 };
 
 template<typename RK, typename RV, typename ROP>
-void exp_init_all(int tid, RK& key_rand,
-		RV& val_rand, ROP& op_rand){
-	key_rand.init(tid);
-	val_rand.init(tid);
-	op_rand.reset(tid);
+void exp_init_all(RK& key_rand, RV& val_rand, ROP& op_rand, uint64_t n_keys){
+	key_rand.init(rand()+1, n_keys);
+	val_rand.init(rand()+1, n_keys);
+	op_rand.reset(rand());
 }
 
 }; //ycsbc

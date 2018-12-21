@@ -1,10 +1,10 @@
 #include "ycsb_helper.hh"
 
 #include <cstdio>
-
+#include <cassert>
 using namespace ycsbc;
 
-#define N 10000
+#define N 1000
 
 template <typename Dist>
 void print_dist(Dist& dist){
@@ -23,17 +23,14 @@ void assert_avg(Dist& dist, uint64_t avg){
 }
 
 void test_distributions(){
-	CounterGen cg;
-	cg.init(100);
-	assert_avg(cg,51);
-
-	UniformGen ug;
-	ug.init(100);
+	UniGen ug;
+	ug.init(1, 100);
 	assert_avg(ug,55);
+	print_dist(ug);
 
-	ZipfianGen zg;
-	zg.init(100);
-	assert_avg(zg,20);
+	ScrambledZipGen szg;
+	szg.init(1, 100);
+	//print_dist(szg);
 }
 
 
