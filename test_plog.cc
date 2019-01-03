@@ -15,6 +15,7 @@ volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
+volatile void *global_masstree_root = nullptr;
 
 void test_log_simple(){
 	Node *root = get_simple_list(SMALL_SIZE);
@@ -50,7 +51,6 @@ void do_experiment(std::string fnc_name, void (*fnc)()){
 
 int main(){
 	DO_EXPERIMENT(test_log_simple);
-	//DO_EXPERIMENT(test_log_circular); //disabled
 
 	return 0;
 }

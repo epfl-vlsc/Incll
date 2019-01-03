@@ -26,7 +26,7 @@ void test_distributions(){
 	UniGen ug;
 	ug.init(1, 100);
 	assert_avg(ug,55);
-	print_dist(ug);
+	//print_dist(ug);
 
 	ScrambledZipGen szg;
 	szg.init(1, 100);

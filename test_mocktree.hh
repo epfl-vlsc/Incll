@@ -28,6 +28,7 @@
 extern volatile mrcu_epoch_type failedepoch;
 extern volatile mrcu_epoch_type globalepoch;
 extern volatile mrcu_epoch_type active_epoch;
+extern volatile void *global_masstree_root;
 
 class key_unparse_unsigned {
 public:
@@ -154,17 +155,18 @@ private:
 
 void adv_epoch(MockMasstree *mt){
 	globalepoch++;
-	GH::node_logger.set_log_root(mt->get_root());
-	GH::node_logger.checkpoint();
+	GH::node_logger->set_log_root(mt->get_root());
+	global_masstree_root = mt->get_root();
+	GH::node_logger->checkpoint();
 	DBGLOG("new ge:%lu", globalepoch);
 }
 
 void undo_all(MockMasstree *mt){
-	void *undo_root = GH::node_logger.get_tree_root();
+	void *undo_root = GH::node_logger->get_tree_root();
 	mt->set_root(undo_root);
-	auto last_flush = GH::node_logger.get_last_flush();
-	GH::node_logger.undo(mt->get_root());
-	GH::node_logger.undo_next_prev(mt->get_root(), last_flush);
+	auto last_flush = GH::node_logger->get_last_flush();
+	GH::node_logger->undo(mt->get_root());
+	GH::node_logger->undo_next_prev(mt->get_root(), last_flush);
 }
 
 void set_failed_epoch(mrcu_epoch_type fe){

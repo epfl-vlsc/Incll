@@ -7,6 +7,7 @@ volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
+volatile void *global_masstree_root = nullptr;
 
 #define N_OPS 1000
 

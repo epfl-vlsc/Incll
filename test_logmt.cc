@@ -14,6 +14,7 @@ volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
+volatile void *global_masstree_root = nullptr;
 
 #define INTERVAL 8
 #define SKIP_INTERVAL 2
@@ -78,6 +79,7 @@ void test_simple(MockMasstree *mt){
 		mt->insert({i});
 	}
 
+	//print_tree_asline(mt->get_root());
 	set_failed_epoch(globalepoch);
 	undo_all(mt);
 
@@ -89,12 +91,13 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 	auto mt = new MockMasstree();
 	mt->thread_init(0);
 	globalepoch = 1;
-	GH::node_logger.init(0);
+	GH::plog_allocator.init();
+	GH::node_logger = GH::plog_allocator.init_plog(0);
 
 	printf("%s\n", (fnc_name + " begin").c_str());
 	fnc(mt);
 	printf("\t%s\n", (fnc_name + " passed asserts").c_str());
-	GH::node_logger.destroy();
+	GH::plog_allocator.destroy();
 }
 
 #define DO_EXPERIMENT(test) \

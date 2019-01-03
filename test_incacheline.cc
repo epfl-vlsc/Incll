@@ -16,6 +16,7 @@ volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
 int delaycount = 0;
+volatile void *global_masstree_root = nullptr;
 kvtimestamp_t initial_timestamp;
 
 #define N_OPS 80
@@ -280,7 +281,8 @@ void exhaustive_testing(vi& argv){
 	auto mt = new MockMasstree();
 	globalepoch=1;
 	mt->thread_init(0);
-	GH::node_logger.init(0);
+	GH::plog_allocator.init();
+	GH::node_logger = GH::plog_allocator.init_plog(0);
 
 	//init tree
 	for(auto e:remove_v){
@@ -304,7 +306,7 @@ void exhaustive_testing(vi& argv){
 	undo_all(mt);
 	assert(is_same_tree(mt->get_root(), copy, true));
 
-	GH::node_logger.destroy();
+	GH::plog_allocator.destroy();
 }
 
 void init_tree(int init_size){
@@ -337,14 +339,15 @@ void do_experiment(std::string fnc_name, void (*fnc)(MockMasstree *)){
 	mt->thread_init(0);
 	globalepoch=1;
 	failedepoch=0;
-	GH::node_logger.init(0);
+	GH::plog_allocator.init();
+	GH::node_logger = GH::plog_allocator.init_plog(0);
 	GH::bucket_locks.init();
 
 	printf("%s\n", (fnc_name + " begin").c_str());
 	fnc(mt);
 	printf("\t%s\n", (fnc_name + " passed asserts").c_str());
 	GH::bucket_locks.destroy();
-	GH::node_logger.destroy();
+	GH::plog_allocator.destroy();
 }
 
 #define DO_EXPERIMENT(test) \

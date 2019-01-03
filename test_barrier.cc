@@ -10,9 +10,12 @@
 volatile mrcu_epoch_type failedepoch = 0;
 volatile mrcu_epoch_type globalepoch = 1;
 volatile mrcu_epoch_type active_epoch = 1;
+int delaycount = 0;
+volatile void *global_masstree_root = nullptr;
 
 const int NUM_THREADS = 8;
 int signs[NUM_THREADS];
+
 
 void assert_all_num(int num){
 	for(int i=0;i<NUM_THREADS;++i){
