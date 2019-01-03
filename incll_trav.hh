@@ -19,7 +19,6 @@ void get_children_leaf(std::queue<N*>& q, LN *ln){
 		int p = perm[idx];
 		typename LN::leafvalue_type lv = ln->lv_[p];
 		if(ln->is_layer(p)) {
-			//todo implement later
 			assert(0 && "not implemented system wide");
 			N *node = lv.layer();
 			while (!node->is_root())

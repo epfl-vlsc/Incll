@@ -20,7 +20,7 @@ endif
 LIBS = @LIBS@ -lpthread -lm
 LDFLAGS = @LDFLAGS@
 
-all: test_atomics mtd mtclient mttest
+all: test_atomics mttest
 
 %.o: %.c config.h $(DEPSDIR)/stamp
 	$(CXX) $(CPPFLAGS) ${EXTFLAGS} $(CXXFLAGS) $(DEPCFLAGS) -include config.h -c -o $@ $<
@@ -56,44 +56,54 @@ recovery: mttest
 	./mttest recovery
 	
 test_recovery: mttest
+	rm -rf *.json
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=25 --remrate=25
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=25 --remrate=25 --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=50 --remrate=0
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=50 --putrate=50 --remrate=0  --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=10 --nops2=1000000 --getrate=50 --putrate=50 --remrate=0
+	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=10 --nops2=1000000 --getrate=50 --putrate=50 --remrate=0  --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0 --remrate=100
+	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0 --remrate=100  --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0 --remrate=100
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=0 --remrate=100  --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=100 --putrate=0 --remrate=0
+	./mttest recovery --nkeys=10 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=100 --putrate=0 --remrate=0  --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
-	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=100 --remrate=0
+	./mttest recovery --nkeys=1000000 --ninitops=1000000 --nops1=1000000 --nops2=1000000 --getrate=0 --putrate=100 --remrate=0  --threads=8
 	rm -rf /scratch/tmp/nvm.*
 	rm -rf /dev/shm/incll/nvm.*
 
 rand: mttest
+	rm -rf /dev/shm/incll/nvm.*
 	rm -rf *.json
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
 	python get_average.py
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
 	python get_average.py
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	./mttest rand
+	rm -rf /dev/shm/incll/nvm.*
 	python get_average.py
 
 # unit tests

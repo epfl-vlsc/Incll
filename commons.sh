@@ -68,7 +68,7 @@ remove_files(){
 write_csv_header_args(){
 	#ex: $1=Nkeys
 	#requires OUTFILE
-	echo "TotalOps,AvgOps,StdOps,StdPOps,TotalTime,AvgOfMaxTime,StdTime,StdPTime,Workload,$1" >> ${OUTFILE}
+	echo "TotalOps,AvgOps,StdOps,StdPOps,Workload,$1" >> ${OUTFILE}
 }
 
 write_csv_header(){

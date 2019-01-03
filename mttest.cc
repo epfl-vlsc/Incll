@@ -603,11 +603,6 @@ static pthread_cond_t subtest_cond;
 MAKE_TESTRUNNER(rand, kvtest_rand(client, 5000000));
 //MAKE_TESTRUNNER(recovery, kvtest_recovery(client));
 
-//UniGen()
-//Zipfian(nkeys)
-//ScrambledZipGen()
-
-
 MAKE_TESTRUNNER(ycsb_a_uni,
 kvtest_ycsb(client,
 		ycsbc::OpRatios(50, 50, 0, 0),
@@ -675,77 +670,6 @@ MAKE_TESTRUNNER(ycsb_a_zipf_recovery,
 ));
 #endif //ycsb recovery
 
-/*
-MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
-// MAKE_TESTRUNNER(palma, kvtest_palma(client));
-// MAKE_TESTRUNNER(palmb, kvtest_palmb(client));
-MAKE_TESTRUNNER(rw1fixed, kvtest_rw1fixed(client));
-MAKE_TESTRUNNER(rw1long, kvtest_rw1long(client));
-MAKE_TESTRUNNER(rw1puts, kvtest_rw1puts(client));
-MAKE_TESTRUNNER(rw2, kvtest_rw2(client));
-MAKE_TESTRUNNER(rw2fixed, kvtest_rw2fixed(client));
-MAKE_TESTRUNNER(rw2g90, kvtest_rw2g90(client));
-MAKE_TESTRUNNER(rw2fixedg90, kvtest_rw2fixedg90(client));
-MAKE_TESTRUNNER(rw2g98, kvtest_rw2g98(client));
-MAKE_TESTRUNNER(rw2fixedg98, kvtest_rw2fixedg98(client));
-MAKE_TESTRUNNER(rw3, kvtest_rw3(client));
-MAKE_TESTRUNNER(rw4, kvtest_rw4(client));
-MAKE_TESTRUNNER(rw4fixed, kvtest_rw4fixed(client));
-MAKE_TESTRUNNER(wd1, kvtest_wd1(10000000, 1, client));
-MAKE_TESTRUNNER(wd1m1, kvtest_wd1(100000000, 1, client));
-MAKE_TESTRUNNER(wd1m2, kvtest_wd1(1000000000, 4, client));
-MAKE_TESTRUNNER(same, kvtest_same(client));
-MAKE_TESTRUNNER(rwsmall24, kvtest_rwsmall24(client));
-MAKE_TESTRUNNER(rwsep24, kvtest_rwsep24(client));
-MAKE_TESTRUNNER(wscale, kvtest_wscale(client));
-MAKE_TESTRUNNER(ruscale_init, kvtest_ruscale_init(client));
-MAKE_TESTRUNNER(rscale, if (client.ti_->index() < ::rscale_ncores) kvtest_rscale(client));
-MAKE_TESTRUNNER(uscale, kvtest_uscale(client));
-MAKE_TESTRUNNER(bdb, kvtest_bdb(client));
-MAKE_TESTRUNNER(wcol1, kvtest_wcol1at(client, client.id() % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(rcol1, kvtest_rcol1at(client, client.id() % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(wcol1o1, kvtest_wcol1at(client, (client.id() + 1) % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(intensive_small, kvtest_intensive(client, 500, 200));
-MAKE_TESTRUNNER(intensive, kvtest_intensive(client, 5000000, 2000000));
-MAKE_TESTRUNNER(rw1, kvtest_rw1(client));
-// MAKE_TESTRUNNER(palma, kvtest_palma(client));
-// MAKE_TESTRUNNER(palmb, kvtest_palmb(client));
-MAKE_TESTRUNNER(rw1fixed, kvtest_rw1fixed(client));
-MAKE_TESTRUNNER(rw1long, kvtest_rw1long(client));
-MAKE_TESTRUNNER(rw1puts, kvtest_rw1puts(client));
-MAKE_TESTRUNNER(rw2, kvtest_rw2(client));
-MAKE_TESTRUNNER(rw2fixed, kvtest_rw2fixed(client));
-MAKE_TESTRUNNER(rw2g90, kvtest_rw2g90(client));
-MAKE_TESTRUNNER(rw2fixedg90, kvtest_rw2fixedg90(client));
-MAKE_TESTRUNNER(rw2g98, kvtest_rw2g98(client));
-MAKE_TESTRUNNER(rw2fixedg98, kvtest_rw2fixedg98(client));
-MAKE_TESTRUNNER(rw3, kvtest_rw3(client));
-MAKE_TESTRUNNER(rw4, kvtest_rw4(client));
-MAKE_TESTRUNNER(rw4fixed, kvtest_rw4fixed(client));
-MAKE_TESTRUNNER(wd1, kvtest_wd1(10000000, 1, client));
-MAKE_TESTRUNNER(wd1m1, kvtest_wd1(100000000, 1, client));
-MAKE_TESTRUNNER(wd1m2, kvtest_wd1(1000000000, 4, client));
-MAKE_TESTRUNNER(same, kvtest_same(client));
-MAKE_TESTRUNNER(rwsmall24, kvtest_rwsmall24(client));
-MAKE_TESTRUNNER(rwsep24, kvtest_rwsep24(client));
-MAKE_TESTRUNNER(wscale, kvtest_wscale(client));
-MAKE_TESTRUNNER(ruscale_init, kvtest_ruscale_init(client));
-MAKE_TESTRUNNER(rscale, if (client.ti_->index() < ::rscale_ncores) kvtest_rscale(client));
-MAKE_TESTRUNNER(uscale, kvtest_uscale(client));
-MAKE_TESTRUNNER(bdb, kvtest_bdb(client));
-MAKE_TESTRUNNER(wcol1, kvtest_wcol1at(client, client.id() % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(rcol1, kvtest_rcol1at(client, client.id() % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(wcol1o1, kvtest_wcol1at(client, (client.id() + 1) % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(rcol1o1, kvtest_rcol1at(client, (client.id() + 1) % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(wcol1o2, kvtest_wcol1at(client, (client.id() + 2) % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(rcol1o2, kvtest_rcol1at(client, (client.id() + 2) % 24, kvtest_first_seed + client.id() % 48, 5000000));
-MAKE_TESTRUNNER(scan1, kvtest_scan1(client, 0));
-MAKE_TESTRUNNER(scan1q80, kvtest_scan1(client, 0.8));
-MAKE_TESTRUNNER(rscan1, kvtest_rscan1(client, 0));
-MAKE_TESTRUNNER(rscan1q80, kvtest_rscan1(client, 0.8));
-MAKE_TESTRUNNER(splitremove1, kvtest_splitremove1(client));
-MAKE_TESTRUNNER(url, kvtest_url(client));
-*/
 
 enum {
     test_thread_initialize = 1,

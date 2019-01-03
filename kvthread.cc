@@ -245,8 +245,6 @@ void threadinfo::refill_pool(int nl) {
 	if (superpage_size != (size_t) -1) {
 		pool_size = superpage_size;
 		pool = pallocator.malloc_nvm(pool_size);
-		//assert(posix_memalign(&pool, pool_size, pool_size) == 0);
-		//assert(madvise(pool, pool_size, MADV_HUGEPAGE) == 0);
 	}
     initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
     pool_[nl - 1] = pool;
@@ -274,9 +272,7 @@ void threadinfo::refill_pool(int nl) {
 
 	if (superpage_size != (size_t) -1) {
 		pool_size = superpage_size;
-		//pool = pallocator.malloc_nvm(pool_size);
-		assert(posix_memalign(&pool, pool_size, pool_size) == 0);
-		//assert(madvise(pool, pool_size, MADV_HUGEPAGE) == 0);
+		posix_memalign(&pool, pool_size, pool_size);
 	}
     initialize_pool(pool, pool_size, nl * CACHE_LINE_SIZE);
     pool_[nl - 1] = pool;

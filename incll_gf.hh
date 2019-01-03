@@ -42,8 +42,6 @@ private:
 	std::atomic<bool> influshWarning; //general warning that something may change.
 	std::atomic<bool> waitingFlush;	  //flush needed. Wait until it finishes.
 	std::atomic<int> doneThreads;
-	//std::atomic<long> epoch;
-	//std::atomic<int> numAcks;
 
 	void global_flush(){
 		int ret = write(fd, "", 0);
@@ -97,10 +95,6 @@ public:
 
 		//if in flush
 		if(waitingFlush.load(std::memory_order_acquire)){
-			//assert(epoch == globalepoch);
-			//assert(numAcks.fetch_add(1)<=nthreads);
-
-
 			//printf("ackflush ge:%lu \n", globalepoch);
 
 			//signal acknowledge
@@ -147,7 +141,6 @@ public:
 		influshWarning.store(true, std::memory_order_seq_cst);
 		if(check_done())
 			return;
-		//assert(epoch.exchange(e) < e);
 
 		//entering flush mode
 		waitingFlush.store(true, std::memory_order_seq_cst);

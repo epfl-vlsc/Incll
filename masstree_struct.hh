@@ -576,9 +576,7 @@ class leaf : public node_base<P> {
 	incll_lv_ lv_cl1;									//8 bytes
 	leafvalue_type lv_[width];							//112 bytes
 	incll_lv_ lv_cl2;									//8 bytes
-	char tmp; //todo: consider removing.
-	//Without this it deadlock on rand, but improve perf by 2%, by having 5cl
-	//instead of 6
+	char tmp;
 
 #ifdef MTAN
 	bool is_recorded;
@@ -641,23 +639,7 @@ class leaf : public node_base<P> {
 #ifdef MTAN
         is_recorded = false;
 #endif //mtan
-        /*
-        printf("es:%ld ms:%ld kl:%ld nl:%ld p:%ld pm:%ld pmc:%ld ks:%ld ik:%ld next:%ld prev:%ld par:%ld pad:%ld lvcl:%ld\n",
-        (uintptr_t)(&((leaf<P>*)0)->extrasize64_),
-        (uintptr_t)(&((leaf<P>*)0)->modstate_),
-        (uintptr_t)(&((leaf<P>*)0)->keylenx_),
-        (uintptr_t)(&((leaf<P>*)0)->not_logged),
-        (uintptr_t)(&((leaf<P>*)0)->cl0_idx),
-        (uintptr_t)(&((leaf<P>*)0)->permutation_),
-        (uintptr_t)(&((leaf<P>*)0)->perm_cl0),
-        (uintptr_t)(&((leaf<P>*)0)->ksuf_),
-        (uintptr_t)(&((leaf<P>*)0)->ikey0_),
-        (uintptr_t)(&((leaf<P>*)0)->next_),
-        (uintptr_t)(&((leaf<P>*)0)->prev_),
-        (uintptr_t)(&((leaf<P>*)0)->parent_),
-        (uintptr_t)(&((leaf<P>*)0)->padding),
-        (uintptr_t)(&((leaf<P>*)0)->lv_cl1)
-        );*/
+
     }
 		int number_of_keys(){
 			permuter_type perm = permutation_;
