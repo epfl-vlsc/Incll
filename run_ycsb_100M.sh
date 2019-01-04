@@ -4,7 +4,7 @@ source commons.sh
 
 set_repeat $1
 quick_make
-create_output threads
+create_output threads100M
 write_csv_header_args Threads
 
 use_default_params
