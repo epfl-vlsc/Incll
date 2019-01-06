@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
 #include "incll_configs.hh"
 #include "incll_extflush.hh"
@@ -28,9 +29,11 @@
 #ifdef USE_DEV_SHM
 #define DATA_BUF_SIZE (1ull<<34)
 #define PDATA_FILENAME "/dev/shm/incll/nvm.data"
+#define PDATA_DIRNAME "/dev/shm/incll/"
 #else //USE_DEV_SHM
 #define DATA_BUF_SIZE (8ull << 30)
 #define PDATA_FILENAME "/scratch/tmp/nvm.data"
+#define PDATA_DIRNAME "/scratch/tmp/"
 #endif //USE_DEV_SHM
 
 
@@ -92,6 +95,8 @@ public:
 	bool exists;
 
 	void init(){
+		mkdir(PDATA_DIRNAME, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
 		pthread_mutex_init(&nvm_lock, NULL);
 
 		exists = access( pdata_filename, F_OK ) != -1;
