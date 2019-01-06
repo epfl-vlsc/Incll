@@ -31,6 +31,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#ifdef GF_STATS
+#include <chrono>
+#include <iostream>
+#endif //gf stats
+
 #define GF_FILE "/dev/global_flush"
 typedef uint64_t mrcu_epoch_type;
 extern volatile mrcu_epoch_type globalepoch;
@@ -59,7 +64,15 @@ private:
 	std::atomic<int> doneThreads;
 
 	void global_flush(){
+#ifdef GF_STATS
+		auto start = std::chrono::high_resolution_clock::now();
+#endif //gf stats
 		int ret = write(fd, "", 0);
+#ifdef GF_STATS
+		auto end = std::chrono::high_resolution_clock::now();
+		auto diff = end - start;
+		std::cout << "GF time:" << std::chrono::duration <double, std::milli> (diff).count() << " ms\n";
+#endif // gf stats
 		if (ret < 0){
 			perror("Failed to flush.");
 			return;

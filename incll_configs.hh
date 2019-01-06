@@ -72,3 +72,4 @@
 //#define MTAN
 //#define YCSB_RECOVERY
 //#define EXTLOG_STATS
+//#define GF_STATS
