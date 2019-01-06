@@ -5,8 +5,8 @@ source commons.sh
 
 WORKLOADS=($1)
 
-set_repeat=1
-quick_make
+set_repeat $2
+full_make
 create_output workload
 write_csv_header
 
@@ -14,4 +14,3 @@ use_default_params
 
 run_different_workloads
 read_out
-remove_out
