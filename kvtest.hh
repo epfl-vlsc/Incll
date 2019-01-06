@@ -1052,7 +1052,7 @@ void ycsb_init_execution(C &client,
 
 	GH::init_thread_all(client.id());
 	UniGen val_rand;
-	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
+	ycsbc::exp_init_all(key_rand, val_rand, op_ratios.op_rand, GH::n_keys);
 
 	quick_istr key;
 	std::vector<Str> keys(10), values(10);
@@ -1133,7 +1133,7 @@ void ycsb_re_execution(C &client,
 
 	GH::init_thread_all(client.id());
 	UniGen val_rand;
-	ycsbc::exp_init_all(client.id(), key_rand, val_rand, op_ratios.op_rand);
+	ycsbc::exp_init_all(key_rand, val_rand, op_ratios.op_rand, GH::n_keys);
 
 	Json result = Json();
 
