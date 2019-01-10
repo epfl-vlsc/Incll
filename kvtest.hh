@@ -1002,7 +1002,7 @@ void kvtest_ycsb(C &client,
 	result.set("thread_time", t_end - t_beg);
 	result.set("keys", GH::n_keys);
 	result.set("threads", client.ncores());
-	result.set("version", 0);
+	result.set("version", "incll");
 #ifdef PALLOCATOR
 	result.set("delay_count", delaycount);
 #endif //pallocator

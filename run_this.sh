@@ -30,3 +30,4 @@ make mttest
 
 ./run_ycsb_100M.sh
 
+python json_to_csv.py
