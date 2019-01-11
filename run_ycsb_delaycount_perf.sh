@@ -22,25 +22,29 @@ source commons.sh
 set_repeat 5
 
 NB_SRC=notebook-mttest.json
-NB_DST=output/workloads_perf.json
+NB_DST=output/delays_perf.json
 
 remove_files
 
 use_default_params
-use_all_workloads
+use_a_workloads
 
 make clean
 make mttest "EXTFLAGS=-DPERF_WORKLOAD"
+DELAYS_COUNTS=(0 260 520 780 1040 1300 1560 1820 2080 2340 2600)
+for DELAYS in ${DELAYS_COUNTS[@]}; do
 for WORKLOAD in ${WORKLOADS[@]}; do
 	run_multi_experiment
+done
 done
 
 make clean
 make mttest "EXTFLAGS=-DPERF_WORKLOAD -DPERF_STORES"
+DELAYS_COUNTS=(0 260 520 780 1040 1300 1560 1820 2080 2340 2600)
+for DELAYS in ${DELAYS_COUNTS[@]}; do
 for WORKLOAD in ${WORKLOADS[@]}; do
 	run_multi_experiment
 done
-
+done
 
 cp ${NB_SRC} ${NB_DST}
-

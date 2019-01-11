@@ -17,30 +17,17 @@
  */
 '
 
-source commons.sh
-
-set_repeat 5
-
-NB_SRC=notebook-mttest.json
-NB_DST=output/workloads_perf.json
-
-remove_files
-
-use_default_params
-use_all_workloads
-
 make clean
-make mttest "EXTFLAGS=-DPERF_WORKLOAD"
-for WORKLOAD in ${WORKLOADS[@]}; do
-	run_multi_experiment
-done
+make mttest
 
-make clean
-make mttest "EXTFLAGS=-DPERF_WORKLOAD -DPERF_STORES"
-for WORKLOAD in ${WORKLOADS[@]}; do
-	run_multi_experiment
-done
+./run_workloads_perf.sh
 
+./run_ycsb_threads_perf.sh
 
-cp ${NB_SRC} ${NB_DST}
+./run_ycsb_keys_perf.sh
 
+./run_ycsb_delaycount_perf.sh
+
+./run_ycsb_100M_perf.sh
+
+python json_to_csv.py

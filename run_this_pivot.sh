@@ -29,3 +29,5 @@ make mttest
 ./run_ycsb_delaycount_pivot.sh
 
 ./run_ycsb_100M_pivot.sh
+
+python json_to_csv.py

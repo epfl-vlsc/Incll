@@ -19,10 +19,10 @@
 
 source commons.sh
 
-set_repeat 5
+set_repeat $1
 
 NB_SRC=notebook-mttest.json
-NB_DST=output/workloads_perf.json
+NB_DST=/scratch/results/incll.json
 
 remove_files
 
@@ -41,6 +41,4 @@ for WORKLOAD in ${WORKLOADS[@]}; do
 	run_multi_experiment
 done
 
-
 cp ${NB_SRC} ${NB_DST}
-

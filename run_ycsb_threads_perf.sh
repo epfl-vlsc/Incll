@@ -22,25 +22,30 @@ source commons.sh
 set_repeat 5
 
 NB_SRC=notebook-mttest.json
-NB_DST=output/workloads_perf.json
+NB_DST=output/threads_perf.json
 
 remove_files
 
 use_default_params
-use_all_workloads
+use_a_workloads
 
 make clean
 make mttest "EXTFLAGS=-DPERF_WORKLOAD"
+THREAD_COUNTS=(1 4 8 12 16 20 24 28 32 36 40 44 48 52 56)
+for THREADS in ${THREAD_COUNTS[@]}; do
 for WORKLOAD in ${WORKLOADS[@]}; do
 	run_multi_experiment
+done
 done
 
 make clean
 make mttest "EXTFLAGS=-DPERF_WORKLOAD -DPERF_STORES"
+THREAD_COUNTS=(1 4 8 12 16 20 24 28 32 36 40 44 48 52 56)
+for THREADS in ${THREAD_COUNTS[@]}; do
 for WORKLOAD in ${WORKLOADS[@]}; do
 	run_multi_experiment
 done
-
+done
 
 cp ${NB_SRC} ${NB_DST}
 
