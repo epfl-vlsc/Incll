@@ -85,8 +85,8 @@ public:
 	static constexpr const int last_flush_range = 24;
 
 #ifdef EXTLOG_STATS
-	void get_active_records(){
-		printf("active recs:%lu \n", active_records);
+	size_t get_active_records(){
+		return active_records;
 	}
 #endif
 

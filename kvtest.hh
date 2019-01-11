@@ -1149,7 +1149,7 @@ void ycsb_re_execution(C &client,
 	//undo-----------------------------------------
 	GH::thread_barrier.wait_barrier(client.id());
 #ifdef EXTLOG_STATS
-	GH::node_logger->get_active_records();
+	size_t active_records = GH::node_logger->get_active_records();
 #endif
 	GH::thread_barrier.wait_barrier(client.id());
 
@@ -1162,7 +1162,13 @@ void ycsb_re_execution(C &client,
 	GH::thread_barrier.wait_barrier(client.id());
 
 	double t1 = client.usec_now();
-	result.set("recovery_time", t1-t0);
+	result.set("recovery_time_us", t1-t0);
+	result.set("keys", GH::n_keys);
+	result.set("threads", client.ncores());
+	result.set("version", "incll");
+#ifdef EXTLOG_STATS
+	result.set("active_records", active_records);
+#endif
 	if(client.id() == 0){
 		DBGLOG("finished undo")
 	}
