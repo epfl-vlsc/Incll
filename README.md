@@ -1,20 +1,27 @@
 # Durable Masstree #
 
-This is the experimental source release for Durable Masstree, a fast, multi-core key-value store that runs on NVM. 
-
-This document describes how to run durable Masstree and obtain results.
+This is the experimental source release for Durable Masstree, a fast, multi-core key-value store that runs on NVM.
+Ensuring the recoverability of the data after crash is expensive due to the cost involved in ordering the writes to NVM.
+Durable Masstree offers a new design space, where the cost of ordering writes by using flushes and fences can be reduced as described in Fine-Grain Checkpointing with In-Cache-Line Logging.
+Durable Masstree code offers the possibility to explore the described design space.
+  
+This document describes how to run Durable Masstree and obtain results.
 
 ## Dependencies ##
 * Jemalloc: It is preferable that you use [jemalloc](https://samiux.blogspot.com/2017/02/howto-optimize-ubuntu-1604-lts-and-kali.html) as allocator.
 
 ## Installation ##
 
-Masstree is tested on Debian, Ubuntu and Mac OS X. To build from
-source:
+Get the sources using:
+	
+	$ git clone https://github.com/epfl-vlsc/Masstree.git
+
+Please make sure you have jemalloc installed.
+Afterwards, run the commands below to build the project.
 
     $ ./bootstrap.sh
     $ ./configure
-    $ make mttest
+    $ make all
     
 ## Cache line flusher ##
 
@@ -34,7 +41,7 @@ Run the script for tests. Check `incll_configs.hh` for trying out different conf
 
 Run a single ycsb experiment.
 
-	$ ./run_workload.sh ycsb_a_uni
+	$ ./run_workload.sh ycsb_a_uni 10
 
 Run many different experiments. Check the `output` folder for results.
 
