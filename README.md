@@ -31,7 +31,7 @@ Load the kernel module for kernel flushes.
     $ make flush_load
     
 ## Persistent Region Size ##
-* In `kvthread_pallocator.hh` and `incll_pextlog.hh`, please modify `DATA_BUF_SIZE, PDATA_FILENAME, PDATA_DIRNAME, PBUF_SIZE, PLOG_FILENAME` according to the mapping location and size of memory that you want to use.
+* In `kvthread_pallocator.hh` please change `DATA_BUF_SIZE, PDATA_FILENAME, PDATA_DIRNAME` and in `incll_pextlog.hh`, please change, `PBUF_SIZE, PLOG_FILENAME` according to the mapping location and size of the memory available to your system.
 
 ## Testing ##
 Run the script for tests. Check `incll_configs.hh` for trying out different configurations.
