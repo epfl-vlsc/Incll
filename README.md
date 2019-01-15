@@ -2,7 +2,7 @@
 
 This is the experimental source release for Durable Masstree, a fast, multi-core key-value store that runs on NVM. 
 
-This document describes how to run durable Masstree results.
+This document describes how to run durable Masstree and obtain results.
 
 ## Dependencies ##
 * Jemalloc: It is preferable that you use [jemalloc](https://samiux.blogspot.com/2017/02/howto-optimize-ubuntu-1604-lts-and-kali.html) as allocator.
