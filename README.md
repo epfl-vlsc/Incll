@@ -2,7 +2,7 @@
 
 This is the experimental source release for Durable Masstree, a fast, multi-core key-value store that runs on NVM.
 Ensuring the recoverability of the data after crash is expensive due to the cost involved in ordering the writes to NVM.
-Durable Masstree offers a new design space, where the cost of ordering writes by using flushes and fences can be reduced as described in Fine-Grain Checkpointing with In-Cache-Line Logging.
+Durable Masstree offers a new design space, where the cost of ordering writes by using flushes and fences can be reduced through the use of fine-grain checkpointing and using a log that is stored within a cache line as described in Fine-Grain Checkpointing with In-Cache-Line Logging.
 Durable Masstree code offers the possibility to explore the described design space.
   
 This document describes how to run Durable Masstree and obtain results.
