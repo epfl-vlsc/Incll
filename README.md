@@ -1,3 +1,8 @@
+## Persistent Memory ##
+Under construction!
+
+Soon efficient support for PM will be added.
+
 # Durable Masstree #
 
 This is the experimental source release for Durable Masstree, a fast, multi-core key-value store that runs on NVM.
@@ -22,9 +27,6 @@ Afterwards, run the commands below to build the project.
     $ ./bootstrap.sh
     $ ./configure
     $ make all
-   
-## Persistent Memory ##
-Under construction, efficient support is added for PM use.
 
 ## Cache line flusher ##
 
