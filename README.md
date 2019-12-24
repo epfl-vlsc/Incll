@@ -1,7 +1,7 @@
-## Persistent Memory ##
+## Intel Optane Persistent Memory ##
 Under construction!
 
-Soon efficient support for PM will be added.
+Soon efficient support for Intel Optane will be added.
 
 # Durable Masstree #
 
