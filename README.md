@@ -22,7 +22,10 @@ Afterwards, run the commands below to build the project.
     $ ./bootstrap.sh
     $ ./configure
     $ make all
-    
+   
+## Persistent Memory ##
+Under construction, efficient support is added for PM use.
+
 ## Cache line flusher ##
 
 Load the kernel module for kernel flushes.
